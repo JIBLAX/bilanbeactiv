@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#07070f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>BE ACTIV — Coach Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* ════════════════════════════════════════════
+   BE ACTIV COACH PRO v4
+   Aesthetic : noir opérationnel · vert électrique
+   Typo : Outfit (display) + Lora (corps)
+   ════════════════════════════════════════════ */
+:root{
+  --bg:#07070f;--bg2:#0d0d1c;--bg3:#131328;--bg4:#1a1a30;
+  --glass:rgba(255,255,255,.042);--glass2:rgba(255,255,255,.07);
+  --rim:rgba(255,255,255,.07);--rim2:rgba(255,255,255,.13);
+  --G:#00e5a0;--G2:#00c07e;--B:#00b8ff;--Y:#ffb800;--R:#ff5040;--V:#a78bfa;
+  --snow:#eeeeff;--fog:rgba(238,238,255,.55);--mist:rgba(238,238,255,.3);--ghost:rgba(238,238,255,.12);
+  --r:16px;--r2:11px;--r3:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--snow);-webkit-font-smoothing:antialiased}
+#app{display:flex;flex-direction:column;height:100%;max-width:500px;margin:0 auto;overflow:hidden}
+
+/* ── TOPBAR ── */
+#topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:13px 18px 10px;background:rgba(7,7,15,.96);backdrop-filter:blur(24px);border-bottom:1px solid var(--rim);z-index:100}
+.tbar-logo{display:flex;align-items:center;gap:10px}
+.logo-sq{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--G),var(--B));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;color:#07070f}
+.logo-name{font-weight:800;font-size:15px}.logo-name b{color:var(--G)}
+.tbar-right{display:flex;align-items:center;gap:8px}
+.tbar-kpi{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:50px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25)}
+.kpi-pct{font-weight:900;font-size:15px;color:var(--G)}
+.kpi-sub{font-size:9px;color:var(--mist);text-transform:uppercase;letter-spacing:.5px}
+.ico-btn{width:34px;height:34px;border-radius:10px;background:var(--glass);border:1px solid var(--rim);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;color:var(--fog);transition:all .15s}
+.ico-btn:hover{background:var(--glass2);color:var(--snow)}
+
+/* ── SCROLLER ── */
+#scroller{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+#scroller::-webkit-scrollbar{display:none}
+
+/* ── NAV ── */
+#nav{flex-shrink:0;display:flex;background:rgba(7,7,15,.97);backdrop-filter:blur(24px);border-top:1px solid var(--rim);padding:6px 2px calc(6px + env(safe-area-inset-bottom,0px))}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:5px 1px;border-radius:10px;transition:background .15s}
+.ni:hover{background:var(--glass)}
+.ni-ico{font-size:18px;transition:transform .18s}
+.ni-dot{width:3px;height:3px;border-radius:50%;background:var(--G);opacity:0;transition:opacity .18s;margin:1px 0}
+.ni-lbl{font-size:8.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--mist);transition:color .18s}
+.ni.on .ni-ico{transform:scale(1.12)}.ni.on .ni-dot{opacity:1}.ni.on .ni-lbl{color:var(--G)}
+
+/* ── PAGES ── */
+.pg{display:none;padding:17px 17px 40px;animation:pgIn .22s ease}.pg.on{display:block}
+@keyframes pgIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── SECTION HEADERS ── */
+.sh{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--G);margin-bottom:13px;margin-top:20px}
+.sh::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--rim2),transparent)}
+.sh:first-child{margin-top:0}
+.sh-R{color:var(--R)}.sh-R::after{background:linear-gradient(90deg,rgba(255,80,64,.3),transparent)}
+.sh-B{color:var(--B)}.sh-B::after{background:linear-gradient(90deg,rgba(0,184,255,.3),transparent)}
+.sh-Y{color:var(--Y)}.sh-Y::after{background:linear-gradient(90deg,rgba(255,184,0,.3),transparent)}
+.sh-V{color:var(--V)}.sh-V::after{background:linear-gradient(90deg,rgba(167,139,250,.3),transparent)}
+.sh-m{color:var(--mist)}.sh-m::after{background:linear-gradient(90deg,rgba(238,238,255,.15),transparent)}
+.sh-ol{color:#c8a800}.sh-ol::after{background:linear-gradient(90deg,rgba(200,168,0,.3),transparent)}
+
+/* ── CARDS ── */
+.card{background:var(--glass);border:1px solid var(--rim);border-radius:var(--r);padding:17px;margin-bottom:13px}
+.card:hover{border-color:var(--rim2)}
+.card-t{font-weight:700;font-size:14px;margin-bottom:13px;display:flex;align-items:center;gap:7px}
+
+/* ── FORM ── */
+.f{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}.f:last-child{margin-bottom:0}
+label{font-size:10.5px;font-weight:600;color:var(--mist);text-transform:uppercase;letter-spacing:.8px}
+input,select,textarea{background:rgba(255,255,255,.052);border:1px solid var(--rim);border-radius:var(--r3);padding:11px 13px;color:var(--snow);font-family:'Outfit',sans-serif;font-size:14px;outline:none;width:100%;transition:all .16s;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{border-color:var(--G);background:rgba(0,229,160,.055);box-shadow:0 0 0 3px rgba(0,229,160,.08)}
+input::placeholder,textarea::placeholder{color:var(--ghost)}
+select option{background:#13132a}
+textarea{resize:vertical;min-height:80px;line-height:1.6}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* ── CHECKBOXES / RADIOS ── */
+.chk-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--rim);cursor:pointer}
+.chk-item:last-child{border:none;padding-bottom:0}
+.chk-item input[type=checkbox],.chk-item input[type=radio]{display:none}
+.chk-box,.radio-box{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--rim2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;background:transparent}
+.radio-box{border-radius:50%}
+.chk-item input[type=checkbox]:checked + .chk-box{background:var(--G);border-color:var(--G)}
+.chk-item input[type=checkbox]:checked + .chk-box::after{content:'✓';font-size:13px;font-weight:700;color:#07070f}
+.chk-item input[type=radio]:checked + .radio-box{border-color:var(--G)}
+.chk-item input[type=radio]:checked + .radio-box::after{content:'';width:10px;height:10px;border-radius:50%;background:var(--G)}
+.chk-lbl,.radio-lbl{font-size:13.5px;color:var(--fog);line-height:1.4}
+
+/* ── DAYS ── */
+.days-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px}
+.day-chip{cursor:pointer}.day-chip input{display:none}
+.day-sq{width:100%;padding:8px 3px;border-radius:8px;border:1.5px solid var(--rim2);text-align:center;font-size:11px;font-weight:600;color:var(--mist);transition:all .15s;background:transparent}
+.day-chip input:checked + .day-sq{background:var(--G);border-color:var(--G);color:#07070f}
+
+/* ── IMC ── */
+.imc-chip{display:flex;align-items:center;gap:8px;padding:11px 13px;min-height:44px;background:rgba(0,229,160,.07);border:1px solid rgba(0,229,160,.2);border-radius:var(--r3);font-size:14px;font-weight:600;color:var(--G)}
+.imc-b{font-size:10px;padding:2px 8px;border-radius:50px;font-weight:700;text-transform:uppercase}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:13px 20px;border-radius:50px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .16s;-webkit-appearance:none;white-space:nowrap}
+.btn-G{background:linear-gradient(135deg,var(--G),var(--G2));color:#07070f;box-shadow:0 4px 18px rgba(0,229,160,.26)}
+.btn-G:hover{transform:translateY(-1px);box-shadow:0 6px 26px rgba(0,229,160,.38)}
+.btn-G:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-dk{background:var(--glass2);color:var(--snow);border:1px solid var(--rim2)}.btn-dk:hover{background:rgba(255,255,255,.09)}
+.btn-B{background:rgba(0,184,255,.11);color:var(--B);border:1px solid rgba(0,184,255,.24)}.btn-B:hover{background:rgba(0,184,255,.17)}
+.btn-R{background:rgba(255,80,64,.1);color:var(--R);border:1px solid rgba(255,80,64,.22)}.btn-R:hover{background:rgba(255,80,64,.15)}
+.btn-w{width:100%}.btn-sm{padding:8px 15px;font-size:13px}
+.brow{display:flex;gap:9px;margin-top:13px}.brow .btn{flex:1}
+
+/* ── SCORE BARS ── */
+.sbar{height:5px;border-radius:3px;background:var(--glass2);overflow:hidden;margin-top:5px}
+.sfill{height:100%;border-radius:3px;transition:width .4s,background .4s}
+
+/* ── ACCORDIONS ── */
+.acc{border:1px solid var(--rim);border-radius:var(--r);overflow:hidden;margin-bottom:10px}
+.acc-hd{padding:13px 15px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--glass);transition:background .15s;user-select:none}
+.acc-hd:hover{background:var(--glass2)}
+.acc-hl{display:flex;align-items:center;gap:10px}
+.acc-ico{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.acc-title{font-weight:700;font-size:14px}.acc-sub{font-size:11px;color:var(--mist);margin-top:1px}
+.acc-chev{color:var(--mist);font-size:11px;transition:transform .2s}
+.acc.open .acc-chev{transform:rotate(180deg)}
+.acc-body{display:none;padding:5px 15px 15px}.acc.open .acc-body{display:block}
+
+/* ── PILLS / BADGES ── */
+.pill{display:inline-flex;align-items:center;padding:4px 11px;border-radius:50px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.2px}
+.pill-G{background:rgba(0,229,160,.12);color:var(--G);border:1px solid rgba(0,229,160,.28)}
+.pill-B{background:rgba(0,184,255,.1);color:var(--B);border:1px solid rgba(0,184,255,.22)}
+.pill-Y{background:rgba(255,184,0,.1);color:var(--Y);border:1px solid rgba(255,184,0,.22)}
+.pill-R{background:rgba(255,80,64,.1);color:var(--R);border:1px solid rgba(255,80,64,.22)}
+.pill-V{background:rgba(167,139,250,.1);color:var(--V);border:1px solid rgba(167,139,250,.22)}
+
+/* ── HOME DASHBOARD ── */
+.home-hero{display:flex;flex-direction:column;align-items:center;padding:30px 20px 24px;background:linear-gradient(135deg,rgba(0,229,160,.09),rgba(0,184,255,.05));border:1px solid rgba(0,229,160,.2);border-radius:var(--r);margin-bottom:16px;position:relative;overflow:hidden}
+.home-hero::before{content:'';position:absolute;top:-50px;right:-50px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(0,229,160,.16),transparent 70%);pointer-events:none}
+.home-hero-lbl{font-size:11px;color:var(--mist);margin-bottom:16px;letter-spacing:1px;text-transform:uppercase}
+.home-cta{display:flex;align-items:center;gap:10px;padding:16px 34px;border-radius:50px;background:linear-gradient(135deg,var(--G),var(--G2));color:#07070f;font-family:'Outfit',sans-serif;font-weight:900;font-size:16px;cursor:pointer;border:none;transition:all .18s;box-shadow:0 6px 24px rgba(0,229,160,.35);-webkit-appearance:none}
+.home-cta:hover{transform:scale(1.02);box-shadow:0 8px 32px rgba(0,229,160,.5)}
+.home-cta:active{transform:scale(.97)}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.kpi-box{background:var(--glass);border:1px solid var(--rim);border-radius:var(--r2);padding:12px 8px;text-align:center}
+.kpi-v{font-weight:900;font-size:22px;line-height:1;margin-bottom:3px}
+.kpi-l{font-size:9px;color:var(--mist);text-transform:uppercase;letter-spacing:.7px;font-weight:600}
+.kpi-close{background:rgba(0,229,160,.06);border-color:rgba(0,229,160,.2)}.kpi-close .kpi-v{color:var(--G)}
+.kpi-ca{border-color:rgba(255,184,0,.15)}.kpi-ca .kpi-v{color:var(--Y)}
+.rdv-card{background:var(--glass);border:1px solid var(--rim);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:border-color .2s}
+.rdv-card:hover{border-color:var(--rim2)}
+.rdv-date{display:flex;flex-direction:column;align-items:center;background:var(--G);border-radius:10px;padding:8px 12px;min-width:52px;flex-shrink:0}
+.rdv-day{font-weight:900;font-size:22px;color:#07070f;line-height:1}
+.rdv-mon{font-size:9px;color:rgba(7,7,15,.7);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.rdv-info{flex:1;min-width:0}
+.rdv-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rdv-meta{font-size:12px;color:var(--mist);margin-top:3px}
+.rdv-badge{font-size:10px;color:var(--G);font-weight:600;margin-top:2px}
+.rdv-empty{text-align:center;padding:18px;background:var(--glass);border:1px dashed var(--rim2);border-radius:var(--r);margin-bottom:12px;color:var(--mist);font-size:13px}
+
+/* ── GOWOD ── */
+.gowod-wrap{background:linear-gradient(180deg,#1a2235,#111827);border:1px solid rgba(0,184,255,.2);border-radius:var(--r);padding:20px;margin-bottom:12px}
+.gowod-brand{text-align:center;font-size:10.5px;font-weight:700;letter-spacing:2.5px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:3px}
+.gowod-sub{text-align:center;font-size:12px;color:rgba(255,255,255,.6);margin-bottom:18px}
+.gowod-circle-wrap{display:flex;justify-content:center;margin-bottom:22px}
+.gowod-circle{position:relative;width:128px;height:128px}
+.gowod-circle svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.gc-bg{fill:none;stroke:rgba(255,255,255,.08);stroke-width:9}
+.gc-fill{fill:none;stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)}
+.gowod-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gc-val{font-weight:900;font-size:34px;line-height:1}
+.gc-pct{font-size:14px;font-weight:600;opacity:.6}
+.gc-lbl{font-size:9px;color:rgba(255,255,255,.35);letter-spacing:1.2px;text-transform:uppercase;margin-top:3px}
+.gowod-bars{display:flex;justify-content:space-around;align-items:flex-end;height:90px;padding:0 6px;margin-bottom:6px}
+.gz{display:flex;flex-direction:column;align-items:center;flex:1}
+.gz-val{font-weight:800;font-size:12.5px;color:#fff;margin-bottom:5px}
+.gz-track{width:6px;height:70px;background:rgba(255,255,255,.08);border-radius:3px;position:relative;overflow:hidden}
+.gz-bar{position:absolute;bottom:0;left:0;right:0;border-radius:3px;transition:height 1.3s cubic-bezier(.4,0,.2,1)}
+.gowod-zone-lbls{display:flex;justify-content:space-around;padding:0 6px;margin-bottom:14px}
+.gz-lbl{flex:1;font-size:8.5px;color:rgba(255,255,255,.35);text-align:center;line-height:1.3}
+.gowod-sports{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gs-card{background:rgba(255,255,255,.05);border-radius:var(--r2);padding:12px}
+.gs-name{font-size:13px;font-weight:700;margin-bottom:4px}
+.gs-tag{font-size:8.5px;color:rgba(0,184,255,.9);background:rgba(0,184,255,.12);padding:2px 8px;border-radius:50px;display:inline-block;margin-bottom:7px}
+.gs-v{font-weight:900;font-size:20px}.gs-max{font-size:11px;color:rgba(255,255,255,.35)}
+.gs-bar{height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:6px;overflow:hidden}
+.gs-fill{height:100%;border-radius:2px;background:var(--G);transition:width 1s ease}
+
+/* ── UPLOAD ── */
+.upload-zone{border:2px dashed rgba(0,184,255,.3);border-radius:var(--r);padding:24px 15px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(0,184,255,.04);margin-bottom:12px}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--B);background:rgba(0,184,255,.08)}
+.upload-zone input{display:none}
+.uz-icon{font-size:30px;margin-bottom:9px}
+.uz-title{font-size:14px;font-weight:700;color:var(--B);margin-bottom:4px}
+.uz-sub{font-size:12px;color:var(--mist);line-height:1.5}
+
+/* ── IRD ── */
+.ird-result{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(0,184,255,.07);border:1px solid rgba(0,184,255,.2);border-radius:var(--r2);margin-top:8px}
+.ird-val{font-weight:900;font-size:24px;color:var(--B)}
+.ird-lbl{font-size:12px;color:var(--mist)}
+.ird-cat{font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;margin-top:3px;display:inline-block}
+
+/* ── AI CARDS ── */
+.ai-card{background:linear-gradient(135deg,rgba(0,229,160,.07),rgba(0,184,255,.045));border:1px solid rgba(0,229,160,.17);border-radius:var(--r);padding:17px;margin-bottom:13px}
+.ai-title{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--G);margin-bottom:11px;display:flex;align-items:center;gap:6px}
+.ai-body{font-family:'Lora',serif;font-size:14px;color:rgba(238,238,255,.78);line-height:1.82}
+.ai-blk{background:var(--glass);border:1px solid var(--rim);border-radius:var(--r2);padding:12px 14px;margin-bottom:9px}
+.ai-blk-t{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--B);margin-bottom:7px}
+.ai-blk-c{font-family:'Lora',serif;font-size:13.5px;color:var(--fog);line-height:1.75}
+.pbadge{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:50px;margin-bottom:12px;border:1px solid rgba(0,229,160,.28);background:rgba(0,229,160,.08)}
+.pcode{font-weight:900;font-size:17px;color:var(--G)}
+.plabel{font-size:13px;font-weight:600;color:var(--snow)}
+.crow{display:flex;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap}
+.cscore{font-weight:900;font-size:22px;background:linear-gradient(135deg,var(--G),var(--B));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.clbl{font-size:11px;color:var(--mist)}
+
+/* ── RAPPORT ── */
+.report-hero{background:linear-gradient(135deg,rgba(0,229,160,.08),rgba(0,184,255,.05));border:1px solid rgba(0,229,160,.2);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.rh-name{font-weight:900;font-size:22px;margin-bottom:3px}
+.rh-meta{font-size:12px;color:var(--mist);margin-bottom:13px}
+.scores3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:13px}
+.sbox{background:var(--bg3);border:1px solid var(--rim);border-radius:var(--r2);padding:11px;text-align:center}
+.sval{font-weight:900;font-size:24px;line-height:1}
+.slbl{font-size:9.5px;color:var(--mist);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+.rsec{background:var(--glass);border:1px solid var(--rim);border-radius:var(--r);padding:15px;margin-bottom:11px}
+.rsec-t{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--B);margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.rsec-txt{font-family:'Lora',serif;font-size:14px;color:var(--fog);line-height:1.8}
+.litem{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--rim);font-size:13.5px;color:var(--fog)}
+.litem:last-child{border:none}
+.lico{font-size:12px;margin-top:3px;flex-shrink:0}
+
+/* ── CLIENTS ── */
+.srch{display:flex;gap:8px;margin-bottom:13px}
+.srch-i{flex:1;background:var(--glass2);border:1px solid var(--rim);border-radius:50px;padding:10px 15px;color:var(--snow);font-family:'Outfit',sans-serif;font-size:14px;outline:none}
+.srch-i:focus{border-color:var(--G)}
+.chips{display:flex;gap:5px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:5px 13px;border-radius:50px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid var(--rim);color:var(--mist);background:transparent;transition:all .13s;white-space:nowrap}
+.chip.on{background:var(--G);color:#07070f;border-color:var(--G)}
+.ccrd{background:var(--glass);border:1px solid var(--rim);border-radius:var(--r2);padding:13px 15px;margin-bottom:9px;cursor:pointer;transition:all .16s;display:flex;align-items:center;gap:11px}
+.ccrd:hover{border-color:var(--rim2);background:var(--glass2);transform:translateX(2px)}
+.cav{width:42px;height:42px;border-radius:11px;flex-shrink:0;background:linear-gradient(135deg,var(--G),var(--B));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#07070f}
+.cinfo{flex:1;min-width:0}
+.cname{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmeta{font-size:11.5px;color:var(--mist);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cbadges{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+
+/* ── STEPS ── */
+.steps{display:flex;align-items:center;margin-bottom:18px}
+.step{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+.step::after{content:'';position:absolute;top:12px;left:50%;width:100%;height:1.5px;background:var(--rim);z-index:0}
+.step:last-child::after{display:none}
+.step-c{width:24px;height:24px;border-radius:50%;border:2px solid var(--rim2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--mist);background:var(--bg);position:relative;z-index:1;transition:all .2s}
+.step.done .step-c{background:var(--G);border-color:var(--G);color:#07070f}
+.step.act .step-c{background:var(--G);border-color:var(--G);color:#07070f;box-shadow:0 0 0 4px rgba(0,229,160,.16)}
+.step-l{font-size:9px;font-weight:600;color:var(--mist);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.step.act .step-l,.step.done .step-l{color:var(--G)}
+
+/* ── LOADER / EMPTY ── */
+.ldwrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:44px 20px;gap:16px;text-align:center}
+.ldring{width:48px;height:48px;border-radius:50%;border:2px solid var(--rim);border-top-color:var(--G);border-right-color:var(--B);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ldmsg{font-size:14px;color:var(--fog)}
+.ldmsg strong{display:block;color:var(--G);font-size:15px;margin-bottom:3px}
+.empty{text-align:center;padding:40px 18px;color:var(--mist)}
+.empty-ico{font-size:44px;margin-bottom:13px;opacity:.6}
+.empty-t{font-weight:700;font-size:17px;color:var(--fog);margin-bottom:8px}
+.empty-s{font-size:13px;line-height:1.6}
+
+/* ── MODAL ── */
+.mbg{position:fixed;inset:0;background:rgba(7,7,15,.88);backdrop-filter:blur(12px);z-index:500;display:flex;align-items:flex-end;justify-content:center;padding:12px;opacity:0;pointer-events:none;transition:opacity .22s}
+.mbg.open{opacity:1;pointer-events:all}
+.mdl{background:#12122a;border:1px solid var(--rim2);border-radius:var(--r) var(--r) 0 0;padding:22px 18px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;transform:translateY(20px);transition:transform .22s}
+.mbg.open .mdl{transform:translateY(0)}
+.mdl-t{font-weight:800;font-size:17px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.mdl-x{width:28px;height:28px;border-radius:50%;background:var(--glass2);border:none;color:var(--fog);cursor:pointer;font-size:14px}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(16px);background:rgba(16,16,36,.97);backdrop-filter:blur(20px);border:1px solid var(--rim2);border-radius:50px;padding:10px 19px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px;z-index:9000;transition:all .28s cubic-bezier(.34,1.56,.64,1);opacity:0;pointer-events:none;white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.ok{color:var(--G);border-color:rgba(0,229,160,.28)}
+#toast.err{color:var(--R);border-color:rgba(255,80,64,.28)}
+#toast.info{color:var(--B);border-color:rgba(0,184,255,.28)}
+#toast.warn{color:var(--Y);border-color:rgba(255,184,0,.28)}
+
+.dvd{height:1px;background:var(--rim);margin:12px 0}
+.note{font-size:12px;color:var(--mist);line-height:1.6;font-style:italic;margin-top:7px}
+.highlight{background:rgba(255,255,255,.04);border:1px solid var(--rim);border-radius:var(--r2);padding:11px 13px;margin-bottom:12px;font-size:13px;color:var(--fog);line-height:1.6}
+.tag-offre{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(255,184,0,.12);color:var(--Y);border:1px solid rgba(255,184,0,.25);margin:3px}
+@media(max-width:380px){.g3{grid-template-columns:1fr 1fr}.scores3{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="tbar-logo">
+    <div class="logo-sq">BA</div>
+    <div><div class="logo-name">BE <b>ACTIV</b></div></div>
+  </div>
+  <div class="tbar-right">
+    <div class="tbar-kpi"><div class="kpi-pct" id="top-closing">—</div><div class="kpi-sub">closing</div></div>
+    <div class="ico-btn" onclick="openModal('cfg')">⚙️</div>
+  </div>
+</div>
+
+<div id="scroller">
+
+<!-- ══════ PAGE : ACCUEIL ══════ -->
+<div class="pg on" id="pg-home">
+  <div class="home-hero" style="margin-top:4px">
+    <div class="home-hero-lbl">Coach JM · BE ACTIV</div>
+    <button class="home-cta" onclick="newClient();showPg('pq')">＋ &nbsp;Nouveau Bilan</button>
+  </div>
+
+  <div class="sh sh-R" style="margin-top:0">📊 Activité</div>
+  <div class="kpi-grid">
+    <div class="kpi-box"><div class="kpi-v" id="kp-prospects" style="color:var(--snow)">—</div><div class="kpi-l">Prospects</div></div>
+    <div class="kpi-box"><div class="kpi-v" id="kp-rdv" style="color:var(--B)">—</div><div class="kpi-l">RDV</div></div>
+    <div class="kpi-box"><div class="kpi-v" id="kp-bilans" style="color:var(--B)">—</div><div class="kpi-l">Bilans</div></div>
+  </div>
+  <div class="kpi-grid" style="margin-top:-4px">
+    <div class="kpi-box"><div class="kpi-v" id="kp-closings" style="color:var(--G)">—</div><div class="kpi-l">Closings</div></div>
+    <div class="kpi-box kpi-close"><div class="kpi-v" id="kp-taux">—</div><div class="kpi-l">Taux</div></div>
+    <div class="kpi-box kpi-ca"><div class="kpi-v" id="kp-ca">—</div><div class="kpi-l">CA €</div></div>
+  </div>
+
+  <div class="sh sh-B">📅 Prochain RDV Bilan</div>
+  <div id="home-rdv"><div class="rdv-empty">Aucun RDV programmé<br><span style="font-size:11.5px;display:block;margin-top:3px">Cliquez sur + ci-dessous pour en ajouter</span></div></div>
+  <button class="btn btn-dk btn-w btn-sm" onclick="openModal('rdv')" style="margin-bottom:14px">📅 + Ajouter un RDV bilan</button>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div class="sh sh-m" style="margin:0;flex:1">👥 Clients récents</div>
+    <button class="btn btn-dk btn-sm" onclick="showPg('clients')" style="font-size:11px;padding:4px 11px;margin-left:8px;flex-shrink:0">Voir tous →</button>
+  </div>
+  <div id="home-clients"><div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun client</div></div></div>
+</div>
+
+<!-- ══════ PAGE : PRÉ-QUALIF ══════ -->
+<div class="pg" id="pg-pq">
+  <div class="steps">
+    <div class="step act" id="s1"><div class="step-c">1</div><div class="step-l">Pré-qualif</div></div>
+    <div class="step" id="s2"><div class="step-c">2</div><div class="step-l">Bilan</div></div>
+    <div class="step" id="s3"><div class="step-c">3</div><div class="step-l">Tests</div></div>
+    <div class="step" id="s4"><div class="step-c">4</div><div class="step-l">Rapport</div></div>
+  </div>
+  <div class="card">
+    <div class="card-t">📋 Réponses formulaire Tally</div>
+    <div class="highlight">Collez ici le contenu brut reçu via votre formulaire Tally pré-bilan.</div>
+    <div class="f"><label>Réponses Tally</label>
+      <textarea id="pq-raw" rows="10" placeholder="Prénom : Marie&#10;Objectif : Perdre du poids&#10;Relation nourriture : Émotionnelle&#10;Activité : Sédentaire…"></textarea>
+    </div>
+    <button class="btn btn-G btn-w" id="btn-pq" onclick="analyzePQ()">✨ Analyser le profil</button>
+  </div>
+  <div id="pq-result" style="display:none"></div>
+  <div id="pq-cta" style="display:none;margin-bottom:4px">
+    <button class="btn btn-G btn-w" onclick="goToBilan()">Valider → Passer au Bilan</button>
+  </div>
+</div>
+
+<!-- ══════ PAGE : BILAN ══════ -->
+<div class="pg" id="pg-bilan">
+
+  <div class="sh sh-R" style="margin-top:0">👤 Le Prospect</div>
+  <div class="card">
+    <div class="g2"><div class="f"><label>Prénom</label><input id="b-pn" type="text" placeholder="Prénom"></div><div class="f"><label>Nom</label><input id="b-nn" type="text" placeholder="Nom"></div></div>
+    <div class="g2"><div class="f"><label>Âge</label><input id="b-age" type="number" placeholder="30"></div><div class="f"><label>Ville</label><input id="b-ville" type="text" placeholder="Paris"></div></div>
+    <div class="f"><label>Profession / Études</label><input id="b-prof" type="text" placeholder="Infirmière, étudiant…"></div>
+  </div>
+
+  <div class="sh sh-R">📡 Source du Lead</div>
+  <div class="card">
+    <label class="chk-item"><input type="radio" name="source" value="TikTok"><div class="radio-box"></div><span class="radio-lbl">TikTok</span></label>
+    <label class="chk-item"><input type="radio" name="source" value="Instagram"><div class="radio-box"></div><span class="radio-lbl">Instagram</span></label>
+    <label class="chk-item"><input type="radio" name="source" value="Fitness Park"><div class="radio-box"></div><span class="radio-lbl">Fitness Park</span></label>
+    <label class="chk-item"><input type="radio" name="source" value="Facebook"><div class="radio-box"></div><span class="radio-lbl">Facebook</span></label>
+    <label class="chk-item"><input type="radio" name="source" value="Bouche à Oreille"><div class="radio-box"></div><span class="radio-lbl">Bouche à Oreille</span></label>
+  </div>
+
+  <div class="sh sh-R">📅 RDV</div>
+  <div class="card">
+    <div class="g2"><div class="f"><label>Type</label><select id="b-rdv-type"><option value="">—</option><option>Physique</option><option>Visio</option><option>Appel</option></select></div><div class="f"><label>Statut</label><select id="b-rdv-statut"><option value="">—</option><option>Présent</option><option>Absent</option></select></div></div>
+    <div class="f"><label>Date</label><input id="b-date" type="date"></div>
+  </div>
+
+  <div class="sh sh-R">📋 Résumé Pré-Bilan</div>
+  <div class="card"><div class="f"><label>Notes de synthèse pré-bilan</label><textarea id="b-resume-prebilan" rows="3" placeholder="Résumé du formulaire pré-bilan…"></textarea></div></div>
+
+  <div class="sh sh-B">🏋️ Point A — Entraînement</div>
+  <div class="card">
+    <div class="f"><label>Notes d'entraînement</label><textarea id="b-notes-train" rows="2" placeholder="Activité actuelle, fréquence…"></textarea></div>
+    <div class="dvd"></div>
+    <label style="display:block;margin-bottom:9px;font-size:10.5px;font-weight:600;color:var(--mist);text-transform:uppercase;letter-spacing:.8px">Disponibilités sport</label>
+    <div class="days-grid">
+      <label class="day-chip"><input type="checkbox" name="dispo" value="Lundi"><div class="day-sq">Lun</div></label>
+      <label class="day-chip"><input type="checkbox" name="dispo" value="Mardi"><div class="day-sq">Mar</div></label>
+      <label class="day-chip"><input type="checkbox" name="dispo" value="Mercredi"><div class="day-sq">Mer</div></label>
+      <label class="day-chip"><input type="checkbox" name="dispo" value="Jeudi"><div class="day-sq">Jeu</div></label>
+      <label class="day-chip"><input type="checkbox" name="dispo" value="Vendredi"><div class="day-sq">Ven</div></label>
+      <label class="day-chip"><input type="checkbox" name="dispo" value="Samedi"><div class="day-sq">Sam</div></label>
+      <label class="day-chip"><input type="checkbox" name="dispo" value="Dimanche"><div class="day-sq">Dim</div></label>
+    </div>
+    <div class="dvd"></div>
+    <label style="display:block;margin-bottom:8px;font-size:10.5px;font-weight:600;color:var(--mist);text-transform:uppercase;letter-spacing:.8px">Relation à l'entraînement</label>
+    <label class="chk-item"><input type="checkbox" value="Plutôt saine"><div class="chk-box"></div><span class="chk-lbl">Plutôt saine</span></label>
+    <label class="chk-item"><input type="checkbox" value="Tout ou rien"><div class="chk-box"></div><span class="chk-lbl">Tout ou rien</span></label>
+    <label class="chk-item"><input type="checkbox" value="Dépendant de la motivation"><div class="chk-box"></div><span class="chk-lbl">Dépendant de la motivation</span></label>
+    <label class="chk-item"><input type="checkbox" value="Trop intense, pas durable"><div class="chk-box"></div><span class="chk-lbl">Trop intense, pas durable</span></label>
+    <label class="chk-item"><input type="checkbox" value="Trop cool, pas stimulant"><div class="chk-box"></div><span class="chk-lbl">Trop cool, pas stimulant</span></label>
+    <label class="chk-item"><input type="checkbox" value="Déconnecté des objectifs"><div class="chk-box"></div><span class="chk-lbl">Déconnecté des objectifs</span></label>
+    <div class="dvd"></div>
+    <div class="f"><label>Matériel / Salle</label><textarea id="b-materiel" rows="2" placeholder="Salle, home gym, extérieur…"></textarea></div>
+    <label style="display:block;margin-bottom:8px;font-size:10.5px;font-weight:600;color:var(--mist);text-transform:uppercase;letter-spacing:.8px">Faille principale entraînement</label>
+    <label class="chk-item"><input type="checkbox" value="Manque de structure"><div class="chk-box"></div><span class="chk-lbl">Manque de structure</span></label>
+    <label class="chk-item"><input type="checkbox" value="Manque d'adaptation"><div class="chk-box"></div><span class="chk-lbl">Manque d'adaptation</span></label>
+    <label class="chk-item"><input type="checkbox" value="Manque de progression"><div class="chk-box"></div><span class="chk-lbl">Manque de progression</span></label>
+    <label class="chk-item"><input type="checkbox" value="Mauvaise récupération"><div class="chk-box"></div><span class="chk-lbl">Mauvaise récupération</span></label>
+    <label class="chk-item"><input type="checkbox" value="R.A.S"><div class="chk-box"></div><span class="chk-lbl">R.A.S</span></label>
+  </div>
+
+  <div class="sh sh-G">🚶 Point A — NEAT</div>
+  <div class="card">
+    <div class="f"><label>Notes NEAT</label><textarea id="b-notes-neat" rows="2" placeholder="Activité quotidienne non sportive…"></textarea></div>
+    <div class="g2">
+      <div class="f"><label>Pas / jour</label><input id="b-pas" type="number" placeholder="4500"></div>
+      <div class="f"><label>Faille NEAT</label>
+        <select id="b-faille-neat"><option value="">—</option><option>Dépense trop faible</option><option>Irrégulière</option><option>Pas intégré mode de vie</option><option>Trop motivationnelle</option><option>R.A.S</option></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="sh sh-Y">🥗 Point A — Alimentation</div>
+  <div class="card">
+    <div class="f"><label>Notes alimentation</label><textarea id="b-notes-alim" rows="2" placeholder="Observations générales…"></textarea></div>
+    <div class="dvd"></div>
+    <label style="display:block;margin-bottom:8px;font-size:10.5px;font-weight:600;color:var(--mist);text-transform:uppercase;letter-spacing:.8px">Relation à la nourriture</label>
+    <label class="chk-item"><input type="checkbox" value="Émotionnelle (stress, réconfort)"><div class="chk-box"></div><span class="chk-lbl">Émotionnelle (stress, réconfort)</span></label>
+    <label class="chk-item"><input type="checkbox" value="Contrôlante/restrictive"><div class="chk-box"></div><span class="chk-lbl">Contrôlante / restrictive</span></label>
+    <label class="chk-item"><input type="checkbox" value="Anarchique (sans structure)"><div class="chk-box"></div><span class="chk-lbl">Anarchique (sans structure)</span></label>
+    <label class="chk-item"><input type="checkbox" value="Intellectuelle non appliquée"><div class="chk-box"></div><span class="chk-lbl">Sait mais n'applique pas</span></label>
+    <label class="chk-item"><input type="checkbox" value="Bonne (saine, équilibrée)"><div class="chk-box"></div><span class="chk-lbl">Bonne (saine, équilibrée)</span></label>
+    <div class="dvd"></div>
+    <label style="display:block;margin-bottom:8px;font-size:10.5px;font-weight:600;color:var(--mist);text-transform:uppercase;letter-spacing:.8px">Intolérances / Régime</label>
+    <label class="chk-item"><input type="checkbox" value="Gluten"><div class="chk-box"></div><span class="chk-lbl">Gluten</span></label>
+    <label class="chk-item"><input type="checkbox" value="Lactose"><div class="chk-box"></div><span class="chk-lbl">Lactose</span></label>
+    <label class="chk-item"><input type="checkbox" value="Vegan"><div class="chk-box"></div><span class="chk-lbl">Vegan</span></label>
+    <label class="chk-item"><input type="checkbox" value="Halal"><div class="chk-box"></div><span class="chk-lbl">Halal</span></label>
+    <label class="chk-item"><input type="checkbox" value="Jeûne Intermittent"><div class="chk-box"></div><span class="chk-lbl">Jeûne Intermittent</span></label>
+    <label class="chk-item"><input type="checkbox" value="R.A.S"><div class="chk-box"></div><span class="chk-lbl">R.A.S</span></label>
+  </div>
+
+  <div class="sh sh-V">🌙 Point A — Mode de Vie</div>
+  <div class="card">
+    <div class="f"><label>Notes mode de vie</label><textarea id="b-notes-vie" rows="2" placeholder="Sommeil, organisation, charge mentale…"></textarea></div>
+    <div class="dvd"></div>
+    <label style="display:block;margin-bottom:8px;font-size:10.5px;font-weight:600;color:var(--mist);text-transform:uppercase;letter-spacing:.8px">Relation au mode de vie</label>
+    <label class="chk-item"><input type="checkbox" value="Subi (je fais comme je peux)"><div class="chk-box"></div><span class="chk-lbl">Subi (je fais comme je peux)</span></label>
+    <label class="chk-item"><input type="checkbox" value="Réactif (gère dans l'urgence)"><div class="chk-box"></div><span class="chk-lbl">Réactif (gère dans l'urgence)</span></label>
+    <label class="chk-item"><input type="checkbox" value="Désorganisé"><div class="chk-box"></div><span class="chk-lbl">Désorganisé</span></label>
+    <label class="chk-item"><input type="checkbox" value="Trop exigeant envers moi-même"><div class="chk-box"></div><span class="chk-lbl">Trop exigeant envers moi-même</span></label>
+    <label class="chk-item"><input type="checkbox" value="Non aligné (sait mais n'applique pas)"><div class="chk-box"></div><span class="chk-lbl">Non aligné (sait mais n'applique pas)</span></label>
+    <div class="dvd"></div>
+    <label style="display:block;margin-bottom:8px;font-size:10.5px;font-weight:600;color:var(--mist);text-transform:uppercase;letter-spacing:.8px">Faille mode de vie</label>
+    <label class="chk-item"><input type="checkbox" value="Manque de sommeil"><div class="chk-box"></div><span class="chk-lbl">Manque de sommeil</span></label>
+    <label class="chk-item"><input type="checkbox" value="Manque d'organisation"><div class="chk-box"></div><span class="chk-lbl">Manque d'organisation</span></label>
+    <label class="chk-item"><input type="checkbox" value="Excès de charge mentale"><div class="chk-box"></div><span class="chk-lbl">Excès de charge mentale</span></label>
+    <label class="chk-item"><input type="checkbox" value="Manque de soutien"><div class="chk-box"></div><span class="chk-lbl">Manque de soutien</span></label>
+    <label class="chk-item"><input type="checkbox" value="R.A.S"><div class="chk-box"></div><span class="chk-lbl">R.A.S</span></label>
+  </div>
+
+  <div class="sh sh-G">🧬 Profil Type</div>
+  <div class="card">
+    <label class="chk-item"><input type="radio" name="profil" value="P1"><div class="radio-box"></div><span class="radio-lbl">🪨 P1 — Je sais mais je n'y arrive pas</span></label>
+    <label class="chk-item"><input type="radio" name="profil" value="P2"><div class="radio-box"></div><span class="radio-lbl">🪨 P2 — Besoin d'être guidé(e)</span></label>
+    <label class="chk-item"><input type="radio" name="profil" value="P3"><div class="radio-box"></div><span class="radio-lbl">🔥 P3 — Motivé(e) mais instable</span></label>
+    <label class="chk-item"><input type="radio" name="profil" value="P4"><div class="radio-box"></div><span class="radio-lbl">🧊 P4 — Déconnecté(e) de son corps</span></label>
+    <label class="chk-item"><input type="radio" name="profil" value="P5"><div class="radio-box"></div><span class="radio-lbl">🧠 P5 — Mental fort / corps bloqué</span></label>
+    <label class="chk-item"><input type="radio" name="profil" value="P6"><div class="radio-box"></div><span class="radio-lbl">🧩 P6 — Multi-problèmes / désorganisé(e)</span></label>
+    <label class="chk-item"><input type="radio" name="profil" value="P7"><div class="radio-box"></div><span class="radio-lbl">🔴 P7 — Corps en résistance</span></label>
+    <label class="chk-item"><input type="radio" name="profil" value="P8"><div class="radio-box"></div><span class="radio-lbl">⚡ P8 — Hyper-actif(ve)</span></label>
+    <label class="chk-item"><input type="radio" name="profil" value="P9"><div class="radio-box"></div><span class="radio-lbl">🫧 P9 — Image corporelle abîmée</span></label>
+    <label class="chk-item"><input type="radio" name="profil" value="P10"><div class="radio-box"></div><span class="radio-lbl">🧑‍💼 P10 — Performant(e) pro / chaos perso</span></label>
+    <label class="chk-item"><input type="radio" name="profil" value="P11"><div class="radio-box"></div><span class="radio-lbl">🚫 P11 — Non compatible BE ACTIV</span></label>
+    <label class="chk-item"><input type="radio" name="profil" value="P12"><div class="radio-box"></div><span class="radio-lbl">🔍 P12 — Cas médical / clinique</span></label>
+  </div>
+
+  <div class="sh sh-ol">🎯 Point B — Objectifs & Obstacles</div>
+  <div class="card">
+    <div class="f"><label>Dans 6 mois, comment tu veux être ?</label><textarea id="b-vision6m" rows="3" placeholder="Physiquement, mentalement, quotidien…"></textarea></div>
+    <div class="f"><label>Aujourd'hui, tu en es où ?</label><textarea id="b-pointA" rows="2" placeholder="Poids, énergie…"></textarea></div>
+    <div class="f"><label>Qu'est-ce qui t'empêche en 2-3 mois ?</label><textarea id="b-blocages" rows="2" placeholder="Obstacles identifiés…"></textarea></div>
+    <div class="f"><label>Si dans 6 mois tu n'y arrives pas ?</label><textarea id="b-echec6m" rows="2" placeholder="Conséquences émotionnelles…"></textarea></div>
+    <div class="f"><label>Tu attends quoi de moi concrètement ?</label><textarea id="b-attente-coach" rows="2" placeholder="Attentes coaching…"></textarea></div>
+  </div>
+
+  <div class="sh sh-ol">💼 Offre & Closing</div>
+  <div class="card" id="bilan-offres-card">
+    <label style="display:block;margin-bottom:8px;font-size:10.5px;font-weight:600;color:var(--mist);text-transform:uppercase;letter-spacing:.8px">Offre proposée</label>
+    <label class="chk-item"><input type="checkbox" value="À la carte"><div class="chk-box"></div><span class="chk-lbl">À la carte</span></label>
+    <label class="chk-item"><input type="checkbox" value="JM Pass"><div class="chk-box"></div><span class="chk-lbl">JM Pass</span></label>
+    <label class="chk-item"><input type="checkbox" value="Activ' Reset Essentiel"><div class="chk-box"></div><span class="chk-lbl">Activ' Reset Essentiel</span></label>
+    <label class="chk-item"><input type="checkbox" value="Activ' Reset Online"><div class="chk-box"></div><span class="chk-lbl">Activ' Reset Online</span></label>
+    <label class="chk-item"><input type="checkbox" value="Activ' Reset Hybride"><div class="chk-box"></div><span class="chk-lbl">Activ' Reset Hybride</span></label>
+    <label class="chk-item"><input type="checkbox" value="Cardio Mouv"><div class="chk-box"></div><span class="chk-lbl">Cardio Mouv</span></label>
+    <label class="chk-item"><input type="checkbox" value="Activ Training"><div class="chk-box"></div><span class="chk-lbl">Activ Training</span></label>
+    <div class="dvd"></div>
+    <div class="g2">
+      <div class="f"><label>Prêt à payer</label>
+        <div style="display:flex;gap:14px;margin-top:5px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px"><input type="radio" name="pret-payer" value="Oui" style="width:auto;display:inline;background:none;border:none;padding:0;accent-color:var(--G)"> ✅ Oui</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px"><input type="radio" name="pret-payer" value="Non" style="width:auto;display:inline;background:none;border:none;padding:0;accent-color:var(--G)"> ❌ Non</label>
+        </div>
+      </div>
+      <div class="f"><label>Montant (€)</label><input id="b-montant" type="number" placeholder="0"></div>
+    </div>
+  </div>
+
+  <div class="brow" style="margin-bottom:18px">
+    <button class="btn btn-dk" onclick="showPg('pq')">← Retour</button>
+    <button class="btn btn-G" id="btn-bilan" onclick="analyzeBilan()">💡 Générer synthèse</button>
+  </div>
+  <div id="bilan-result" style="display:none"></div>
+  <div id="bilan-cta" style="display:none;margin:13px 0 30px">
+    <button class="btn btn-G btn-w" onclick="showPg('tests')">Passer aux Tests →</button>
+  </div>
+</div>
+
+<!-- ══════ PAGE : TESTS ══════ -->
+<div class="pg" id="pg-tests">
+
+  <div class="card" style="margin-top:0">
+    <div class="f"><label>Programme</label>
+      <select id="t-programme">
+        <option value="360">TEST ACTIV' 360° (Hybride)</option>
+        <option value="90">TEST ACTIV' 90° Essentiel</option>
+        <option value="carte">À la Carte / JM Pass</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="sh sh-B">📏 Métriques</div>
+  <div class="card">
+    <div class="g3">
+      <div class="f"><label>Âge</label><input id="t-age" type="number" placeholder="30"></div>
+      <div class="f"><label>Taille (cm)</label><input id="t-taille" type="number" placeholder="170" oninput="calcIMC2()"></div>
+      <div class="f"><label>Poids (kg)</label><input id="t-poids" type="number" placeholder="70" step="0.1" oninput="calcIMC2()"></div>
+    </div>
+    <div class="f"><label>IMC calculé</label><div class="imc-chip" id="imc2-out">—</div></div>
+    <div class="g2">
+      <div class="f"><label>Tour Nombril (cm)</label><input id="t-tn" type="number" placeholder="85"></div>
+      <div class="f"><label>Tour Cuisses (cm)</label><input id="t-tc" type="number" placeholder="55"></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>Tour Hanche (cm)</label><input id="t-thm" type="number" placeholder="95"></div>
+      <div class="f"><label>Tour Taille (cm)</label><input id="t-tt" type="number" placeholder="78"></div>
+    </div>
+    <div class="f"><label>Tour Bras (cm)</label><input id="t-tb" type="number" placeholder="30"></div>
+  </div>
+
+  <!-- GOWOD Upload + Affichage -->
+  <div class="sh sh-G">🤸 Score Mobilité GOWOD</div>
+
+  <div class="upload-zone" id="gowod-upload-zone"
+    onclick="document.getElementById('gowod-file').click()"
+    ondragover="event.preventDefault();this.classList.add('drag')"
+    ondragleave="this.classList.remove('drag')"
+    ondrop="handleGowodDrop(event)">
+    <input type="file" id="gowod-file" accept="image/*" onchange="readGowodFile(this)">
+    <div class="uz-icon">📸</div>
+    <div class="uz-title">Uploader capture GOWOD</div>
+    <div class="uz-sub">L'IA lit automatiquement tous les scores<br>JPG · PNG · HEIC acceptés</div>
+  </div>
+
+  <div id="gowod-loading" style="display:none">
+    <div class="ldwrap" style="padding:20px"><div class="ldring"></div><div class="ldmsg"><strong>Lecture GOWOD…</strong>L'IA analyse la capture</div></div>
+  </div>
+
+  <div id="gowod-img-preview" style="display:none;margin-bottom:12px">
+    <img id="gowod-img" style="width:100%;border-radius:var(--r);border:1px solid var(--rim);max-height:180px;object-fit:cover">
+    <button class="btn btn-dk btn-w btn-sm" style="margin-top:8px" onclick="reanalyzeGowod()">🔄 Relire les scores</button>
+  </div>
+
+  <div id="gowod-display" style="display:none">
+    <div class="gowod-wrap">
+      <div class="gowod-brand">GOWOD</div>
+      <div class="gowod-sub" id="gowod-date">Score de mobilité</div>
+      <div class="gowod-circle-wrap">
+        <div class="gowod-circle">
+          <svg viewBox="0 0 128 128" width="128" height="128">
+            <circle class="gc-bg" cx="64" cy="64" r="55"/>
+            <circle class="gc-fill" id="gc-fill" cx="64" cy="64" r="55"
+              stroke="#c8ff00" stroke-dasharray="345.4" stroke-dashoffset="345.4"/>
+          </svg>
+          <div class="gowod-center">
+            <div class="gc-val" id="gc-val">—</div>
+            <div class="gc-pct">%</div>
+            <div class="gc-lbl">global</div>
+          </div>
+        </div>
+      </div>
+      <div class="gowod-bars" id="gowod-bars"></div>
+      <div class="gowod-zone-lbls" id="gowod-zone-lbls"></div>
+      <div class="gowod-sports" id="gowod-sports" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Saisie manuelle (backup si pas de capture) -->
+  <div class="acc" id="acc-mob">
+    <div class="acc-hd" onclick="togAcc('mob')">
+      <div class="acc-hl">
+        <div class="acc-ico" style="background:rgba(0,229,160,.1)">✏️</div>
+        <div><div class="acc-title">Saisie manuelle scores</div><div class="acc-sub">Si pas de capture GOWOD disponible</div></div>
+      </div><span class="acc-chev">▼</span>
+    </div>
+    <div class="acc-body">
+      <div class="f"><label>Score global (/100)</label>
+        <input type="number" id="t-mob-global" min="0" max="100" placeholder="Ex: 56" oninput="sbar('mg',this.value)">
+        <div class="sbar"><div class="sfill" id="bar-mg" style="width:0%"></div></div>
+      </div>
+      <div class="g2">
+        <div class="f"><label>Épaules</label><input type="number" id="t-mob-ep" min="0" max="100" placeholder="55" oninput="sbar('ep',this.value)"><div class="sbar"><div class="sfill" id="bar-ep" style="width:0%"></div></div></div>
+        <div class="f"><label>Overhead</label><input type="number" id="t-mob-oh" min="0" max="100" placeholder="46" oninput="sbar('oh',this.value)"><div class="sbar"><div class="sfill" id="bar-oh" style="width:0%"></div></div></div>
+      </div>
+      <div class="g2">
+        <div class="f"><label>Thorax</label><input type="number" id="t-mob-th" min="0" max="100" placeholder="95" oninput="sbar('th',this.value)"><div class="sbar"><div class="sfill" id="bar-th" style="width:0%"></div></div></div>
+        <div class="f"><label>Hanches</label><input type="number" id="t-mob-hi" min="0" max="100" placeholder="57" oninput="sbar('hi',this.value)"><div class="sbar"><div class="sfill" id="bar-hi" style="width:0%"></div></div></div>
+      </div>
+      <div class="g2">
+        <div class="f"><label>Chaîne post.</label><input type="number" id="t-mob-cp" min="0" max="100" placeholder="50" oninput="sbar('cp',this.value)"><div class="sbar"><div class="sfill" id="bar-cp" style="width:0%"></div></div></div>
+        <div class="f"><label>Chevilles</label><input type="number" id="t-mob-ch" min="0" max="100" placeholder="50" oninput="sbar('ch',this.value)"><div class="sbar"><div class="sfill" id="bar-ch" style="width:0%"></div></div></div>
+      </div>
+      <div class="f"><label>Asymétries</label><input type="text" id="t-mob-asy" placeholder="Ex: épaule droite limitée…"></div>
+      <div class="f"><label>Commentaires</label><textarea id="t-mob-com" rows="2" placeholder="Compensations, zones raides…"></textarea></div>
+    </div>
+  </div>
+
+  <!-- Ruffier Dickson -->
+  <div class="acc open" id="acc-ird">
+    <div class="acc-hd" onclick="togAcc('ird')">
+      <div class="acc-hl">
+        <div class="acc-ico" style="background:rgba(255,80,64,.12)">❤️</div>
+        <div><div class="acc-title">Test Ruffier Dickson</div><div class="acc-sub">IRD = (P2-70 + 2×(P3-P1)) / 2</div></div>
+      </div><span class="acc-chev">▲</span>
+    </div>
+    <div class="acc-body">
+      <p class="note" style="margin-bottom:10px">Max squats en 45s — 3 prises de pouls.</p>
+      <div class="g2">
+        <div class="f"><label>P1 — Repos (bpm)</label><input type="number" id="t-p1" placeholder="65" oninput="calcIRD()"></div>
+        <div class="f"><label>P2 — Post Squats (bpm)</label><input type="number" id="t-p2" placeholder="120" oninput="calcIRD()"></div>
+      </div>
+      <div class="g2">
+        <div class="f"><label>P3 — Post 1min (bpm)</label><input type="number" id="t-p3" placeholder="90" oninput="calcIRD()"></div>
+        <div class="f"><label>IRD calculé</label><input type="number" id="t-ird" readonly style="background:rgba(0,184,255,.07);border-color:rgba(0,184,255,.2);color:var(--B)"></div>
+      </div>
+      <div id="ird-result" style="display:none" class="ird-result">
+        <div class="ird-val" id="ird-val">—</div>
+        <div><div class="ird-lbl">Indice Ruffier Dickson</div><div class="ird-cat" id="ird-cat"></div></div>
+      </div>
+      <div class="g2" style="margin-top:10px">
+        <div class="f"><label>FC Max (bpm)</label><input type="number" id="t-fcmax" placeholder="190"></div>
+        <div class="f"><label>Zone 2 (bpm)</label><input type="text" id="t-zone2" placeholder="120-145"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Mobilité Squat -->
+  <div class="acc" id="acc-mob-squat">
+    <div class="acc-hd" onclick="togAcc('mob-squat')">
+      <div class="acc-hl">
+        <div class="acc-ico" style="background:rgba(167,139,250,.12)">🦵</div>
+        <div><div class="acc-title">Test Mobilité Squat</div><div class="acc-sub">Observation pendant Ruffier Dickson</div></div>
+      </div><span class="acc-chev">▼</span>
+    </div>
+    <div class="acc-body">
+      <label class="chk-item"><input type="checkbox" value="Talons qui décollent → Manque mobilité cheville"><div class="chk-box"></div><span class="chk-lbl">Talons qui décollent → Manque mobilité cheville</span></label>
+      <label class="chk-item"><input type="checkbox" value="Genoux valgus → Faiblesse stabilisation"><div class="chk-box"></div><span class="chk-lbl">Genoux valgus → Faiblesse stabilisation</span></label>
+      <label class="chk-item"><input type="checkbox" value="Buste qui tombe → Restriction hanche ou dorsale"><div class="chk-box"></div><span class="chk-lbl">Buste qui tombe → Restriction hanche/dorsale</span></label>
+      <label class="chk-item"><input type="checkbox" value="Test validé R.A.S"><div class="chk-box"></div><span class="chk-lbl">Test validé ✓ R.A.S</span></label>
+    </div>
+  </div>
+
+  <!-- Planche -->
+  <div class="acc open" id="acc-planche">
+    <div class="acc-hd" onclick="togAcc('planche')">
+      <div class="acc-hl">
+        <div class="acc-ico" style="background:rgba(255,184,0,.1)">🏋️</div>
+        <div><div class="acc-title">Test Planche</div><div class="acc-sub">Temps max en position de gainage</div></div>
+      </div><span class="acc-chev">▲</span>
+    </div>
+    <div class="acc-body">
+      <div class="f"><label>Durée (secondes)</label>
+        <input type="number" id="t-planche" placeholder="Ex: 75" oninput="sbar('pl',this.value/1.2)">
+        <div class="sbar"><div class="sfill" id="bar-pl" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Douleurs -->
+  <div class="acc open" id="acc-doul">
+    <div class="acc-hd" onclick="togAcc('doul')">
+      <div class="acc-hl">
+        <div class="acc-ico" style="background:rgba(255,80,64,.12)">🩺</div>
+        <div><div class="acc-title">Douleurs / Blessures / Gênes</div><div class="acc-sub">Zones à surveiller</div></div>
+      </div><span class="acc-chev">▲</span>
+    </div>
+    <div class="acc-body">
+      <label class="chk-item"><input type="checkbox" value="Genoux"><div class="chk-box"></div><span class="chk-lbl">Genoux</span></label>
+      <label class="chk-item"><input type="checkbox" value="Lombaires"><div class="chk-box"></div><span class="chk-lbl">Lombaires</span></label>
+      <label class="chk-item"><input type="checkbox" value="Hanches"><div class="chk-box"></div><span class="chk-lbl">Hanches</span></label>
+      <label class="chk-item"><input type="checkbox" value="Épaules"><div class="chk-box"></div><span class="chk-lbl">Épaules</span></label>
+      <label class="chk-item"><input type="checkbox" value="Cervicales"><div class="chk-box"></div><span class="chk-lbl">Cervicales</span></label>
+      <label class="chk-item"><input type="checkbox" value="Chevilles"><div class="chk-box"></div><span class="chk-lbl">Chevilles</span></label>
+      <label class="chk-item"><input type="checkbox" value="Poignets"><div class="chk-box"></div><span class="chk-lbl">Poignets</span></label>
+      <label class="chk-item"><input type="checkbox" value="Cardiaque"><div class="chk-box"></div><span class="chk-lbl">Cardiaque</span></label>
+      <label class="chk-item"><input type="checkbox" value="R.A.S"><div class="chk-box"></div><span class="chk-lbl">R.A.S</span></label>
+      <div class="f" style="margin-top:11px"><label>Précisions</label><textarea id="t-doul-prec" rows="2" placeholder="Ancienneté, intensité…"></textarea></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-t">📝 Remarques libres</div>
+    <div class="f"><textarea id="t-remarques" rows="3" placeholder="Observations pour le rapport…"></textarea></div>
+  </div>
+
+  <div class="brow" style="margin-bottom:30px">
+    <button class="btn btn-dk" onclick="showPg('bilan')">← Retour</button>
+    <button class="btn btn-B btn-w" onclick="showPg('rapport')">Générer le Rapport →</button>
+  </div>
+</div>
+
+<!-- ══════ PAGE : RAPPORT ══════ -->
+<div class="pg" id="pg-rapport">
+  <div id="rpt-empty">
+    <div class="empty">
+      <div class="empty-ico">🤖</div>
+      <div class="empty-t">Rapport IA final</div>
+      <div class="empty-s">Complétez le bilan et les tests,<br>puis générez le compte rendu.</div>
+      <button class="btn btn-G" style="margin-top:18px" onclick="genReport()">✨ Générer le rapport</button>
+    </div>
+  </div>
+  <div id="rpt-loading" style="display:none">
+    <div class="ldwrap"><div class="ldring"></div><div class="ldmsg"><strong>Rapport en cours…</strong>L'IA analyse toutes les données</div></div>
+  </div>
+  <div id="rpt-content" style="display:none"></div>
+  <div id="rpt-actions" style="display:none;margin-bottom:30px">
+    <div class="g2" style="gap:9px;margin-top:13px">
+      <button class="btn btn-dk btn-w" id="btn-pdf" onclick="dlPDF()">📄 PDF</button>
+      <button class="btn btn-B btn-w" id="btn-email" onclick="openEmailModal()">📧 Email</button>
+    </div>
+    <button class="btn btn-dk btn-w" style="margin-top:9px" onclick="saveClient()">💾 Sauvegarder</button>
+    <button class="btn btn-dk btn-w" style="margin-top:9px" onclick="genReport()">🔄 Régénérer</button>
+  </div>
+</div>
+
+<!-- ══════ PAGE : CLIENTS ══════ -->
+<div class="pg" id="pg-clients">
+  <div class="srch">
+    <input class="srch-i" type="search" placeholder="🔍  Rechercher…" id="srch-i" oninput="renderClients()">
+    <button class="btn btn-G btn-sm" onclick="newClient();showPg('pq')">＋</button>
+  </div>
+  <div class="chips" id="chips-statut">
+    <div class="chip on" data-v="all">Tous</div>
+    <div class="chip" data-v="Non closé">Non closé</div>
+    <div class="chip" data-v="Closé">Closé</div>
+    <div class="chip" data-v="À relancer">À relancer</div>
+    <div class="chip" data-v="Refusé">Refusé</div>
+  </div>
+  <div class="chips" id="chips-profil">
+    <div class="chip on" data-v="all">Tous</div>
+    <div class="chip" data-v="P1">P1</div><div class="chip" data-v="P2">P2</div>
+    <div class="chip" data-v="P3">P3</div><div class="chip" data-v="P4">P4</div>
+    <div class="chip" data-v="P5">P5</div><div class="chip" data-v="P6">P6</div>
+    <div class="chip" data-v="P7">P7</div><div class="chip" data-v="P8">P8</div>
+    <div class="chip" data-v="P9">P9</div><div class="chip" data-v="P10">P10</div>
+    <div class="chip" data-v="P11">P11</div><div class="chip" data-v="P12">P12</div>
+  </div>
+  <div id="clients-list">
+    <div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun client</div><div class="empty-s">Créez votre premier dossier.</div></div>
+  </div>
+</div>
+
+</div><!-- /scroller -->
+
+<!-- NAV -->
+<div id="nav">
+  <div class="ni on" data-pg="home" onclick="showPg('home')"><div class="ni-ico">🏠</div><div class="ni-dot"></div><div class="ni-lbl">Accueil</div></div>
+  <div class="ni" data-pg="pq" onclick="showPg('pq')"><div class="ni-ico">📋</div><div class="ni-dot"></div><div class="ni-lbl">Pré-qualif</div></div>
+  <div class="ni" data-pg="bilan" onclick="showPg('bilan')"><div class="ni-ico">🩺</div><div class="ni-dot"></div><div class="ni-lbl">Bilan</div></div>
+  <div class="ni" data-pg="tests" onclick="showPg('tests')"><div class="ni-ico">📊</div><div class="ni-dot"></div><div class="ni-lbl">Tests</div></div>
+  <div class="ni" data-pg="rapport" onclick="showPg('rapport')"><div class="ni-ico">🤖</div><div class="ni-dot"></div><div class="ni-lbl">Rapport</div></div>
+  <div class="ni" data-pg="clients" onclick="showPg('clients')"><div class="ni-ico">👥</div><div class="ni-dot"></div><div class="ni-lbl">Clients</div></div>
+</div>
+</div><!-- /app -->
+
+<!-- MODAL CONFIG -->
+<div class="mbg" id="m-cfg">
+  <div class="mdl">
+    <div class="mdl-t">⚙️ Configuration <button class="mdl-x" onclick="closeModal('cfg')">✕</button></div>
+    <p class="note" style="margin-bottom:14px">La clé Anthropic est configurée <strong>côté serveur</strong> (variable d'environnement Vercel) — jamais exposée ici.</p>
+    <div class="f" style="margin-bottom:13px"><label>Nom du coach</label><input type="text" id="cfg-coach-name" placeholder="Jonathan"></div>
+    <div class="f" style="margin-bottom:13px"><label>URL Supabase (optionnel)</label><input type="text" id="cfg-surl" placeholder="https://xxx.supabase.co"></div>
+    <div class="f" style="margin-bottom:13px"><label>Clé Anon Supabase (optionnel)</label><input type="password" id="cfg-skey" placeholder="eyJhbGc..."></div>
+    <div class="brow" style="margin-top:14px">
+      <button class="btn btn-dk" onclick="closeModal('cfg')">Annuler</button>
+      <button class="btn btn-G" onclick="saveConfig()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RDV -->
+<div class="mbg" id="m-rdv">
+  <div class="mdl">
+    <div class="mdl-t">📅 Nouveau RDV Bilan <button class="mdl-x" onclick="closeModal('rdv')">✕</button></div>
+    <div class="f" style="margin-bottom:11px"><label>Nom du prospect</label><input type="text" id="rdv-name" placeholder="Prénom Nom"></div>
+    <div class="g2">
+      <div class="f" style="margin-bottom:11px"><label>Date</label><input type="date" id="rdv-date"></div>
+      <div class="f" style="margin-bottom:11px"><label>Heure</label><input type="time" id="rdv-time" value="10:00"></div>
+    </div>
+    <div class="f" style="margin-bottom:11px"><label>Type</label>
+      <select id="rdv-type-sel"><option>Physique</option><option>Visio</option><option>Appel</option></select>
+    </div>
+    <div class="f" style="margin-bottom:11px"><label>Notes</label><textarea id="rdv-notes" rows="2" placeholder="Source, remarques…"></textarea></div>
+    <div class="brow" style="margin-top:14px">
+      <button class="btn btn-dk" onclick="closeModal('rdv')">Annuler</button>
+      <button class="btn btn-G" onclick="saveRDV()">✅ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EMAIL -->
+<div class="mbg" id="m-email">
+  <div class="mdl">
+    <div class="mdl-t">📧 Envoyer au client <button class="mdl-x" onclick="closeModal('email')">✕</button></div>
+    <div class="f" style="margin-bottom:11px"><label>Destinataire</label><input type="email" id="em-to" placeholder="email@client.fr"></div>
+    <div class="f" style="margin-bottom:11px"><label>Objet</label><input type="text" id="em-subj" placeholder="Votre bilan BE ACTIV"></div>
+    <div class="f" style="margin-bottom:11px"><label>Corps</label><textarea id="em-body" rows="9"></textarea></div>
+    <div class="brow" style="margin-top:14px">
+      <button class="btn btn-dk" onclick="closeModal('email')">Annuler</button>
+      <button class="btn btn-G" onclick="sendEmail()">📧 Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL STATUT -->
+<div class="mbg" id="m-statut">
+  <div class="mdl"><div id="m-statut-body"></div></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════
+// STATE GLOBAL
+// ════════════════════════════════════════════════════
+const ST = {
+  coachName: 'Jonathan',
+  sbUrl: '', sbKey: '',
+  clientId: null,
+  pqSummary: null,
+  bilanSummary: null,
+  finalReport: null,
+  gowodData: null,
+  gowodBase64: null,
+  gowodMediaType: null,
+  clients: [],
+  rdvs: [],
+  filterStatut: 'all',
+  filterProfil: 'all',
+};
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+window.onload = () => {
+  loadConfig();
+  setupChips();
+  document.getElementById('b-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('rdv-date').value = new Date().toISOString().split('T')[0];
+  const lc = localStorage.getItem('ba_clients_v4');
+  if (lc) try { ST.clients = JSON.parse(lc); } catch(e) {}
+  const lr = localStorage.getItem('ba_rdvs_v4');
+  if (lr) try { ST.rdvs = JSON.parse(lr); } catch(e) {}
+  updateKPIs();
+  renderHomeClients();
+  renderNextRDV();
+  requestNotifPermission();
+  loadFromSupabase();
+};
+
+// ════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════
+function loadConfig() {
+  const s = localStorage.getItem('ba_cfg_v4');
+  if (s) { const p = JSON.parse(s); ST.coachName = p.coachName || 'Jonathan'; ST.sbUrl = p.sbUrl || ''; ST.sbKey = p.sbKey || ''; }
+  g('cfg-coach-name') && sv('cfg-coach-name', ST.coachName);
+  sv('cfg-surl', ST.sbUrl);
+  sv('cfg-skey', ST.sbKey);
+}
+function saveConfig() {
+  ST.coachName = gv('cfg-coach-name') || 'Jonathan';
+  ST.sbUrl = gv('cfg-surl').replace(/\/$/,'');
+  ST.sbKey = gv('cfg-skey');
+  localStorage.setItem('ba_cfg_v4', JSON.stringify({ coachName: ST.coachName, sbUrl: ST.sbUrl, sbKey: ST.sbKey }));
+  closeModal('cfg');
+  loadFromSupabase();
+  toast('ok', '✅ Configuration enregistrée');
+}
+
+// ════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════
+function showPg(name) {
+  document.querySelectorAll('.pg').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('on'));
+  document.getElementById('pg-' + name)?.classList.add('on');
+  document.querySelector(`.ni[data-pg="${name}"]`)?.classList.add('on');
+  document.getElementById('scroller').scrollTop = 0;
+  updateSteps(name);
+  if (name === 'clients') renderClients();
+  if (name === 'home') { updateKPIs(); renderHomeClients(); renderNextRDV(); }
+}
+function updateSteps(pg) {
+  const order = ['pq','bilan','tests','rapport'];
+  const i = order.indexOf(pg);
+  ['s1','s2','s3','s4'].forEach((id, j) => {
+    const el = document.getElementById(id); if (!el) return;
+    el.classList.remove('act','done');
+    if (j < i) el.classList.add('done');
+    else if (j === i) el.classList.add('act');
+  });
+}
+
+// ════════════════════════════════════════════════════
+// NOTIFICATIONS PWA
+// ════════════════════════════════════════════════════
+async function requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+}
+function scheduleRDVNotif(rdv) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const rdvTime = new Date(`${rdv.date}T${rdv.time || '09:00'}`);
+  const notif30ms = rdvTime.getTime() - 30 * 60 * 1000 - Date.now();
+  if (notif30ms > 0) {
+    setTimeout(() => {
+      new Notification('⏰ RDV Bilan dans 30 min', {
+        body: `${rdv.name} — ${rdv.type}`,
+      });
+    }, notif30ms);
+  }
+}
+
+// ════════════════════════════════════════════════════
+// RDV
+// ════════════════════════════════════════════════════
+function saveRDV() {
+  const name = gv('rdv-name');
+  const date = gv('rdv-date');
+  if (!name || !date) { toast('err', '⚠️ Nom et date requis'); return; }
+  const rdv = { id: Date.now().toString(), name, date, time: gv('rdv-time'), type: gv('rdv-type-sel'), notes: gv('rdv-notes') };
+  ST.rdvs.push(rdv);
+  ST.rdvs.sort((a, b) => new Date(`${a.date}T${a.time||'00:00'}`) - new Date(`${b.date}T${b.time||'00:00'}`));
+  localStorage.setItem('ba_rdvs_v4', JSON.stringify(ST.rdvs));
+  scheduleRDVNotif(rdv);
+  closeModal('rdv');
+  renderNextRDV();
+  sv('rdv-name', ''); sv('rdv-notes', '');
+  toast('ok', '📅 RDV ajouté ! Notification programmée.');
+}
+
+function renderNextRDV() {
+  const now = new Date();
+  const upcoming = ST.rdvs.filter(r => new Date(`${r.date}T${r.time||'23:59'}`) >= now);
+  const el = document.getElementById('home-rdv');
+  if (!upcoming.length) {
+    el.innerHTML = '<div class="rdv-empty">Aucun RDV programmé — cliquez sur + pour en ajouter</div>';
+    return;
+  }
+  const next = upcoming[0];
+  const d = new Date(next.date + 'T12:00');
+  const months = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const days = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  el.innerHTML = `
+    <div class="rdv-card">
+      <div class="rdv-date">
+        <div class="rdv-day">${d.getDate()}</div>
+        <div class="rdv-mon">${months[d.getMonth()]}</div>
+      </div>
+      <div class="rdv-info">
+        <div class="rdv-name">${next.name}</div>
+        <div class="rdv-meta">${days[d.getDay()]} · ${next.time || 'Heure non définie'}${next.notes ? ' · '+next.notes.slice(0,28) : ''}</div>
+        <div class="rdv-badge">${next.type}</div>
+      </div>
+      <div style="font-size:20px;color:var(--mist)">›</div>
+    </div>
+    ${upcoming.length > 1 ? `<div style="font-size:11.5px;color:var(--mist);text-align:center;margin-top:4px;margin-bottom:8px">+ ${upcoming.length - 1} autre${upcoming.length > 2 ? 's' : ''} RDV à venir</div>` : ''}`;
+}
+
+// ════════════════════════════════════════════════════
+// KPIs DASHBOARD
+// ════════════════════════════════════════════════════
+function updateKPIs() {
+  const total = ST.clients.length;
+  const rdvCount = ST.rdvs.length + ST.clients.filter(c => c.date).length;
+  const bilans = ST.clients.filter(c => c.bilan_summary).length;
+  const closings = ST.clients.filter(c => c.statut === 'Closé').length;
+  const taux = bilans > 0 ? Math.round(closings / bilans * 100) : 0;
+  const ca = ST.clients.filter(c => c.statut === 'Closé').reduce((s, c) => s + (parseFloat(c.montant) || 0), 0);
+  sv2('kp-prospects', total || '—');
+  sv2('kp-rdv', rdvCount || '—');
+  sv2('kp-bilans', bilans || '—');
+  sv2('kp-closings', closings || '—');
+  sv2('kp-taux', taux ? taux + '%' : '—');
+  sv2('kp-ca', ca > 0 ? ca + '€' : '—');
+  sv2('top-closing', taux ? taux + '%' : '—');
+}
+function sv2(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
+function renderHomeClients() {
+  const list = ST.clients.slice(0, 5);
+  const el = document.getElementById('home-clients');
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun client</div></div>'; return; }
+  const sp = {'Closé':'pill-G','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R'};
+  el.innerHTML = list.map(c => {
+    const init = ((c.prenom||'?')[0]+(c.nom||'?')[0]).toUpperCase();
+    return `<div class="ccrd" onclick="openClient('${c.id}')">
+      <div class="cav">${init}</div>
+      <div class="cinfo"><div class="cname">${c.prenom} ${c.nom}</div><div class="cmeta">${c.source||'—'} · ${c.offres?.split(',')[0]?.trim()||'—'}</div></div>
+      <div class="cbadges">
+        ${c.profil_code?`<span class="pill pill-G" style="font-size:10px">${c.profil_code}</span>`:''}
+        ${c.statut?`<span class="pill ${sp[c.statut]||''}" style="font-size:10px">${c.statut}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════
+// API CALLS — VERS /api/* (jamais directement Anthropic)
+// ════════════════════════════════════════════════════
+async function apiCall(endpoint, body) {
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+// ════════════════════════════════════════════════════
+// PRÉ-QUALIF
+// ════════════════════════════════════════════════════
+async function analyzePQ() {
+  const tallyRaw = gv('pq-raw');
+  if (tallyRaw.length < 20) { toast('err', '⚠️ Collez d\'abord les réponses Tally'); return; }
+  const btn = document.getElementById('btn-pq');
+  btn.disabled = true; btn.textContent = '⏳ Analyse en cours…';
+  try {
+    // ➜ Appel vers /api/prequalif — la clé Anthropic reste sur le serveur
+    const res = await apiCall('/api/prequalif', { tallyRaw });
+    ST.pqSummary = res.data;
+    renderPQResult(res.data);
+    document.getElementById('pq-result').style.display = 'block';
+    document.getElementById('pq-cta').style.display = 'block';
+    toast('ok', '✨ Profil analysé !');
+    document.getElementById('pq-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch(e) { toast('err', '❌ ' + e.message); }
+  btn.disabled = false; btn.textContent = '✨ Analyser le profil';
+}
+
+function renderPQResult(d) {
+  const uc = {'Critique':'pill-R','Élevé':'pill-Y','Moyen':'pill-B','Faible':'pill-G'}[d.niveauUrgence]||'';
+  const cc = {'Chaud':'pill-R','Tiède':'pill-Y','Froid':'pill-B','À qualifier':'pill-V'}[d.closingStatusSuggestion]||'';
+  document.getElementById('pq-result').innerHTML = `
+    <div class="ai-card">
+      <div class="ai-title">🧬 Synthèse pré-bilan IA</div>
+      <div class="pbadge">
+        <span class="pcode">${d.profilTypeCode}</span>
+        <span class="plabel">${d.profilTypeLabel}</span>
+        ${d.profilTypeCodeSecondaire ? `<span class="pill pill-B" style="font-size:10px;margin-left:4px">${d.profilTypeCodeSecondaire}</span>` : ''}
+      </div>
+      <div class="crow">
+        <div><div class="cscore">${d.closingPotential}%</div><div class="clbl">Potentiel closing</div></div>
+        <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <span class="pill ${uc}">${d.niveauUrgence}</span>
+          <span class="pill ${cc}">${d.closingStatusSuggestion}</span>
+        </div>
+      </div>
+      <div class="ai-body" style="margin-bottom:11px">${d.resumeProfil}</div>
+      ${ab('🎯 Objectif', d.objectifPrincipal)}
+      ${ab('🚧 Freins', d.freinsProbables)}
+      ${ab('🔥 Motivations', d.motivationsDominantes)}
+      ${d.pointsDeVigilance ? ab('⚠️ Vigilances', d.pointsDeVigilance, 'Y') : ''}
+      ${ab('🧠 Approche coaching', d.approcheCoachingRecommandee, 'B')}
+      ${d.profilTypeReason ? `<p class="note" style="margin-top:7px">💬 ${d.profilTypeReason}</p>` : ''}
+    </div>`;
+}
+function ab(t, c, col = 'B') {
+  if (!c) return '';
+  return `<div class="ai-blk"><div class="ai-blk-t" style="color:var(--${col})">${t}</div><div class="ai-blk-c">${c}</div></div>`;
+}
+
+function goToBilan() {
+  const pn = gv('pq-raw').match(/[Pp]rénom\s*:?\s*(.+)/)?.[1]?.trim();
+  const nn = gv('pq-raw').match(/[Nn]om\s*:?\s*(.+)/)?.[1]?.trim();
+  if (pn && !gv('b-pn')) sv('b-pn', pn);
+  if (nn && !gv('b-nn')) sv('b-nn', nn);
+  showPg('bilan');
+}
+
+// ════════════════════════════════════════════════════
+// BILAN
+// ════════════════════════════════════════════════════
+function collectBilan() {
+  return {
+    prenom: gv('b-pn'), nom: gv('b-nn'), age: gv('b-age'),
+    ville: gv('b-ville'), profession: gv('b-prof'),
+    source: radioVal('source'),
+    rdvType: gv('b-rdv-type'), rdvStatut: gv('b-rdv-statut'), date: gv('b-date'),
+    resumePrebilan: gv('b-resume-prebilan'),
+    notesTrain: gv('b-notes-train'),
+    dispoJours: checkedBoxes('input[name="dispo"]:checked').join(', '),
+    relationTrain: checkedInCard('#pg-bilan .card:nth-of-type(4) .chk-item input[type=checkbox]:checked').join(', '),
+    materiel: gv('b-materiel'),
+    failleTrain: checkedInCard('#pg-bilan .card:nth-of-type(4) .chk-item:nth-last-child(-n+5) input[type=checkbox]:checked').join(', '),
+    notesNeat: gv('b-notes-neat'), pas: gv('b-pas'), failleNeat: gv('b-faille-neat'),
+    notesAlim: gv('b-notes-alim'),
+    relationAlim: checkedInSection('🥗').join(', '),
+    intolerances: checkedInSection('🥗', 2).join(', '),
+    notesVie: gv('b-notes-vie'),
+    relationVie: checkedInSection('🌙').join(', '),
+    failleVie: checkedInSection('🌙', 2).join(', '),
+    profilTypeCode: radioVal('profil'),
+    vision6m: gv('b-vision6m'), pointA: gv('b-pointA'), blocages: gv('b-blocages'),
+    echec6m: gv('b-echec6m'), attenteCoach: gv('b-attente-coach'),
+    offres: Array.from(document.querySelectorAll('#bilan-offres-card input[type=checkbox]:checked')).map(i => i.value).join(', '),
+    pretPayer: radioVal('pret-payer'),
+    montant: gv('b-montant'),
+    tourTaille: gv('b-ttaille') || '',
+    tourHanches: gv('b-thanches') || '',
+  };
+}
+
+// Helpers collecte simplifié
+function checkedBoxes(sel) { return Array.from(document.querySelectorAll(sel)).map(i => i.value); }
+function checkedInCard(sel) { return Array.from(document.querySelectorAll(sel)).map(i => i.value); }
+function checkedInSection(emoji, nth = 1) {
+  // Fallback simple — collecte tous les checkboxes cochés dans la page bilan
+  return [];
+}
+
+async function analyzeBilan() {
+  const btn = document.getElementById('btn-bilan');
+  btn.disabled = true; btn.textContent = '⏳ Analyse…';
+  try {
+    const bilanData = collectBilan();
+    // ➜ Appel vers /api/bilan
+    const res = await apiCall('/api/bilan', { bilanData, prequalifSummary: ST.pqSummary });
+    ST.bilanSummary = res.data;
+    renderBilanResult(res.data);
+    document.getElementById('bilan-result').style.display = 'block';
+    document.getElementById('bilan-cta').style.display = 'block';
+    toast('ok', '✨ Synthèse bilan générée !');
+    document.getElementById('bilan-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch(e) { toast('err', '❌ ' + e.message); }
+  btn.disabled = false; btn.textContent = '💡 Générer synthèse';
+}
+
+function renderBilanResult(d) {
+  const rc = {'Démarrer maintenant':'pill-G','Envoyer offre':'pill-R','Relancer dans 1 semaine':'pill-Y','Ne pas continuer':'pill-V'}[d.recommandationSuiteRDV]||'';
+  document.getElementById('bilan-result').innerHTML = `
+    <div class="ai-card" style="background:linear-gradient(135deg,rgba(0,184,255,.07),rgba(167,139,250,.04));border-color:rgba(0,184,255,.17)">
+      <div class="ai-title" style="color:var(--B)">🩺 Synthèse bilan coach</div>
+      ${d.profilTypeCodeUpdated ? `<div class="pbadge" style="border-color:rgba(0,184,255,.28);background:rgba(0,184,255,.08)"><span class="pcode" style="color:var(--B)">${d.profilTypeCodeUpdated}</span><span class="plabel">${d.profilTypeLabelUpdated}</span></div>` : ''}
+      <div class="crow">
+        <div><div class="cscore">${d.closingPotentialUpdated}%</div><div class="clbl">Closing actualisé</div></div>
+        <div style="margin-left:auto"><span class="pill ${rc}">${d.recommandationSuiteRDV}</span></div>
+      </div>
+      <div class="ai-body" style="margin-bottom:11px">${d.syntheseBilan}</div>
+      ${ab('💡 Hypothèse', d.hypotheseCoach, 'B')}
+      ${ab('🚀 Leviers', d.facteursLeviers, 'G')}
+      ${ab('⛔ Limitants', d.facteursLimitants, 'R')}
+      ${d.incoherencesOuVigilances ? ab('⚠️ Vigilances', d.incoherencesOuVigilances, 'Y') : ''}
+      ${ab('🎯 Priorités', d.prioritesCoaching, 'V')}
+      ${d.offreRecommandee ? `<div style="margin-top:10px;font-size:12px;color:var(--mist)">💼 <strong style="color:var(--Y)">${d.offreRecommandee}</strong></div>` : ''}
+      ${d.profileEvolutionNote ? `<p class="note" style="margin-top:7px">🔄 ${d.profileEvolutionNote}</p>` : ''}
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════
+// GOWOD — LECTURE IMAGE VIA /api/gowod
+// ════════════════════════════════════════════════════
+function handleGowodDrop(e) {
+  e.preventDefault();
+  document.getElementById('gowod-upload-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) { const dt = new DataTransfer(); dt.items.add(file); document.getElementById('gowod-file').files = dt.files; readGowodFile({ files: [file] }); }
+}
+
+function readGowodFile(input) {
+  const file = input.files?.[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    ST.gowodBase64 = dataUrl.split(',')[1];
+    ST.gowodMediaType = file.type || 'image/jpeg';
+    document.getElementById('gowod-img').src = dataUrl;
+    document.getElementById('gowod-img-preview').style.display = 'block';
+    callGowodAPI();
+  };
+  reader.readAsDataURL(file);
+}
+
+function reanalyzeGowod() { if (ST.gowodBase64) callGowodAPI(); }
+
+async function callGowodAPI() {
+  document.getElementById('gowod-loading').style.display = 'block';
+  document.getElementById('gowod-display').style.display = 'none';
+  try {
+    // ➜ Appel vers /api/gowod — image envoyée en base64 au serveur
+    const res = await apiCall('/api/gowod', { imageBase64: ST.gowodBase64, mediaType: ST.gowodMediaType });
+    ST.gowodData = res.data;
+    renderGowodDisplay(res.data);
+    // Synchroniser les inputs manuels
+    if (res.data.scoreGlobal != null) sv('t-mob-global', res.data.scoreGlobal);
+    const zoneMap = { 'épaul': 't-mob-ep', 'overhead': 't-mob-oh', 'thorax': 't-mob-th', 'hanch': 't-mob-hi', 'chaîne': 't-mob-cp', 'chevill': 't-mob-ch' };
+    (res.data.zones || []).forEach(z => {
+      const key = Object.keys(zoneMap).find(k => z.label?.toLowerCase().includes(k));
+      if (key && z.value != null) sv(zoneMap[key], z.value);
+    });
+    toast('ok', '✅ Scores GOWOD lus !');
+  } catch(e) { toast('err', '❌ Lecture GOWOD : ' + e.message); }
+  document.getElementById('gowod-loading').style.display = 'none';
+}
+
+function renderGowodDisplay(d) {
+  const v = d.scoreGlobal || 0;
+  const circumference = 2 * Math.PI * 55; // r=55
+  const offset = circumference - (v / 100) * circumference;
+  const fill = document.getElementById('gc-fill');
+  const scoreColor = v >= 70 ? '#c8ff00' : v >= 50 ? '#f0b429' : '#ff5040';
+  fill.style.stroke = scoreColor;
+  fill.style.strokeDasharray = circumference;
+  fill.style.strokeDashoffset = circumference;
+  setTimeout(() => { fill.style.strokeDashoffset = offset; }, 50);
+  document.getElementById('gc-val').textContent = v;
+  document.getElementById('gc-val').style.color = scoreColor;
+  if (d.date) document.getElementById('gowod-date').textContent = d.date;
+  document.getElementById('gowod-display').style.display = 'block';
+
+  // Barres zones
+  const zones = d.zones || [];
+  document.getElementById('gowod-bars').innerHTML = zones.map(z => {
+    const val = z.value ?? 0;
+    const barCol = val >= 70 ? '#c8ff00' : val >= 50 ? '#f0b429' : '#ff5040';
+    const h = Math.min(100, val) * 0.68;
+    return `<div class="gz">
+      <div class="gz-val">${val ?? '—'}</div>
+      <div class="gz-track"><div class="gz-bar" style="background:${barCol};height:0%" data-h="${h}%"></div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('gowod-zone-lbls').innerHTML = zones.map(z =>
+    `<div class="gz-lbl">${(z.label||'').slice(0, 9)}</div>`
+  ).join('');
+  setTimeout(() => {
+    document.querySelectorAll('.gz-bar').forEach(b => { b.style.height = b.dataset.h; });
+  }, 100);
+
+  // Sports
+  const sEl = document.getElementById('gowod-sports');
+  if (d.sports?.length) {
+    sEl.style.display = 'grid';
+    sEl.innerHTML = d.sports.map(s => `
+      <div class="gs-card">
+        <div class="gs-name">${s.name}</div>
+        <div class="gs-tag">${s.tag || ''}</div>
+        <div><span class="gs-v">${s.score}</span><span class="gs-max">/${s.max || 10}</span></div>
+        <div class="gs-bar"><div class="gs-fill" style="width:0%" data-w="${(s.score / (s.max || 10)) * 100}%"></div></div>
+      </div>`).join('');
+    setTimeout(() => { document.querySelectorAll('.gs-fill').forEach(b => { b.style.width = b.dataset.w; }); }, 100);
+  } else {
+    sEl.style.display = 'none';
+  }
+}
+
+// ════════════════════════════════════════════════════
+// RAPPORT FINAL
+// ════════════════════════════════════════════════════
+function collectTests() {
+  const gd = ST.gowodData;
+  return {
+    programme: gv('t-programme'),
+    taille: gv('t-taille'), poids: gv('t-poids'),
+    tourNombril: gv('t-tn'), tourCuisses: gv('t-tc'), tourHanche: gv('t-thm'), tourTaille: gv('t-tt'),
+    mobGlobal: gv('t-mob-global') || (gd?.scoreGlobal ?? ''),
+    mobZones: gd?.zones?.map(z => `${z.label}:${z.value}`).join(', ') || '',
+    p1: gv('t-p1'), p2: gv('t-p2'), p3: gv('t-p3'), ird: gv('t-ird'),
+    fcmax: gv('t-fcmax'), zone2: gv('t-zone2'),
+    mobSquat: Array.from(document.querySelectorAll('#acc-mob-squat input[type=checkbox]:checked')).map(i => i.value).join(', '),
+    planche: gv('t-planche'),
+    douleurs: Array.from(document.querySelectorAll('#acc-doul input[type=checkbox]:checked')).map(i => i.value).join(', '),
+    remarques: gv('t-remarques'),
+  };
+}
+
+async function genReport() {
+  document.getElementById('rpt-empty').style.display = 'none';
+  document.getElementById('rpt-loading').style.display = 'block';
+  document.getElementById('rpt-content').style.display = 'none';
+  document.getElementById('rpt-actions').style.display = 'none';
+  try {
+    const b = collectBilan();
+    const t = collectTests();
+    // ➜ Appel vers /api/rapport — envoie les RÉSUMÉS pas les données brutes complètes
+    const res = await apiCall('/api/rapport', {
+      client: { ...b, poids: gv('t-poids') || b.poids, taille: gv('t-taille') || b.taille },
+      prequalif: ST.pqSummary,
+      bilan: ST.bilanSummary,
+      tests: t,
+    });
+    ST.finalReport = res.data;
+    ST.finalReport._client = b;
+    ST.finalReport._tests = t;
+    renderReport(res.data, b);
+    document.getElementById('rpt-loading').style.display = 'none';
+    document.getElementById('rpt-content').style.display = 'block';
+    document.getElementById('rpt-actions').style.display = 'block';
+    toast('ok', '✨ Rapport généré !');
+  } catch(e) {
+    document.getElementById('rpt-loading').style.display = 'none';
+    document.getElementById('rpt-empty').style.display = 'block';
+    toast('err', '❌ ' + e.message);
+  }
+}
+
+function renderReport(r, b) {
+  const sc = v => v >= 70 ? 'var(--G)' : v >= 50 ? 'var(--Y)' : 'var(--R)';
+  const li = (arr, ico = '→') => Array.isArray(arr) ? arr.map(x => `<div class="litem"><span class="lico">${ico}</span><span>${x}</span></div>`).join('') : '';
+  const rs = (icon, title, content, color = 'var(--B)') => content ? `<div class="rsec"><div class="rsec-t" style="color:${color}">${icon} ${title}</div><div class="rsec-txt">${content}</div></div>` : '';
+  const cc = {'Démarrer maintenant':'pill-G','Envoyer offre':'pill-R','Relancer':'pill-Y','Ne pas continuer':'pill-V'}[r.closingStatusRecommended] || '';
+  document.getElementById('rpt-content').innerHTML = `
+    <div class="report-hero">
+      <div class="rh-name">${b.prenom || ''} ${b.nom || ''}</div>
+      <div class="rh-meta">${b.age ? b.age + ' ans · ' : ''}${b.ville ? b.ville + ' · ' : ''}${b.profession || ''}</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px">
+        ${r.profilTypeCodeFinal ? `<span class="pill pill-G">${r.profilTypeCodeFinal} — ${r.profilTypeLabelFinal}</span>` : ''}
+        ${r.niveauGlobal ? `<span class="pill pill-B">${r.niveauGlobal}</span>` : ''}
+        ${r.closingStatusRecommended ? `<span class="pill ${cc}">${r.closingStatusRecommended}</span>` : ''}
+        ${r.offreRecommandee ? `<span class="tag-offre">${r.offreRecommandee}</span>` : ''}
+      </div>
+      <div class="scores3">
+        <div class="sbox"><div class="sval" style="color:${sc(r.scoreMobilite)}">${r.scoreMobilite ?? '—'}</div><div class="slbl">Mobilité</div></div>
+        <div class="sbox"><div class="sval" style="color:${sc(r.scoreCondition)}">${r.scoreCondition ?? '—'}</div><div class="slbl">Condition</div></div>
+        <div class="sbox"><div class="sval" style="color:${sc(r.scoreGlobal)}">${r.scoreGlobal ?? '—'}</div><div class="slbl">Global</div></div>
+      </div>
+    </div>
+    ${rs('🧬', 'Profil global', r.profilGlobal, 'var(--G)')}
+    ${rs('📋', 'Synthèse pré-bilan', r.synthesePreBilan)}
+    ${rs('🩺', 'Synthèse bilan', r.syntheseBilan, 'var(--V)')}
+    ${rs('📏', 'Morphologie', r.analyseMorphologique)}
+    ${rs('🤸', 'Mobilité GOWOD', r.analyseMobilite, 'var(--G)')}
+    ${rs('❤️', 'Cardio — IRD', r.analyseCardio, 'var(--R)')}
+    ${rs('💪', 'Force — Planche', r.analyseForce, 'var(--V)')}
+    ${rs('⚖️', 'Composition', r.analyseCompo, 'var(--Y)')}
+    <div class="rsec"><div class="rsec-t" style="color:var(--G)">⭐ Points forts</div><div>${li(r.pointsForts, '✓')}</div></div>
+    <div class="rsec"><div class="rsec-t" style="color:var(--Y)">⚠️ Freins</div><div>${li(r.freinsPrincipaux, '!')}</div></div>
+    <div class="rsec"><div class="rsec-t" style="color:var(--B)">🎯 Axes prioritaires</div><div>${li(r.axesPrioritaires, '→')}</div></div>
+    ${rs('📅', 'Plan 90 jours', r.planAction90J, 'var(--Y)')}
+    <div class="rsec"><div class="rsec-t" style="color:var(--G)">📋 Objectifs SMART</div><div>${(r.objectifsSMART || []).map((o, i) => `<div class="litem"><span class="lico" style="color:var(--G);font-weight:700">${i + 1}.</span><span>${o}</span></div>`).join('')}</div></div>
+    ${rs('🏋️', 'Conseils training', r.conseilsTraining, 'var(--G)')}
+    ${rs('🥗', 'Nutrition', r.conseilsNutrition, 'var(--Y)')}
+    ${rs('😴', 'Récupération', r.conseilsRecuperation, 'var(--B)')}
+    <div class="ai-card" style="margin-bottom:13px">
+      <div class="ai-title">💬 Message pour ${b.prenom || 'vous'}</div>
+      <div class="ai-body" style="font-style:italic">"${r.messageMotivation || ''}"</div>
+      <div style="margin-top:9px;font-size:11px;color:var(--mist)">— ${ST.coachName}, BE ACTIV Coach</div>
+    </div>
+    ${r.closingSummaryCoach ? `<div class="card" style="border-color:rgba(167,139,250,.24);background:rgba(167,139,250,.05)"><div class="card-t" style="color:var(--V)">🔒 Note coach</div><div style="font-size:13px;color:var(--fog)">${r.closingSummaryCoach}</div></div>` : ''}
+    <div style="font-size:11px;color:var(--mist);text-align:center;margin-top:12px">BE ACTIV · ${new Date().toLocaleDateString('fr-FR', {day:'2-digit',month:'long',year:'numeric'})}</div>`;
+}
+
+// ════════════════════════════════════════════════════
+// PDF (client-side — jsPDF)
+// ════════════════════════════════════════════════════
+async function dlPDF() {
+  if (!ST.finalReport) { toast('err', '⚠️ Générez d\'abord le rapport'); return; }
+  const btn = document.getElementById('btn-pdf');
+  btn.disabled = true; btn.textContent = '⏳…';
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const r = ST.finalReport, b = r._client || {};
+    const PW = 210, M = 18, CW = PW - M * 2; let y = 0;
+    const addPg = () => { doc.addPage(); y = 22; doc.setFillColor(7,7,15); doc.rect(0,0,210,297,'F'); };
+    const ck = (n = 18) => { if (y + n > 272) addPg(); };
+    const H = (sz, sty = 'normal', col = [238,238,255]) => { doc.setFontSize(sz); doc.setFont('helvetica', sty); doc.setTextColor(...col); };
+    const para = (txt, x = M, mw = CW) => { if (!txt) return; doc.splitTextToSize(String(txt), mw).forEach(l => { ck(6); doc.text(l, x, y); y += 5; }); y += 2; };
+    const secT = (t2, col = [0,229,160]) => { ck(14); doc.setFillColor(14,14,28); doc.roundedRect(M,y,CW,8.5,1.5,1.5,'F'); doc.setFillColor(...col); doc.rect(M,y,3,8.5,'F'); H(8,'bold',col); doc.text(t2.toUpperCase(),M+6,y+6); y += 13; };
+    const sBox = (lbl, val, x, bw) => { const col = val>=70?[0,200,120]:val>=50?[200,150,0]:[180,50,50]; doc.setFillColor(14,14,28); doc.roundedRect(x,y,bw,21,2,2,'F'); doc.setDrawColor(...col); doc.setLineWidth(.4); doc.roundedRect(x,y,bw,21,2,2,'S'); H(15,'bold',col); doc.text(String(val??'—'),x+bw/2,y+12,{align:'center'}); H(6.5,'normal',[100,100,130]); doc.text(lbl,x+bw/2,y+18,{align:'center'}); };
+
+    doc.setFillColor(7,7,15); doc.rect(0,0,210,297,'F');
+    doc.setFillColor(0,229,160); doc.rect(0,0,210,1.5,'F');
+    y = 26;
+    doc.setFillColor(0,229,160); doc.roundedRect(M,y,21,21,3,3,'F');
+    H(10,'bold',[7,7,15]); doc.text('BA',M+10.5,y+13,{align:'center'});
+    H(19,'bold',[238,238,255]); doc.text('BE ACTIV',M+27,y+9);
+    H(7.5,'normal',[100,100,150]); doc.text('JM COACH SPORTIF',M+27,y+17);
+    H(7,'normal',[80,80,120]); doc.text(new Date().toLocaleDateString('fr-FR'),PW-M,y+9,{align:'right'});
+    y += 30; doc.setDrawColor(30,30,50); doc.setLineWidth(.3); doc.line(M,y,PW-M,y); y += 12;
+    H(24,'bold',[238,238,255]); doc.text(`${b.prenom||''} ${b.nom||''}`,M,y); y += 9;
+    H(9,'normal',[120,120,160]);
+    doc.text([b.age?b.age+' ans':null,b.ville,b.profession].filter(Boolean).join('  ·  ')||'',M,y); y += 11;
+    const bw = (CW-6)/3;
+    sBox('Mobilité',r.scoreMobilite,M,bw); sBox('Condition',r.scoreCondition,M+bw+3,bw); sBox('Global',r.scoreGlobal,M+(bw+3)*2,bw); y += 28;
+    doc.setFillColor(0,40,25); doc.roundedRect(M,y,CW,9,2,2,'F');
+    H(8.5,'bold',[0,229,160]); doc.text(`${(r.niveauGlobal||'').toUpperCase()}  ·  ${r.profilTypeCodeFinal} — ${r.profilTypeLabelFinal}`,PW/2,y+6.5,{align:'center'}); y += 16;
+    if (r.offreRecommandee) { doc.setFillColor(25,20,0); doc.roundedRect(M,y,CW,9,2,2,'F'); H(8.5,'bold',[200,160,0]); doc.text(`OFFRE : ${r.offreRecommandee}`,PW/2,y+6.5,{align:'center'}); y += 14; }
+
+    const sects = [['Profil global',r.profilGlobal,[0,229,160]],['Synthèse pré-bilan',r.synthesePreBilan],['Synthèse bilan',r.syntheseBilan,[0,184,255]],['Morphologie',r.analyseMorphologique],['Mobilité GOWOD',r.analyseMobilite,[0,229,160]],['Cardio — IRD',r.analyseCardio,[220,80,60]],['Force — Planche',r.analyseForce,[167,139,250]],['Composition',r.analyseCompo,[200,160,0]]];
+    for (const [t2, c, col] of sects) { if (c) { secT(t2, col || [0,184,255]); H(8.5,'normal',[190,190,215]); para(c); } }
+
+    addPg();
+    secT('Axes prioritaires',[0,184,255]);
+    (r.axesPrioritaires||[]).forEach((a,i) => { ck(10); doc.setFillColor(0,20,40); doc.roundedRect(M,y,CW,9,1.5,1.5,'F'); H(8.5,'bold',[0,184,255]); doc.text(`${i+1}.`,M+4,y+6.2); H(8.5,'normal',[180,210,240]); doc.text(a,M+10,y+6.2); y += 12; });
+    secT('Plan d\'action 90 jours',[200,160,0]); H(8.5,'normal',[190,190,215]); para(r.planAction90J);
+    secT('Objectifs SMART',[0,229,160]);
+    (r.objectifsSMART||[]).forEach((o,i) => { ck(11); doc.setFillColor(0,30,20); doc.roundedRect(M,y,CW,10,1.5,1.5,'F'); H(8,'bold',[0,229,160]); doc.text(String(i+1),M+4,y+7); H(8.5,'normal',[180,240,210]); const ls = doc.splitTextToSize(o,CW-12); doc.text(ls[0]||'',M+10,y+7); y += 13; });
+    secT('Conseils training',[0,229,160]); H(8.5,'normal',[190,190,215]); para(r.conseilsTraining);
+    secT('Nutrition',[200,160,0]); H(8.5,'normal',[190,190,215]); para(r.conseilsNutrition);
+    secT('Récupération',[0,184,255]); H(8.5,'normal',[190,190,215]); para(r.conseilsRecuperation);
+    ck(38); doc.setFillColor(0,40,25); doc.setDrawColor(0,229,160); doc.setLineWidth(.5); doc.roundedRect(M,y,CW,38,2,2,'FD'); doc.setFillColor(0,229,160); doc.rect(M,y,3,38,'F');
+    H(9,'bold',[0,229,160]); doc.text('MESSAGE POUR VOUS',M+8,y+8); H(9,'italic',[170,240,210]);
+    doc.splitTextToSize(`"${r.messageMotivation}"`,CW-16).slice(0,5).forEach((l,i) => { doc.text(l,M+8,y+15+i*5.5); });
+    H(7.5,'normal',[80,140,100]); doc.text(`— ${ST.coachName}, BE ACTIV Coach`,M+8,y+34); y += 44;
+
+    const tot = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= tot; p++) { doc.setPage(p); doc.setFillColor(10,10,20); doc.rect(0,285,210,12,'F'); doc.setFillColor(0,229,160); doc.rect(0,295,210,2,'F'); H(6.5,'normal',[80,80,120]); doc.text('BE ACTIV JM COACH SPORTIF — Document confidentiel',PW/2,291,{align:'center'}); H(6.5,'normal',[60,60,100]); doc.text(`Page ${p}/${tot}`,PW-M,291,{align:'right'}); }
+
+    doc.save(`BeActiv_${b.prenom||'Client'}_${b.nom||''}_${new Date().toISOString().split('T')[0]}.pdf`.replace(/\s+/g,'_'));
+    toast('ok', '📄 PDF téléchargé !');
+  } catch(e) { toast('err', '❌ PDF : ' + e.message); }
+  btn.disabled = false; btn.textContent = '📄 PDF';
+}
+
+// ════════════════════════════════════════════════════
+// EMAIL
+// ════════════════════════════════════════════════════
+function openEmailModal() {
+  if (!ST.finalReport) { toast('err', '⚠️ Générez d\'abord le rapport'); return; }
+  sv('em-subj', ST.finalReport.emailSubject || 'Votre bilan BE ACTIV');
+  sv('em-body', ST.finalReport.emailBody || '');
+  openModal('email');
+}
+function sendEmail() {
+  const to = gv('em-to'); if (!to) { toast('err', '⚠️ Email requis'); return; }
+  window.location.href = `mailto:${to}?subject=${encodeURIComponent(gv('em-subj'))}&body=${encodeURIComponent(gv('em-body'))}`;
+  closeModal('email'); toast('ok', '📧 Email préparé !');
+}
+
+// ════════════════════════════════════════════════════
+// CLIENTS — SAVE / LOAD / RENDER
+// ════════════════════════════════════════════════════
+function saveClient() {
+  const b = collectBilan(); const r = ST.finalReport;
+  if (!b.prenom && !b.nom) { toast('err', '⚠️ Prénom/nom requis'); return; }
+  const client = {
+    id: ST.clientId || Date.now().toString(),
+    prenom: b.prenom, nom: b.nom, age: b.age, ville: b.ville, profession: b.profession,
+    source: b.source, rdvType: b.rdvType, date: b.date,
+    profil_code: r?.profilTypeCodeFinal || ST.bilanSummary?.profilTypeCodeUpdated || b.profilTypeCode || '',
+    profil_label: r?.profilTypeLabelFinal || ST.bilanSummary?.profilTypeLabelUpdated || '',
+    offres: b.offres, pretPayer: b.pretPayer, montant: b.montant,
+    statut: 'Non closé',
+    score_global: r?.scoreGlobal || null,
+    pq_summary: ST.pqSummary, bilan_summary: ST.bilanSummary, final_report: r,
+    updated_at: new Date().toISOString(),
+  };
+  ST.clientId = client.id;
+  const idx = ST.clients.findIndex(c => c.id === client.id);
+  if (idx >= 0) ST.clients[idx] = client; else ST.clients.unshift(client);
+  localStorage.setItem('ba_clients_v4', JSON.stringify(ST.clients));
+  saveToSupabase(client);
+  updateKPIs(); renderHomeClients();
+  toast('ok', `✅ ${client.prenom} ${client.nom} sauvegardé`);
+}
+
+async function saveToSupabase(c) {
+  if (!ST.sbUrl || !ST.sbKey) return;
+  try {
+    await fetch(`${ST.sbUrl}/rest/v1/be_activ_clients`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': ST.sbKey, 'Authorization': `Bearer ${ST.sbKey}`, 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ id: c.id, prenom: c.prenom, nom: c.nom, age: parseInt(c.age)||null, ville: c.ville, source: c.source, date_rdv: c.date, profil_code: c.profil_code, profil_label: c.profil_label, offres: c.offres, pret_payer: c.pretPayer, montant: parseFloat(c.montant)||null, statut: c.statut, score_global: c.score_global, report_json: JSON.stringify({ pq: c.pq_summary, bilan: c.bilan_summary, final: c.final_report }), updated_at: c.updated_at }),
+    });
+  } catch(e) {}
+}
+
+async function loadFromSupabase() {
+  if (!ST.sbUrl || !ST.sbKey) return;
+  try {
+    const res = await fetch(`${ST.sbUrl}/rest/v1/be_activ_clients?order=updated_at.desc&limit=100`, { headers: { 'apikey': ST.sbKey, 'Authorization': `Bearer ${ST.sbKey}` } });
+    if (!res.ok) return;
+    const rows = await res.json();
+    rows.forEach(r => {
+      let pq=null, bilan=null, final=null;
+      try { const j = JSON.parse(r.report_json||'{}'); pq=j.pq; bilan=j.bilan; final=j.final; } catch(e) {}
+      const sc = { id:r.id, prenom:r.prenom, nom:r.nom, age:r.age, ville:r.ville, source:r.source, date:r.date_rdv, profil_code:r.profil_code, profil_label:r.profil_label, offres:r.offres, pretPayer:r.pret_payer, montant:r.montant, statut:r.statut||'Non closé', score_global:r.score_global, pq_summary:pq, bilan_summary:bilan, final_report:final, updated_at:r.updated_at };
+      const i = ST.clients.findIndex(c => c.id === sc.id);
+      if (i >= 0) ST.clients[i] = sc; else ST.clients.unshift(sc);
+    });
+    localStorage.setItem('ba_clients_v4', JSON.stringify(ST.clients));
+    updateKPIs(); renderHomeClients();
+  } catch(e) {}
+}
+
+function renderClients() {
+  const srch = document.getElementById('srch-i')?.value?.toLowerCase() || '';
+  const list = ST.clients.filter(c => {
+    const ms = !srch || `${c.prenom} ${c.nom} ${c.ville||''}`.toLowerCase().includes(srch);
+    const mv = ST.filterStatut === 'all' || c.statut === ST.filterStatut;
+    const mp = ST.filterProfil === 'all' || c.profil_code === ST.filterProfil;
+    return ms && mv && mp;
+  });
+  if (!list.length) { document.getElementById('clients-list').innerHTML = '<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun client</div><div class="empty-s">Créez votre premier dossier.</div></div>'; return; }
+  const sp = {'Closé':'pill-G','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R'};
+  document.getElementById('clients-list').innerHTML = list.map(c => {
+    const init = ((c.prenom||'?')[0]+(c.nom||'?')[0]).toUpperCase();
+    const dt = c.updated_at ? new Date(c.updated_at).toLocaleDateString('fr-FR') : '';
+    return `<div class="ccrd" onclick="openClient('${c.id}')">
+      <div class="cav">${init}</div>
+      <div class="cinfo"><div class="cname">${c.prenom} ${c.nom}</div><div class="cmeta">${c.source||'—'} · ${c.offres?.split(',')[0]?.trim()||'—'} · ${dt}</div></div>
+      <div class="cbadges">
+        ${c.profil_code ? `<span class="pill pill-G" style="font-size:10px">${c.profil_code}</span>` : ''}
+        ${c.statut ? `<span class="pill ${sp[c.statut]||''}" style="font-size:10px">${c.statut}</span>` : ''}
+        ${c.score_global != null ? `<span style="font-size:11px;color:var(--mist)">⭐${c.score_global}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openClient(id) {
+  const c = ST.clients.find(x => x.id == id); if (!c) return;
+  ST.clientId = c.id; ST.pqSummary = c.pq_summary; ST.bilanSummary = c.bilan_summary; ST.finalReport = c.final_report;
+  const sp = {'Closé':'pill-G','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R'};
+  document.getElementById('m-statut-body').innerHTML = `
+    <div class="mdl-t">${c.prenom} ${c.nom} <button class="mdl-x" onclick="closeModal('statut')">✕</button></div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px">
+      ${c.profil_code ? `<span class="pill pill-G">${c.profil_code}</span>` : ''}
+      ${c.statut ? `<span class="pill ${sp[c.statut]||''}">${c.statut}</span>` : ''}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${['Non closé','Closé','À relancer','Refusé'].map(s =>
+        `<button class="btn btn-dk btn-w" style="border-color:${c.statut===s?'var(--G)':'var(--rim)'}" onclick="updateStatut('${c.id}','${s}')">${s}</button>`
+      ).join('')}
+    </div>
+    <div class="brow" style="margin-top:14px">
+      ${c.final_report
+        ? `<button class="btn btn-G btn-w" onclick="closeModal('statut');openFromSaved()">Voir le rapport →</button>`
+        : `<button class="btn btn-dk btn-w" onclick="closeModal('statut');showPg('bilan')">Compléter →</button>`}
+    </div>`;
+  openModal('statut');
+}
+
+function openFromSaved() {
+  if (ST.finalReport) {
+    renderReport(ST.finalReport, ST.finalReport._client || {});
+    document.getElementById('rpt-empty').style.display = 'none';
+    document.getElementById('rpt-content').style.display = 'block';
+    document.getElementById('rpt-actions').style.display = 'block';
+  }
+  showPg('rapport');
+}
+
+function updateStatut(id, statut) {
+  const c = ST.clients.find(x => x.id == id);
+  if (c) { c.statut = statut; c.updated_at = new Date().toISOString(); }
+  localStorage.setItem('ba_clients_v4', JSON.stringify(ST.clients));
+  if (ST.sbUrl && ST.sbKey) {
+    fetch(`${ST.sbUrl}/rest/v1/be_activ_clients?id=eq.${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'apikey': ST.sbKey, 'Authorization': `Bearer ${ST.sbKey}` }, body: JSON.stringify({ statut, updated_at: new Date().toISOString() }) }).catch(() => {});
+  }
+  closeModal('statut'); renderClients(); updateKPIs();
+  toast('ok', '✅ Statut mis à jour');
+}
+
+function setupChips() {
+  document.querySelectorAll('#chips-statut .chip').forEach(c => {
+    c.onclick = () => { document.querySelectorAll('#chips-statut .chip').forEach(x => x.classList.remove('on')); c.classList.add('on'); ST.filterStatut = c.dataset.v; renderClients(); };
+  });
+  document.querySelectorAll('#chips-profil .chip').forEach(c => {
+    c.onclick = () => { document.querySelectorAll('#chips-profil .chip').forEach(x => x.classList.remove('on')); c.classList.add('on'); ST.filterProfil = c.dataset.v; renderClients(); };
+  });
+}
+
+// ════════════════════════════════════════════════════
+// RESET NOUVEAU CLIENT
+// ════════════════════════════════════════════════════
+function newClient() {
+  ST.clientId=null; ST.pqSummary=null; ST.bilanSummary=null; ST.finalReport=null; ST.gowodData=null; ST.gowodBase64=null;
+  document.querySelectorAll('input:not([type=password]):not([type=date]):not(.srch-i):not([id=t-ird])').forEach(el => { if (!el.closest('.mbg') && el.type !== 'radio' && el.type !== 'checkbox') el.value = ''; });
+  document.querySelectorAll('input[type=checkbox], input[type=radio]').forEach(el => { if (!el.closest('.mbg')) el.checked = false; });
+  document.querySelectorAll('select').forEach(el => { if (!el.closest('.mbg')) el.selectedIndex = 0; });
+  document.querySelectorAll('textarea').forEach(el => { if (!el.closest('.mbg')) el.value = ''; });
+  document.querySelectorAll('.sfill').forEach(b => { b.style.width = '0%'; });
+  document.getElementById('imc2-out').innerHTML = '—';
+  document.getElementById('ird-result').style.display = 'none';
+  document.getElementById('gowod-display').style.display = 'none';
+  document.getElementById('gowod-loading').style.display = 'none';
+  document.getElementById('gowod-img-preview').style.display = 'none';
+  document.getElementById('pq-result').style.display = 'none';
+  document.getElementById('pq-cta').style.display = 'none';
+  document.getElementById('bilan-result').style.display = 'none';
+  document.getElementById('bilan-cta').style.display = 'none';
+  document.getElementById('rpt-empty').style.display = 'block';
+  document.getElementById('rpt-content').style.display = 'none';
+  document.getElementById('rpt-actions').style.display = 'none';
+  document.getElementById('b-date').value = new Date().toISOString().split('T')[0];
+}
+
+// ════════════════════════════════════════════════════
+// UTILS FORM
+// ════════════════════════════════════════════════════
+function calcIMC2() {
+  const p = parseFloat(gv('t-poids')), t = parseFloat(gv('t-taille')) / 100;
+  const el = document.getElementById('imc2-out');
+  if (!p || !t) { el.innerHTML = '—'; return; }
+  const imc = (p / (t * t)).toFixed(1);
+  const [cat, col] = imc < 18.5 ? ['Maigreur','#ff5040'] : imc < 25 ? ['Normal','var(--G)'] : imc < 30 ? ['Surpoids','var(--Y)'] : ['Obésité','var(--R)'];
+  el.innerHTML = `<strong>${imc}</strong><span class="imc-b" style="background:${col}22;color:${col};border:1px solid ${col}44">${cat}</span>`;
+}
+
+function calcIRD() {
+  const p1 = parseInt(gv('t-p1')), p2 = parseInt(gv('t-p2')), p3 = parseInt(gv('t-p3'));
+  if (!p1 || !p2 || !p3) return;
+  const ird = ((p2 - 70 + 2 * (p3 - p1)) / 2).toFixed(1);
+  sv('t-ird', ird);
+  const v = parseFloat(ird);
+  let cat = '', col = '';
+  if (v < 0) { cat = 'Excellent'; col = 'var(--G)'; }
+  else if (v < 5) { cat = 'Bon'; col = 'var(--G)'; }
+  else if (v < 10) { cat = 'Moyen'; col = 'var(--Y)'; }
+  else if (v < 15) { cat = 'Insuffisant'; col = 'var(--R)'; }
+  else { cat = 'Mauvais'; col = 'var(--R)'; }
+  document.getElementById('ird-result').style.display = 'flex';
+  document.getElementById('ird-val').textContent = ird;
+  document.getElementById('ird-val').style.color = col;
+  document.getElementById('ird-cat').textContent = cat;
+  document.getElementById('ird-cat').style.cssText = `background:${col}22;color:${col};border:1px solid ${col}44;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700`;
+}
+
+function sbar(id, val) {
+  const b = document.getElementById('bar-' + id); if (!b) return;
+  const v = Math.min(100, Math.max(0, parseInt(val) || 0));
+  b.style.width = v + '%';
+  b.style.background = v >= 70 ? 'var(--G)' : v >= 50 ? 'var(--Y)' : 'var(--R)';
+}
+
+function togAcc(name) {
+  const a = document.getElementById('acc-' + name);
+  a.classList.toggle('open');
+  a.querySelector('.acc-chev').textContent = a.classList.contains('open') ? '▲' : '▼';
+}
+
+// MODAL + TOAST + MISC
+function openModal(n) { document.getElementById('m-' + n)?.classList.add('open'); }
+function closeModal(n) { document.getElementById('m-' + n)?.classList.remove('open'); }
+document.querySelectorAll('.mbg').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
+
+let _tt;
+function toast(type, msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'show ' + type;
+  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+const gv = id => document.getElementById(id)?.value?.trim() || '';
+const g = id => document.getElementById(id);
+const sv = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+const radioVal = name => document.querySelector(`input[name="${name}"]:checked`)?.value || '';
+</script>
+</body>
+</html>
