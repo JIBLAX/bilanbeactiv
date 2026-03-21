@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#8b1520">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>BE ACTIV | BILAN CRM</title>
@@ -501,6 +501,41 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .phase-editor-lbl:focus{background:#fff;border-color:var(--bx);outline:none}
 .phase-editor-days{width:56px;font-size:12px;text-align:center}
 .c2-separator{text-align:center;font-size:11px;font-weight:700;color:var(--bx);letter-spacing:1px;text-transform:uppercase;padding:8px 0;margin:4px 0;border-top:1.5px dashed var(--rim);border-bottom:1.5px dashed var(--rim)}
+
+/* Désactiver zoom partout */
+* { touch-action: pan-x pan-y; }
+input, select, textarea { font-size: 16px !important; touch-action: manipulation; }
+body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* Espace bas sécurisé */
+#nav-mobile { padding-bottom: max(10px, env(safe-area-inset-bottom, 10px)); }
+.pg { padding-bottom: max(80px, calc(60px + env(safe-area-inset-bottom, 20px))); }
+/* Retirer config du topbar mobile */
+.tb-cfg-hide { display: none !important; }
+
+.offre-card-compact{background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh);transition:border-color .15s}
+.offre-card-compact:hover{border-color:var(--rim)}
+
+.cycle-section{margin-bottom:14px}
+.cycle-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg3);border:1.5px solid var(--rim3);border-radius:var(--r2);cursor:pointer;user-select:none;transition:all .15s}
+.cycle-header:hover{border-color:var(--rim);background:var(--bg4)}
+.cycle-header.active-cycle{background:rgba(139,21,32,.06);border-color:var(--rim)}
+.cycle-header-ico{font-size:18px;width:28px;text-align:center}
+.cycle-header-info{flex:1}
+.cycle-header-title{font-weight:700;font-size:13.5px;color:var(--tx)}
+.cycle-header-sub{font-size:11px;color:var(--tx3);margin-top:1px}
+.cycle-progress{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-top:6px}
+.cycle-progress-fill{height:100%;background:var(--bx);border-radius:3px;transition:width .4s}
+.cycle-body{display:none;padding:10px 0 4px}
+.cycle-body.open{display:block}
+.offre-jauge{background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:12px;margin-bottom:10px}
+.offre-jauge-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.offre-jauge-name{font-weight:600;font-size:13px;color:var(--tx)}
+.offre-jauge-pct{font-size:13px;font-weight:700;color:var(--bx)}
+.offre-jauge-bar{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;margin-bottom:8px;cursor:pointer}
+.offre-jauge-fill{height:100%;background:linear-gradient(90deg,var(--bx),var(--bx3));border-radius:4px;transition:width .3s}
+.offre-jauge-controls{display:flex;gap:6px;align-items:center}
+.jauge-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--rim3);background:var(--bg3);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .12s;font-family:'Outfit',sans-serif}
+.jauge-btn:hover{border-color:var(--bx);background:var(--bx-light)}
 </style>
 </head>
 <body>
@@ -573,7 +608,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
       <div class="tb-brand">BE <b>ACTIV</b><span class="sep"> | </span><b>BILAN CRM</b></div>
       <div class="tb-right">
         <div class="tb-kpi"><div class="tb-kpi-v" id="tb-closing">—</div><div class="tb-kpi-l">closing</div></div>
-        <div class="ico-btn" onclick="openModal('cfg')">⚙️</div>
+        
       </div>
     </div>
 
@@ -795,6 +830,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="chip on" onclick="switchEditor('bilan',this)">📋 Bilan</div>
     <div class="chip" onclick="switchEditor('tests',this)">📏 Tests</div>
     <div class="chip" onclick="switchEditor('parcours',this)">🗺️ Parcours</div>
+    <div class="chip" onclick="switchEditor('suites',this)">🔀 Suites</div>
   </div>
   <div id="editor-bilan">
     <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
@@ -812,6 +848,14 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     </div>
     <p style="font-size:12px;color:var(--tx3);margin-bottom:12px">Badges <strong>90°</strong> / <strong>360°</strong> sur chaque section = choisir dans quel test elle apparaît.</p>
     <div id="tests-sections-editor"></div>
+  </div>
+  <div id="editor-suites" style="display:none">
+    <p style="font-size:13px;color:var(--tx3);margin-bottom:12px">Options proposées au coach après la certification d'un cycle. Modifiez, ajoutez ou supprimez les suites possibles.</p>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn btn-bx btn-sm" onclick="addSuiteOption()">＋ Ajouter une suite</button>
+      <button class="btn btn-dk btn-sm" onclick="resetSuiteOptions()">↩ Réinitialiser</button>
+    </div>
+    <div id="suites-editor-list"></div>
   </div>
   <div id="editor-parcours" style="display:none">
     <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
@@ -1180,17 +1224,18 @@ const PROFILS = {P1:'Je sais mais je n\'y arrive pas',P2:'Besoin d\'être guidé
 // OFFRES
 // ═══════════════════════════════════════════════════
 const OFFRES_DEFAULT = [
-  {id:'o1',name:'ACTIV RESET ONLINE',price:1350,durVal:12,durUnit:'semaines',paiement:1,test:'360'},
-  {id:'o2',name:'ACTIV RESET HYBRIDE',price:525,durVal:12,durUnit:'semaines',paiement:1,test:'360'},
-  {id:'o3',name:'ACTIV PROGRAM STANDARD',price:160,durVal:8,durUnit:'semaines',paiement:1,test:'90'},
-  {id:'o4',name:'JM PASS',price:240,durVal:1,durUnit:'mois',paiement:1,test:'90'},
-  {id:'o5',name:'JM PASS COACHING',price:250,durVal:1,durUnit:'mois',paiement:1,test:'90'},
-  {id:'o6',name:'JM PASS COACHING+',price:240,durVal:3,durUnit:'mois',paiement:1,test:'90'},
-  {id:'o7',name:'CARDIO MOUV PASS 4',price:45,durVal:4,durUnit:'séances',paiement:1,test:'none'},
-  {id:'o8',name:'CARDIO MOUV PACK 10',price:130,durVal:10,durUnit:'séances',paiement:1,test:'none'},
-  {id:'o9',name:'COACHING À LA CARTE',price:65,durVal:1,durUnit:'séance',paiement:1,test:'none'},
-  {id:'o10',name:'CARDIO MOUV ONE SHOT',price:15,durVal:1,durUnit:'séance',paiement:1,test:'none'},
-  {id:'o11',name:'ACTIV TRAINING',price:10,durVal:1,durUnit:'séance',paiement:1,test:'none'}
+  {id:'o1',name:'ACTIV RESET ONLINE',price:1350,durVal:12,durUnit:'semaines',paiement:3,test:'360',parcours:true,alaCarte:false},
+  {id:'o2',name:'ACTIV RESET HYBRIDE',price:525,durVal:12,durUnit:'semaines',paiement:2,test:'360',parcours:true,alaCarte:false},
+  {id:'o3',name:'ACTIV PROGRAM STANDARD',price:160,durVal:8,durUnit:'semaines',paiement:1,test:'90',parcours:true,alaCarte:false},
+  {id:'o_ac',name:'ACTIV CONTINUE',price:150,durVal:1,durUnit:'mois',paiement:1,test:'none',parcours:true,alaCarte:false,isAbonnement:true},
+  {id:'o4',name:'JM PASS',price:240,durVal:1,durUnit:'mois',paiement:1,test:'90',parcours:true,alaCarte:false},
+  {id:'o5',name:'JM PASS COACHING',price:250,durVal:1,durUnit:'mois',paiement:1,test:'90',parcours:true,alaCarte:false},
+  {id:'o6',name:'JM PASS COACHING+',price:240,durVal:3,durUnit:'mois',paiement:1,test:'90',parcours:true,alaCarte:false},
+  {id:'o7',name:'CARDIO MOUV PASS 4',price:45,durVal:4,durUnit:'séances',paiement:1,test:'none',parcours:true,alaCarte:false},
+  {id:'o8',name:'CARDIO MOUV PACK 10',price:130,durVal:10,durUnit:'séances',paiement:1,test:'none',parcours:true,alaCarte:false},
+  {id:'o9',name:'COACHING À LA CARTE',price:65,durVal:1,durUnit:'séance',paiement:1,test:'none',parcours:false,alaCarte:true},
+  {id:'o10',name:'CARDIO MOUV ONE SHOT',price:15,durVal:1,durUnit:'séance',paiement:1,test:'none',parcours:false,alaCarte:true},
+  {id:'o11',name:'ACTIV TRAINING',price:10,durVal:1,durUnit:'séance',paiement:1,test:'none',parcours:false,alaCarte:true}
 ];
 function loadOffres() {
   try { const s=localStorage.getItem('ba_offres_v8'); if(s) return JSON.parse(s); } catch(e){}
@@ -1452,31 +1497,96 @@ function renderTestsForm(programmeOverride) {
 // OFFRES PAGE
 // ═══════════════════════════════════════════════════
 function renderOffresPage() {
-  const offres=loadOffres(); const el=document.getElementById('offres-list'); if(!el)return;
-  el.innerHTML='';
-  offres.forEach(o => {
-    const div=document.createElement('div'); div.className='offre-card';
-    div.innerHTML=
-      '<div style="font-weight:700;font-size:14px;color:var(--tx);margin-bottom:12px">' + o.name + '</div>' +
-      '<div class="g2" style="gap:8px">' +
-      '<div class="f"><label>Nom de l\'offre</label><input type="text" value="' + o.name.replace(/"/g,'&quot;') + '" data-id="' + o.id + '" data-f="name" onchange="updateOffre(this)" style="font-size:13px"></div>' +
-      '<div class="f"><label>Prix total (€)</label><input type="number" value="' + o.price + '" data-id="' + o.id + '" data-f="price" onchange="updateOffre(this)" style="font-size:14px;font-weight:700"></div>' +
+  var offres = loadOffres();
+  var el = document.getElementById('offres-list');
+  if (!el) return;
+  el.innerHTML = '';
+
+  offres.forEach(function(o) {
+    var card = document.createElement('div');
+    card.className = 'offre-card-compact';
+    card.id = 'ocard_' + o.id;
+
+    // Badge tags
+    var tags = '';
+    if (o.parcours && !o.alaCarte) tags += '<span class="pill pill-G" style="font-size:9px">Parcours</span> ';
+    if (o.alaCarte) tags += '<span class="pill pill-Y" style="font-size:9px">À la carte</span> ';
+    if (o.isAbonnement) tags += '<span class="pill pill-B" style="font-size:9px">Abonnement</span> ';
+    if (o.paiement > 1) tags += '<span class="pill pill-V" style="font-size:9px">'+o.paiement+'× paiement</span> ';
+
+    card.innerHTML =
+      '<div class="occ-view" id="oview_'+o.id+'">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<div style="flex:1">' +
+            '<div style="font-weight:700;font-size:14px;color:var(--tx)">'+o.name+'</div>' +
+            '<div style="font-size:12px;color:var(--tx3);margin-top:2px">'+o.price+'€ · '+o.durVal+' '+o.durUnit+(o.paiement>1?' · '+o.paiement+'× paiement':'')+(o.isAbonnement?' · /mois':'')+'</div>' +
+            '<div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">'+tags+'</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;flex-shrink:0">' +
+            '<button class="btn btn-dk btn-sm" onclick="toggleOffreEdit(\''+o.id+'\')" style="padding:7px 12px">✏️</button>' +
+            '<button class="btn btn-R btn-sm" onclick="deleteOffre(\''+o.id+'\')" style="padding:7px 12px">✕</button>' +
+          '</div>' +
+        '</div>' +
       '</div>' +
-      '<div class="g3" style="gap:8px">' +
-      '<div class="f"><label>Durée (nb)</label><input type="number" value="' + (o.durVal||1) + '" min="1" data-id="' + o.id + '" data-f="durVal" onchange="updateOffre(this)" style="font-size:13px"></div>' +
-      '<div class="f"><label>Unité</label><select data-id="' + o.id + '" data-f="durUnit" onchange="updateOffre(this)">' +
-        ['séance','séances','jours','semaines','mois'].map(u=>'<option' + (o.durUnit===u?' selected':'') + '>' + u + '</option>').join('') +
-      '</select></div>' +
-      '<div class="f"><label>Paiement en</label><div style="display:flex;align-items:center;gap:5px"><input type="number" value="' + (o.paiement||1) + '" min="1" max="12" data-id="' + o.id + '" data-f="paiement" onchange="updateOffre(this)" style="font-size:13px"><span style="font-size:12px;color:var(--tx3);white-space:nowrap">fois</span></div></div>' +
-      '</div>' +
-      '<div style="font-size:12px;color:var(--tx3);margin-top:4px">Mensualité : <strong style="color:var(--bx)">' + ((o.price/(o.paiement||1))).toFixed(0) + '€</strong> × ' + (o.paiement||1) + '</div>' +
-      '<div class="f" style="margin-top:10px"><label>Test associé</label><select data-id="' + o.id + '" data-f="test" onchange="updateOffre(this)">' +
-      ['none|Aucun test','90|Test 90&deg; Essentiel','360|Test 360&deg; Complet'].map(function(opt){var p=opt.split('|');return'<option value="'+p[0]+'"'+((o.test||'none')===p[0]?' selected':'')+'>'+p[1]+'</option>';}).join('') +
-      '</select></div>' +
-      '<button class="btn btn-R btn-sm" data-del="' + o.id + '" onclick="deleteOffre(this.dataset.del)" style="margin-top:8px;align-self:flex-end">Supprimer</button>';
-    el.appendChild(div);
+      '<div class="occ-edit" id="oedit_'+o.id+'" style="display:none;padding-top:12px;border-top:1px solid var(--rim3);margin-top:12px">' +
+        '<div class="g2" style="gap:8px">' +
+          '<div class="f"><label>Nom</label><input type="text" id="oe_name_'+o.id+'" value="'+o.name.replace(/"/g,'&quot;')+'" onchange="saveOffreField(\''+o.id+'\',\'name\',this.value)"></div>' +
+          '<div class="f"><label>Prix (€)</label><input type="number" id="oe_price_'+o.id+'" value="'+o.price+'" onchange="saveOffreField(\''+o.id+'\',\'price\',this.value)"></div>' +
+        '</div>' +
+        '<div class="g3" style="gap:8px">' +
+          '<div class="f"><label>Durée</label><input type="number" id="oe_durVal_'+o.id+'" value="'+o.durVal+'" onchange="saveOffreField(\''+o.id+'\',\'durVal\',this.value)"></div>' +
+          '<div class="f"><label>Unité</label><select id="oe_durUnit_'+o.id+'" onchange="saveOffreField(\''+o.id+'\',\'durUnit\',this.value)">' +
+            ['séance','séances','jours','semaines','mois'].map(function(u){return '<option'+(o.durUnit===u?' selected':'')+'>'+u+'</option>';}).join('') +
+          '</select></div>' +
+          '<div class="f"><label>Paiement</label><div style="display:flex;align-items:center;gap:5px"><input type="number" id="oe_paiement_'+o.id+'" value="'+(o.paiement||1)+'" min="1" max="12" onchange="saveOffreField(\''+o.id+'\',\'paiement\',this.value)" style="width:60px"><span style="font-size:12px;color:var(--tx3)">fois</span></div></div>' +
+        '</div>' +
+        '<div class="g2" style="gap:8px;margin-top:4px">' +
+          '<div class="f"><label>Test associé</label><select id="oe_test_'+o.id+'" onchange="saveOffreField(\''+o.id+'\',\'test\',this.value)">' +
+            ['none|Aucun test','90|Test 90°','360|Test 360°'].map(function(opt){var p=opt.split('|');return '<option value="'+p[0]+'"'+(o.test===p[0]?' selected':'')+'>'+p[1]+'</option>';}).join('') +
+          '</select></div>' +
+          '<div class="f"><label>Type</label><select id="oe_type_'+o.id+'" onchange="saveOffreTypeField(\''+o.id+'\',this.value)">' +
+            '<option value="parcours"'+(o.parcours&&!o.alaCarte?' selected':'')+'>Parcours continu</option>' +
+            '<option value="alacarte"'+(o.alaCarte?' selected':'')+'>À la carte</option>' +
+            '<option value="abonnement"'+(o.isAbonnement?' selected':'')+'>Abonnement mensuel</option>' +
+          '</select></div>' +
+        '</div>' +
+        '<button class="btn btn-bx btn-sm" onclick="toggleOffreEdit(\''+o.id+'\')" style="margin-top:10px;width:100%">✓ Fermer</button>' +
+      '</div>';
+
+    el.appendChild(card);
   });
 }
+function toggleOffreEdit(id) {
+  var view = document.getElementById('oview_'+id);
+  var edit = document.getElementById('oedit_'+id);
+  var card = document.getElementById('ocard_'+id);
+  if (!view || !edit) return;
+  var isOpen = edit.style.display !== 'none';
+  edit.style.display = isOpen ? 'none' : 'block';
+  card.style.borderColor = isOpen ? '' : 'var(--bx)';
+}
+
+function saveOffreField(id, field, val) {
+  var offres = loadOffres();
+  var o = offres.find(function(x){return x.id===id;});
+  if (!o) return;
+  if (field === 'price' || field === 'durVal' || field === 'paiement') val = parseFloat(val)||0;
+  o[field] = val;
+  saveOffres(offres);
+  renderBilanOffresList();
+}
+
+function saveOffreTypeField(id, typeVal) {
+  var offres = loadOffres();
+  var o = offres.find(function(x){return x.id===id;});
+  if (!o) return;
+  o.parcours = typeVal === 'parcours' || typeVal === 'abonnement';
+  o.alaCarte = typeVal === 'alacarte';
+  o.isAbonnement = typeVal === 'abonnement';
+  saveOffres(offres);
+  renderBilanOffresList();
+}
+
 function updateOffre(input) {
   const id=input.dataset.id, field=input.dataset.f, val=input.value;
   const offres=loadOffres(); const o=offres.find(x=>x.id===id); if(!o)return;
@@ -1633,7 +1743,7 @@ function showPg(name) {
   if(name==='offres') renderOffresPage();
   if(name==='bilan'){renderBilanForm();renderBilanOffresList();}
   if(name==='tests') renderTestsForm();
-  if(name==='form-editor'){ renderSectionsEditor('bilan'); switchEditor('bilan', document.querySelector('#pg-form-editor .chip')); }
+  if(name==='form-editor'){ renderSectionsEditor('bilan'); switchEditor('bilan', document.querySelector('#pg-form-editor .chip')); renderSuitesEditor(); }
 }
 
 // ═══════════════════════════════════════════════════
@@ -2030,190 +2140,529 @@ function openFromSaved(){
 // ═══════════════════════════════════════════════════
 // PARCOURS CLIENT — PHASES
 // ═══════════════════════════════════════════════════
-const PHASES_C1 = [
-  {id:'rdv-bilan',    ico:'📅', lbl:'RDV Bilan',          days:0},
-  {id:'go-contrat',   ico:'✍️', lbl:'GO Contrat',          days:0},
-  {id:'contrat-signe',ico:'📄', lbl:'Contrat signé',       days:0},
-  {id:'paiement',     ico:'💳', lbl:'Paiement validé',     days:0},
-  {id:'tests',        ico:'📏', lbl:'Tests',               days:0},
-  {id:'onboarding',   ico:'🚀', lbl:'Onboarding',          days:0},
-  {id:'diag',         ico:'🔍', lbl:'Diagnostique',        days:0},
-  {id:'fondation',    ico:'🧱', lbl:'Fondation S1-S2',     days:14},
-  {id:'optim',        ico:'⚡', lbl:'Optimisation S3-S8',  days:42},
-  {id:'maintien',     ico:'🎯', lbl:'Maintien S9-S10',     days:14},
-  {id:'liberte',      ico:'🌟', lbl:'Liberté S11',         days:7},
-  {id:'retour',       ico:'🔄', lbl:'Retour S12',          days:7},
-  {id:'certified',    ico:'🏆', lbl:'CERTIFIED',           days:0, isCertified:true}
+// ═══════════════════════════════════════
+// PHASES — RESET / SCULPT / HEALTH
+// ═══════════════════════════════════════
+// Les phases C2/C3 partagent les mêmes étapes que C1
+// Le coach décide : continuer la phase ou certifier → suivante
+
+const PHASE_LABELS = {
+  reset:  {name:'PHASE RESET',  ico:'🔴', cert:'CERTIFIED RESET',  color:'var(--R)'},
+  sculpt: {name:'PHASE SCULPT', ico:'🟡', cert:'CERTIFIED SCULPT', color:'var(--Y)'},
+  health: {name:'PHASE HEALTH', ico:'🟢', cert:'CERTIFIED HEALTH', color:'var(--G)'},
+  cont:   {name:'ACTIV CONTINUE', ico:'♾️', cert:null, color:'var(--bx)', isContinue:true}
+};
+
+// Suites possibles après certification — modifiables dans l'éditeur
+// Chaque item: {key, label, ico, phaseKey}
+// phaseKey = null → même phase (offre libre)
+var SUITE_OPTIONS_DEFAULT = [
+  {key:'activ_reset_online',   label:'ACTIV RESET ONLINE',   ico:'🔴', phaseKey:'reset'},
+  {key:'activ_reset_hybride',  label:'ACTIV RESET HYBRIDE',  ico:'🔴', phaseKey:'reset'},
+  {key:'activ_program',        label:'ACTIV PROGRAM',        ico:'📗', phaseKey:'sculpt'},
+  {key:'activ_continue_sculpt',label:'ACTIV CONTINUE — SCULPT', ico:'🟡♾️', phaseKey:'sculpt'},
+  {key:'activ_continue_health',label:'ACTIV CONTINUE — HEALTH', ico:'🟢♾️', phaseKey:'health'},
+  {key:'activ_continue_reset', label:'ACTIV CONTINUE — RESET',  ico:'🔴♾️', phaseKey:'reset'},
+  {key:'jm_pass_coaching',     label:'JM PASS COACHING',     ico:'💪', phaseKey:null},
+  {key:'cardio_mouv',          label:'CARDIO MOUV Pass/Pack', ico:'🎵', phaseKey:null},
+  {key:'activ_training',       label:'ACTIV TRAINING',       ico:'⚡', phaseKey:null}
 ];
-const PHASES_C2 = [
-  {id:'rediag',       ico:'🔍', lbl:'Re-Diagnostique',    days:7},
-  {id:'reoptim',      ico:'⚡', lbl:'Ré-Optimisation',    days:42},
-  {id:'remaintien',   ico:'🎯', lbl:'Re-Maintien',        days:14},
-  {id:'retour2',      ico:'🔄', lbl:'Retour & Fin 2',     days:7},
-  {id:'certified2',   ico:'🏆', lbl:'CERTIFIED 2',        days:0, isCertified:true}
+
+function loadSuiteOptions() {
+  try { var s=localStorage.getItem('ba_suite_opts'); if(s) return JSON.parse(s); } catch(e){}
+  return SUITE_OPTIONS_DEFAULT.map(function(o){return Object.assign({},o);});
+}
+function saveSuiteOptions(arr) { localStorage.setItem('ba_suite_opts', JSON.stringify(arr)); }
+
+
+// Étapes communes à toutes les phases (personnalisables dans l'éditeur)
+const PHASES_BASE = [
+  {id:'rdv-bilan',     ico:'📅', lbl:'RDV Bilan',         days:0},
+  {id:'go-contrat',    ico:'✍️', lbl:'GO Contrat',         days:0},
+  {id:'contrat-signe', ico:'📄', lbl:'Contrat signé',      days:0},
+  {id:'paiement',      ico:'💳', lbl:'Paiement validé',    days:0},
+  {id:'tests',         ico:'📏', lbl:'Tests physiques',    days:0},
+  {id:'onboarding',    ico:'🚀', lbl:'Onboarding',         days:0},
+  {id:'diag',          ico:'🔍', lbl:'Diagnostique',       days:0},
+  {id:'fondation',     ico:'🧱', lbl:'Fondation S1-S2',    days:14},
+  {id:'optim',         ico:'⚡', lbl:'Optimisation S3-S8', days:42},
+  {id:'maintien',      ico:'🎯', lbl:'Maintien S9-S10',    days:14},
+  {id:'liberte',       ico:'🌟', lbl:'Liberté S11',        days:7},
+  {id:'retour',        ico:'🔄', lbl:'Retour S12',         days:7},
+  {id:'certified',     ico:'🏆', lbl:'Certification',      days:0, isCert:true}
 ];
+
+const PHASES_CONTINUE = [
+  {id:'cont_suivi',    ico:'♾️', lbl:'Suivi mensuel',      days:30, isContinue:true},
+  {id:'cont_bilan',    ico:'📊', lbl:'Bilan progression',  days:30, isContinue:true},
+  {id:'cont_renouv',   ico:'🔁', lbl:'Renouvellement',     days:30, isContinue:true}
+];
+
+// Rétro-compat (utilisé dans quelques endroits)
+// PHASES_C1 alias removed (use PHASES_BASE)
+// PHASES_C2 alias removed (use PHASES_BASE)
 
 function getClientPhasesAll(c) {
-  const cycle = c.cycle || 1;
-  if (cycle >= 2) return [...PHASES_C1, ...PHASES_C2];
-  return [...PHASES_C1];
+  // Chaque "run" de phase = un bloc d'étapes PHASES_BASE
+  // c.phaseRuns = [{phaseKey:'reset'|'sculpt'|'health'|'cont', certified:bool, offreId, jaugeVal}]
+  if (!c.phaseRuns || c.phaseRuns.length === 0) {
+    c.phaseRuns = [{phaseKey:'reset', certified:false, offreId:null, jaugeVal:0}];
+  }
+  var all = [];
+  var customBase = loadPhasesCustom().base || PHASES_BASE;
+  c.phaseRuns.forEach(function(run, ri) {
+    customBase.forEach(function(p) {
+      all.push(Object.assign({}, p, {
+        id: p.id+'_r'+ri,
+        runIdx: ri,
+        phaseKey: run.phaseKey
+      }));
+    });
+  });
+  // Si dernier run est certifié ET phase != health → les phases suivantes sont disponibles via activateCycle2
+  return all;
 }
 
+
 function renderClientModal(id) {
-  const c = ST.clients.find(function(x){ return x.id == id; });
+  var c = ST.clients.find(function(x){ return x.id == id; });
   if (!c) return;
 
-  const allPhases = getClientPhasesAll(c);
-  if (!c.phases || c.phases.length < PHASES_C1.length) {
-    c.phases = allPhases.map(function(p){ return {id:p.id, done:false, startDate:null}; });
+  // Migrate ancien format vers phaseRuns
+  if (!c.phaseRuns || c.phaseRuns.length === 0) {
+    c.phaseRuns = [{phaseKey:'reset', certified:false, offreId:c['offreC1']||null, jaugeVal:c['jaugeC1']||0}];
+    if ((c.cycle||1) >= 2) c.phaseRuns.push({phaseKey:'sculpt', certified:false, offreId:c['offreC2']||null, jaugeVal:c['jaugeC2']||0});
+    if ((c.cycle||1) >= 3) c.phaseRuns.push({phaseKey:'health', certified:false, offreId:c['offreC3']||null, jaugeVal:c['jaugeC3']||0});
   }
+
+  var allPhases = getClientPhasesAll(c);
+  if (!c.phases) c.phases = [];
   while (c.phases.length < allPhases.length) {
-    c.phases.push({id: allPhases[c.phases.length].id, done:false, startDate:null});
+    var ph2 = allPhases[c.phases.length];
+    c.phases.push({id:ph2.id, done:false, startDate:null});
   }
 
-  const doneCount = c.phases.filter(function(p){ return p.done; }).length;
-  const pct = Math.round(doneCount / allPhases.length * 100);
-  const currentIdx = c.phases.reduce(function(acc,p,i){ return p.done ? i+1 : acc; }, 0);
-  const isCertified = c.phases[PHASES_C1.length-1] && c.phases[PHASES_C1.length-1].done;
+  var doneCount = c.phases.filter(function(p){return p.done;}).length;
+  var pct = allPhases.length > 0 ? Math.round(doneCount / allPhases.length * 100) : 0;
+  var currentIdx = c.phases.reduce(function(acc,p,i){return p.done?i+1:acc;}, 0);
+  var currentRunIdx = c.phaseRuns.length - 1;
+  var currentRun = c.phaseRuns[currentRunIdx];
+  var currentPhaseKey = currentRun ? currentRun.phaseKey : 'reset';
+  var pl = PHASE_LABELS[currentPhaseKey] || PHASE_LABELS.reset;
 
-  const container = document.getElementById('m-client-body');
+  var container = document.getElementById('m-client-body');
   container.innerHTML = '';
 
   // Title
-  const title = document.createElement('div');
-  title.className = 'mdl-t';
-  title.innerHTML = c.prenom + ' ' + c.nom;
-  const closeBtn = document.createElement('button');
-  closeBtn.className = 'mdl-x';
-  closeBtn.textContent = '✕';
+  var titleEl = document.createElement('div');
+  titleEl.className = 'mdl-t';
+  titleEl.innerHTML = c.prenom + ' ' + c.nom;
+  var closeBtn = document.createElement('button');
+  closeBtn.className = 'mdl-x'; closeBtn.textContent = '✕';
   closeBtn.onclick = function(){ closeModal('client'); };
-  title.appendChild(closeBtn);
-  container.appendChild(title);
+  titleEl.appendChild(closeBtn);
+  container.appendChild(titleEl);
+
+  // Phase courante badge
+  var phaseBadge = document.createElement('div');
+  phaseBadge.style.cssText = 'display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:50px;border:1.5px solid var(--rim);background:rgba(139,21,32,.05);margin-bottom:10px';
+  phaseBadge.innerHTML = '<span style="font-size:18px">'+pl.ico+'</span>'
+    + '<div><div style="font-weight:700;font-size:13px;color:var(--bx)">'+pl.name+'</div>'
+    + '<div style="font-size:10px;color:var(--tx3)">Run '+c.phaseRuns.length+' · '+(currentRun&&currentRun.certified?'Certifié':'En cours')+'</div></div>';
+  container.appendChild(phaseBadge);
 
   // Pills
-  const pills = document.createElement('div');
-  pills.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;margin-bottom:11px';
-  const sp = {'Closé':'pill-G','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R'};
+  var pills = document.createElement('div');
+  pills.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px';
+  var sp = {'Closé':'pill-G','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R'};
   if (c.profil_code) pills.innerHTML += '<span class="pill pill-bx">'+c.profil_code+'</span>';
   if (c.statut) pills.innerHTML += '<span class="pill '+(sp[c.statut]||'')+'">'+c.statut+'</span>';
   if (c.montant) pills.innerHTML += '<span class="pill pill-Y">'+c.montant+'€</span>';
-  pills.innerHTML += '<span class="pill pill-B">'+pct+'% accompli</span>';
-  if ((c.cycle||1) >= 2) pills.innerHTML += '<span class="cycle-badge">🔄 Cycle 2</span>';
+  pills.innerHTML += '<span class="pill pill-B">'+pct+'%</span>';
+
+  // Certs obtenues
+  var certs = c.phaseRuns.filter(function(r){return r.certified;});
+  if (certs.length > 0) {
+    certs.forEach(function(r) {
+      var pl2 = PHASE_LABELS[r.phaseKey];
+      if (pl2 && pl2.cert) pills.innerHTML += '<span class="pill pill-G" style="font-size:9px">🏆 '+pl2.cert+'</span>';
+    });
+  }
   container.appendChild(pills);
 
-  // Progress bar
-  const pbar = document.createElement('div');
+  // Duo/groupe liens
+  if (c.linkedClients && c.linkedClients.length > 0) {
+    var duoDiv = document.createElement('div');
+    duoDiv.style.cssText = 'background:rgba(26,110,219,.05);border:1.5px solid rgba(26,110,219,.18);border-radius:var(--r2);padding:10px 12px;margin-bottom:10px;font-size:12px';
+    var linkedNames = c.linkedClients.map(function(lid) {
+      var linked = ST.clients.find(function(x){return x.id===lid;});
+      return linked ? linked.prenom+' '+linked.nom : '—';
+    }).join(', ');
+    duoDiv.innerHTML = '<span style="font-weight:700;color:var(--B)">👥 Duo/Groupe avec : </span>' + linkedNames
+      + (c.groupeOffre ? ' <span style="color:var(--tx3)">· '+c.groupeOffre+'</span>' : '');
+    container.appendChild(duoDiv);
+  }
+
+  // Barre globale
+  var pbar = document.createElement('div');
   pbar.className = 'parcours-pct';
   pbar.innerHTML = '<div class="parcours-pct-fill" style="width:'+pct+'%"></div>';
   container.appendChild(pbar);
 
-  // Thermomètre label
-  const thLabel = document.createElement('div');
-  thLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin:12px 0 8px';
-  thLabel.textContent = '🗺️ Parcours client';
-  container.appendChild(thLabel);
+  // Toggle anciens runs
+  var toggleBtn = document.createElement('button');
+  toggleBtn.className = 'btn btn-dk btn-sm';
+  toggleBtn.style.cssText = 'margin:10px 0 8px;font-size:11px';
+  toggleBtn.textContent = 'Afficher tous les runs ('+c.phaseRuns.length+')';
+  var allVisible = false;
+  toggleBtn.onclick = function() {
+    allVisible = !allVisible;
+    container.querySelectorAll('.cycle-body').forEach(function(b) {
+      var isLast = b.dataset.runIdx == (c.phaseRuns.length-1).toString();
+      b.classList.toggle('open', allVisible || isLast);
+    });
+    toggleBtn.textContent = allVisible
+      ? 'Masquer anciens runs'
+      : 'Afficher tous les runs ('+c.phaseRuns.length+')';
+  };
+  container.appendChild(toggleBtn);
 
-  // Thermomètre
-  const wrap = document.createElement('div');
-  wrap.className = 'parcours-wrap';
-  const steps = document.createElement('div');
-  steps.className = 'parcours-steps';
+  // === UN ACCORDÉON PAR RUN ===
+  var customBase = loadPhasesCustom().base || PHASES_BASE;
+  var phaseOffset = 0;
 
-  allPhases.forEach(function(ph, i) {
-    if (ph.id === 'rediag') {
-      const sep = document.createElement('div');
-      sep.className = 'ps-sep';
-      sep.innerHTML = '<div class="ps-sep-line"></div><div class="ps-sep-lbl">C2</div><div class="ps-sep-line"></div>';
-      steps.appendChild(sep);
+  c.phaseRuns.forEach(function(run, ri) {
+    var pl3 = PHASE_LABELS[run.phaseKey] || PHASE_LABELS.reset;
+    var isLast = ri === c.phaseRuns.length - 1;
+    var runPhases = customBase.map(function(p){
+      return Object.assign({}, p, {id:p.id+'_r'+ri, runIdx:ri, phaseKey:run.phaseKey});
+    });
+    var runDone = runPhases.filter(function(_,i){
+      return c.phases[phaseOffset+i] && c.phases[phaseOffset+i].done;
+    }).length;
+    var runPct = Math.round(runDone/runPhases.length*100);
+
+    var sec = document.createElement('div');
+    sec.className = 'cycle-section';
+
+    var hd = document.createElement('div');
+    hd.className = 'cycle-header' + (isLast ? ' active-cycle' : '');
+    hd.onclick = function(){
+      var body = sec.querySelector('.cycle-body');
+      body.classList.toggle('open');
+    };
+
+    var offres = loadOffres();
+    var runOffre = run.offreId ? offres.find(function(o){return o.id===run.offreId;}) : null;
+    var offresub = runOffre ? runOffre.name+' · '+runOffre.price+'€' : 'Aucune offre';
+
+    hd.innerHTML = '<div class="cycle-header-ico">'+pl3.ico+'</div>'
+      + '<div class="cycle-header-info">'
+      + '<div class="cycle-header-title">'+pl3.name+' — Run '+(ri+1)+(isLast?' <span style="font-size:9px;background:var(--bx);color:#fff;padding:2px 6px;border-radius:50px;margin-left:4px">ACTUEL</span>':'')+(run.certified?' <span style="font-size:9px;background:var(--G);color:#fff;padding:2px 6px;border-radius:50px;margin-left:4px">🏆</span>':'')+'</div>'
+      + '<div class="cycle-header-sub">'+offresub+' · '+runDone+'/'+runPhases.length+' étapes</div>'
+      + '<div class="cycle-progress"><div class="cycle-progress-fill" style="width:'+runPct+'%"></div></div>'
+      + '</div>'
+      + '<span style="color:var(--tx4);font-size:11px;margin-left:4px">▼</span>';
+    sec.appendChild(hd);
+
+    var body = document.createElement('div');
+    body.className = 'cycle-body' + (isLast ? ' open' : '');
+    body.dataset.runIdx = ri;
+
+    // Sélecteur offre
+    var offreRow = document.createElement('div');
+    offreRow.style.cssText = 'margin-bottom:11px';
+    var offreLbl = document.createElement('label');
+    offreLbl.textContent = 'Offre de ce run';
+    offreRow.appendChild(offreLbl);
+    var offreSel = document.createElement('select');
+    offreSel.style.marginTop = '5px';
+    offreSel.innerHTML = '<option value="">— Choisir —</option>';
+    offres.filter(function(o){return o.parcours||o.isAbonnement;}).forEach(function(o){
+      var opt = document.createElement('option');
+      opt.value = o.id;
+      opt.textContent = o.name+' — '+o.price+'€ · '+o.durVal+' '+o.durUnit;
+      if (run.offreId === o.id) opt.selected = true;
+      offreSel.appendChild(opt);
+    });
+    var capturedRi = ri;
+    offreSel.onchange = function() {
+      c.phaseRuns[capturedRi].offreId = this.value;
+      c.updated_at = new Date().toISOString();
+      localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+      renderClientModal(id);
+    };
+    offreRow.appendChild(offreSel);
+    body.appendChild(offreRow);
+
+    // Jauge offre
+    if (run.offreId) {
+      var selOffre = offres.find(function(o){return o.id===run.offreId;});
+      if (selOffre) {
+        var jv = run.jaugeVal || 0;
+        var jpct = Math.min(100, Math.round(jv/selOffre.durVal*100));
+        var capturedRi2 = ri;
+        var jDiv = document.createElement('div');
+        jDiv.className = 'offre-jauge';
+        jDiv.innerHTML = '<div class="offre-jauge-top">'
+          + '<div class="offre-jauge-name">'+selOffre.name+'</div>'
+          + '<div class="offre-jauge-pct" id="jpct_'+ri+'">'+jv+'/'+selOffre.durVal+' '+selOffre.durUnit+'</div>'
+          + '</div>'
+          + '<div class="offre-jauge-bar"><div class="offre-jauge-fill" id="jfill_'+ri+'" style="width:'+jpct+'%"></div></div>'
+          + '<div class="offre-jauge-controls">'
+          + '<button class="jauge-btn" data-ri="'+ri+'" data-cid="'+id+'" data-d="-1" onclick="updateJaugeRun(this)">−</button>'
+          + '<span style="font-size:12px;color:var(--tx3);flex:1;text-align:center">'+jpct+'% accompli</span>'
+          + '<button class="jauge-btn" data-ri="'+ri+'" data-cid="'+id+'" data-d="1" onclick="updateJaugeRun(this)">＋</button>'
+          + '</div>';
+        body.appendChild(jDiv);
+      }
     }
-    const isDone = c.phases[i] && c.phases[i].done;
-    const isActive = i === currentIdx;
-    const cls = isDone ? 'done' : isActive ? 'active' : 'locked';
-    const ps = document.createElement('div');
-    ps.className = 'ps ' + cls;
-    ps.title = ph.lbl + (ph.days > 0 ? ' (' + ph.days + 'j)' : '');
-    ps.dataset.idx = i;
-    ps.dataset.cid = id;
-    ps.onclick = function(){ togglePhase(this.dataset.cid, parseInt(this.dataset.idx)); };
-    ps.innerHTML = '<div class="ps-dot">' + (isDone ? '✓' : ph.ico) + '</div>' +
-      '<div class="ps-lbl">' + ph.lbl + (ph.days > 0 ? '<br><span style="color:var(--bx3);font-size:7px">'+ph.days+'j</span>' : '') + '</div>';
-    steps.appendChild(ps);
+
+    // Thermomètre
+    var thLabel = document.createElement('div');
+    thLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin:10px 0 8px';
+    thLabel.textContent = 'Étapes du run';
+    body.appendChild(thLabel);
+
+    var wrap = document.createElement('div');
+    wrap.className = 'parcours-wrap';
+    var steps = document.createElement('div');
+    steps.className = 'parcours-steps';
+    var capturedOffset = phaseOffset;
+
+    runPhases.forEach(function(ph, i) {
+      var gi = capturedOffset + i;
+      var isDone = c.phases[gi] && c.phases[gi].done;
+      var isActive = gi === currentIdx;
+      var ps = document.createElement('div');
+      ps.className = 'ps ' + (isDone?'done':isActive?'active':'locked');
+      ps.title = ph.lbl+(ph.days>0?' ('+ph.days+'j)':'');
+      ps.dataset.gi = gi; ps.dataset.cid = id;
+      ps.onclick = function(){ togglePhase(this.dataset.cid, parseInt(this.dataset.gi)); };
+      ps.innerHTML = '<div class="ps-dot">'+(isDone?'✓':ph.ico)+'</div>'
+        +'<div class="ps-lbl">'+ph.lbl+(ph.days>0?'<br><span style="color:var(--bx3);font-size:7px">'+ph.days+'j</span>':'')+'</div>';
+      steps.appendChild(ps);
+    });
+    wrap.appendChild(steps);
+    body.appendChild(wrap);
+
+    // Certification automatique + choix de trajectoire
+    if (isLast) {
+      var lastPhDone = c.phases[capturedOffset+runPhases.length-1] && c.phases[capturedOffset+runPhases.length-1].done;
+      if (lastPhDone) {
+        // Auto-certifier RESET uniquement
+        // SCULPT/HEALTH = certification manuelle après 3 mois
+        var isReset = run.phaseKey === 'reset';
+        var isContinuePhase = pl3.isContinue;
+        var minDays = 90; // 3 mois minimum pour certifier sculpt/health
+
+        // Calculer le nombre de jours depuis le démarrage du run
+        var runStartDate = (c.phases[capturedOffset] && c.phases[capturedOffset].startDate)
+          ? new Date(c.phases[capturedOffset].startDate)
+          : null;
+        var daysSinceStart = runStartDate
+          ? Math.floor((new Date() - runStartDate) / (1000*60*60*24))
+          : 999;
+        var minReached = daysSinceStart >= minDays;
+
+        if (isReset && !run.certified) {
+          // Auto-certifier Reset
+          run.certified = true;
+          c.updated_at = new Date().toISOString();
+          localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+        }
+        var isContinuePhase = pl3.isContinue;
+        var actionDiv = document.createElement('div');
+        actionDiv.style.cssText = 'margin-top:12px;background:rgba(139,21,32,.05);border:1.5px solid var(--bx);border-radius:var(--r);padding:14px;text-align:center';
+
+        // Certification — Reset auto, Sculpt/Health manuel après 3 mois
+        if (!isReset && !run.certified) {
+          // Sculpt ou Health : afficher statut + bouton certifier si 3 mois atteints
+          var daysLeft = Math.max(0, minDays - daysSinceStart);
+          if (!minReached) {
+            // Pas encore 3 mois — afficher le compte à rebours
+            actionDiv.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--bx);margin-bottom:6px">'
+              + pl3.ico + ' Toutes les étapes complètes !</div>'
+              + '<div style="font-size:12px;color:var(--tx3);margin-bottom:10px">Certification disponible dans <strong style="color:var(--bx)">'
+              + daysLeft + ' jour'+(daysLeft>1?'s':'')+'</strong> (3 mois minimum requis)</div>'
+              + '<div class="sbar" style="margin-bottom:0"><div class="sfill" style="width:'
+              + Math.round(daysSinceStart/minDays*100)+'%;background:var(--bx)"></div></div>';
+            body.appendChild(actionDiv);
+            return;
+          }
+          // 3 mois atteints — bouton certifier manuel
+          actionDiv.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--bx);margin-bottom:10px">'
+            + pl3.ico + ' 3 mois atteints — Certification disponible</div>';
+          var certBtn = document.createElement('button');
+          certBtn.className = 'btn btn-bx btn-w btn-sm';
+          certBtn.style.marginBottom = '12px';
+          certBtn.textContent = '🏆 Certifier ' + (pl3.cert || pl3.name);
+          certBtn.dataset.cid = id;
+          certBtn.onclick = function(){
+            var cc = ST.clients.find(function(x){return x.id==this.dataset.cid;}.bind(this));
+            if (cc && cc.phaseRuns) {
+              cc.phaseRuns[cc.phaseRuns.length-1].certified = true;
+              cc.updated_at = new Date().toISOString();
+              localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+              toast('ok', '🏆 ' + (pl3.cert||'Certification') + ' obtenue !');
+            }
+            renderClientModal(this.dataset.cid);
+          };
+          actionDiv.appendChild(certBtn);
+          body.appendChild(actionDiv);
+          return;
+        }
+
+        // Certified (auto Reset ou manuel Sculpt/Health) — afficher les suites
+        var certHtml = pl3.cert
+          ? '<div style="font-size:15px;font-weight:800;color:var(--bx);margin-bottom:3px">🏆 '+pl3.cert+'</div>'
+            + '<div style="font-size:11.5px;color:var(--tx3);margin-bottom:12px">Choisir la suite :</div>'
+          : '<div style="font-size:13px;font-weight:700;color:var(--bx);margin-bottom:12px">'+pl3.ico+' Choisir la suite :</div>';
+        actionDiv.innerHTML = certHtml;
+
+        var suites = loadSuiteOptions();
+        suites.forEach(function(s) {
+          var btn = document.createElement('button');
+          btn.className = 'btn btn-dk btn-w btn-sm';
+          btn.style.cssText = 'margin-bottom:7px;text-align:left;justify-content:flex-start';
+          btn.textContent = s.ico+' '+s.label;
+          btn.dataset.cid = id;
+          btn.dataset.suitekey = s.key;
+          btn.dataset.phasekeyval = s.phaseKey || run.phaseKey;
+          btn.onclick = function(){
+            activateCycle2(this.dataset.cid, 'suite', {
+              suiteKey: this.dataset.suitekey,
+              phaseKey: this.dataset.phasekeyval
+            });
+          };
+          actionDiv.appendChild(btn);
+        });
+
+        body.appendChild(actionDiv);
+      }
+    }
+
+    sec.appendChild(body);
+    container.appendChild(sec);
+    phaseOffset += runPhases.length;
   });
 
-  wrap.appendChild(steps);
-  container.appendChild(wrap);
+  // Statut
+  var statutLabel = document.createElement('div');
+  statutLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin:12px 0 8px';
+  statutLabel.textContent = 'Statut commercial';
+  container.appendChild(statutLabel);
+  var statutWrap = document.createElement('div');
+  statutWrap.style.cssText = 'display:flex;flex-direction:column;gap:7px;margin-bottom:13px';
+  ['Non closé','Closé','À relancer','Refusé'].forEach(function(s) {
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-dk btn-w btn-sm';
+    btn.textContent = s;
+    btn.style.borderColor = c.statut===s ? 'var(--bx)' : 'var(--rim3)';
+    btn.style.fontWeight = c.statut===s ? '700' : '400';
+    btn.dataset.statut = s; btn.dataset.cid = id;
+    btn.onclick = function(){ updateStatutParcours(this.dataset.cid, this.dataset.statut); };
+    statutWrap.appendChild(btn);
+  });
+  container.appendChild(statutWrap);
 
-  // Note
-  const note = document.createElement('p');
-  note.style.cssText = 'font-size:11px;color:var(--tx3);font-style:italic;margin-bottom:13px';
-  note.textContent = 'Appuyez sur une étape pour valider / dévalider.';
-  container.appendChild(note);
+  // Lier à un autre client
+  var duoSection = document.createElement('div');
+  duoSection.style.cssText = 'margin-bottom:13px';
+  var duoLabel = document.createElement('div');
+  duoLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px';
+  duoLabel.textContent = '👥 Coaching Duo / Groupe';
+  duoSection.appendChild(duoLabel);
+  var duoSel = document.createElement('select');
+  duoSel.style.marginBottom = '7px';
+  duoSel.innerHTML = '<option value="">— Lier à un client —</option>';
+  ST.clients.filter(function(x){return x.id!==id;}).forEach(function(x){
+    var opt = document.createElement('option');
+    opt.value = x.id;
+    opt.textContent = x.prenom+' '+x.nom+(x.ville?' · '+x.ville:'');
+    if (c.linkedClients && c.linkedClients.includes(x.id)) opt.selected = true;
+    duoSel.appendChild(opt);
+  });
+  duoSel.onchange = function() {
+    if (!this.value) return;
+    if (!c.linkedClients) c.linkedClients = [];
+    if (!c.linkedClients.includes(this.value)) {
+      c.linkedClients.push(this.value);
+      // Lier aussi l'autre
+      var other = ST.clients.find(function(x){return x.id===duoSel.value;});
+      if (other) { if(!other.linkedClients) other.linkedClients=[]; if(!other.linkedClients.includes(id)) other.linkedClients.push(id); }
+      c.updated_at = new Date().toISOString();
+      localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+      toast('ok', 'Lien créé');
+      renderClientModal(id);
+    }
+  };
+  duoSection.appendChild(duoSel);
 
-  // Étape en cours
-  const curPh = allPhases[Math.min(currentIdx, allPhases.length-1)];
-  const curPhaseData = c.phases[Math.min(currentIdx, allPhases.length-1)];
-  const isGoContrat = currentIdx === 1;
-
-  const etapeLabel = document.createElement('div');
-  etapeLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px';
-  etapeLabel.textContent = '📍 Étape en cours';
-  container.appendChild(etapeLabel);
-
-  const etapeCard = document.createElement('div');
-  etapeCard.className = 'card card-bx';
-  etapeCard.style.marginBottom = '13px';
-  const startInfo = curPhaseData && curPhaseData.startDate
-    ? 'Démarré le ' + curPhaseData.startDate
-    : 'Non démarré';
-  etapeCard.innerHTML = '<div style="font-weight:700;font-size:14px;color:var(--bx)">' + curPh.ico + ' ' + curPh.lbl +
-    (curPh.days > 0 ? '<span style="font-size:11px;font-weight:400;color:var(--tx3);margin-left:6px">'+curPh.days+' jours</span>' : '') +
-    '</div><div style="font-size:11.5px;color:var(--tx3);margin-top:4px">' + startInfo + '</div>';
-  if (isGoContrat) {
-    const goBtn = document.createElement('a');
-    goBtn.href = 'https://tally.so/r/2EkbGb';
-    goBtn.target = '_blank';
-    goBtn.className = 'btn btn-bx btn-w btn-sm';
-    goBtn.style.cssText = 'margin-top:10px;text-decoration:none;display:flex';
-    goBtn.textContent = '📝 GO CONTRAT ACTIV →';
-    etapeCard.appendChild(goBtn);
+  if (c.linkedClients && c.linkedClients.length > 0) {
+    c.linkedClients.forEach(function(lid) {
+      var linked = ST.clients.find(function(x){return x.id===lid;});
+      if (!linked) return;
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg3);border-radius:var(--r3);margin-bottom:5px;font-size:13px';
+      row.innerHTML = '<span style="font-size:16px">👤</span><span style="flex:1;font-weight:600">'+linked.prenom+' '+linked.nom+'</span>'
+        + '<span style="font-size:11px;color:var(--tx3)">'+(linked.statut||'')+'</span>';
+      var unlinkBtn = document.createElement('button');
+      unlinkBtn.className = 'ffe-btn';
+      unlinkBtn.textContent = '✕';
+      unlinkBtn.dataset.lid = lid;
+      unlinkBtn.dataset.cid = id;
+      unlinkBtn.onclick = function(){
+        c.linkedClients = c.linkedClients.filter(function(x){return x!==this.dataset.lid;}.bind(this));
+        var other2 = ST.clients.find(function(x){return x.id===this.dataset.lid;}.bind(this));
+        if(other2 && other2.linkedClients) other2.linkedClients=other2.linkedClients.filter(function(x){return x!==id;});
+        localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+        renderClientModal(id);
+      };
+      row.appendChild(unlinkBtn);
+      duoSection.appendChild(row);
+    });
   }
-  container.appendChild(etapeCard);
+  container.appendChild(duoSection);
 
-  // Cycle 2 — activation ou recommencer
-  // Cycle 2
-  var c2Certified = (c.cycle||1) >= 2
-    && c.phases[PHASES_C1.length + PHASES_C2.length - 1]
-    && c.phases[PHASES_C1.length + PHASES_C2.length - 1].done;
-
-  if (isCertified && (c.cycle||1) < 2) {
-    var c2div = document.createElement('div');
-    c2div.style.cssText = 'background:rgba(139,21,32,.06);border:1.5px solid var(--rim);border-radius:var(--r);padding:12px;margin-bottom:13px;text-align:center';
-    c2div.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--bx);margin-bottom:8px">Certified ! Continuer en Cycle 2 ?</div>';
-    var c2btn = document.createElement('button');
-    c2btn.className = 'btn btn-bx btn-sm';
-    c2btn.textContent = 'Activer Cycle 2';
-    c2btn.dataset.cid = id;
-    c2btn.onclick = function(){ activateCycle2(this.dataset.cid); };
-    c2div.appendChild(c2btn);
-    container.appendChild(c2div);
-  } else if (c2Certified) {
-    var rc2 = document.createElement('div');
-    rc2.style.cssText = 'background:rgba(139,21,32,.06);border:1.5px solid var(--rim);border-radius:var(--r);padding:12px;margin-bottom:13px;text-align:center';
-    rc2.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--bx);margin-bottom:4px">Cycle 2 termine !</div><div style="font-size:11.5px;color:var(--tx3);margin-bottom:8px">La personne peut recommencer un nouveau cycle 2.</div>';
-    var rc2btn = document.createElement('button');
-    rc2btn.className = 'btn btn-bx btn-sm';
-    rc2btn.textContent = 'Recommencer Cycle 2';
-    rc2btn.dataset.cid = id;
-    rc2btn.onclick = function(){ restartCycle2(this.dataset.cid); };
-    rc2.appendChild(rc2btn);
-    container.appendChild(rc2);
+  // CTA rapport
+  var brow2 = document.createElement('div');
+  brow2.className = 'brow';
+  if (c.final_report) {
+    var rBtn = document.createElement('button');
+    rBtn.className='btn btn-bx btn-w'; rBtn.textContent='Voir rapport →';
+    rBtn.onclick=function(){closeModal('client');openFromSaved();};
+    brow2.appendChild(rBtn);
+  } else {
+    var bBtn = document.createElement('button');
+    bBtn.className='btn btn-dk btn-w'; bBtn.textContent='Compléter le bilan →';
+    bBtn.onclick=function(){closeModal('client');showPg('bilan');};
+    brow2.appendChild(bBtn);
   }
-
-  container.appendChild(brow);
-
+  container.appendChild(brow2);
   openModal('client');
 }
 
+
+function updateJaugeRun(btn) {
+  var clientId = btn.dataset.cid;
+  var ri = parseInt(btn.dataset.ri);
+  var delta = parseInt(btn.dataset.d)||0;
+  var c = ST.clients.find(function(x){return x.id==clientId;});
+  if (!c || !c.phaseRuns || !c.phaseRuns[ri]) return;
+  var run = c.phaseRuns[ri];
+  var offres = loadOffres();
+  var selOffre = offres.find(function(o){return o.id===run.offreId;});
+  if (!selOffre) return;
+  run.jaugeVal = Math.max(0, Math.min(selOffre.durVal, (run.jaugeVal||0) + delta));
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  var pct = Math.min(100, Math.round(run.jaugeVal/selOffre.durVal*100));
+  var fillEl = document.getElementById('jfill_'+ri);
+  var pctEl = document.getElementById('jpct_'+ri);
+  if(fillEl) fillEl.style.width = pct+'%';
+  if(pctEl) pctEl.textContent = run.jaugeVal+'/'+selOffre.durVal+' '+selOffre.durUnit;
+}
 
 function togglePhase(clientId, phaseIndex) {
   const c = ST.clients.find(x => x.id == clientId);
@@ -2234,37 +2683,49 @@ function togglePhase(clientId, phaseIndex) {
   renderClientModal(clientId);
 }
 
-function activateCycle2(clientId) {
-  var c = ST.clients.find(function(x){ return x.id==clientId; });
-  if(!c) return;
-  c.cycle = 2;
-  var total = PHASES_C1.length + PHASES_C2.length;
-  while(c.phases.length < total) {
-    var i2 = c.phases.length - PHASES_C1.length;
-    var ph = PHASES_C2[i2] || PHASES_C2[PHASES_C2.length-1];
-    c.phases.push({id:ph.id, done:false, startDate:null});
+function activateCycle2(clientId, action, param) {
+  var c = ST.clients.find(function(x){return x.id==clientId;});
+  if (!c) return;
+  if (!c.phaseRuns || c.phaseRuns.length===0) {
+    c.phaseRuns = [{phaseKey:'reset', certified:false, offreId:null, jaugeVal:0}];
+  }
+
+  var newPhaseKey = 'reset';
+
+  if (action === 'suite') {
+    // Suite choisie par le coach — phaseKey vient de la suite
+    newPhaseKey = (param && param.phaseKey) ? param.phaseKey : 'reset';
+    c.phaseRuns.push({
+      phaseKey: newPhaseKey,
+      certified: false,
+      offreId: null,
+      jaugeVal: 0,
+      suiteKey: param ? param.suiteKey : null,
+      label: param && param.suiteKey ? (loadSuiteOptions().find(function(s){return s.key===param.suiteKey;}) || {}).label : null
+    });
+    var pl = PHASE_LABELS[newPhaseKey] || {};
+    toast('ok', (pl.ico||'') + ' ' + (pl.name||'Nouveau cycle') + ' démarré !');
+  } else {
+    // Compat ancien code
+    var lastRun = c.phaseRuns[c.phaseRuns.length-1];
+    newPhaseKey = (action==='next_phase' && param) ? param : 'reset';
+    c.phaseRuns.push({phaseKey:newPhaseKey, certified:false, offreId:null, jaugeVal:0});
+    toast('ok','Nouveau cycle démarré !');
+  }
+
+  c.cycle = c.phaseRuns.length;
+  var allPhases = getClientPhasesAll(c);
+  if (!c.phases) c.phases = [];
+  while (c.phases.length < allPhases.length) {
+    var ph2 = allPhases[c.phases.length];
+    c.phases.push({id:ph2.id, done:false, startDate:null});
   }
   c.updated_at = new Date().toISOString();
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
   renderClientModal(clientId);
-  toast('ok','Cycle 2 active !');
 }
 
-function restartCycle2(clientId) {
-  var c = ST.clients.find(function(x){ return x.id==clientId; });
-  if(!c) return;
-  // Remettre les phases C2 a zero (cycle 2 peut se repeter indefiniment)
-  PHASES_C2.forEach(function(ph, i) {
-    var idx = PHASES_C1.length + i;
-    if(c.phases[idx]) { c.phases[idx].done=false; c.phases[idx].startDate=null; }
-  });
-  c.updated_at = new Date().toISOString();
-  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-  saveToSupabase(c);
-  renderClientModal(clientId);
-  toast('ok','Nouveau Cycle 2 demarre !');
-}
 function updateStatutParcours(id, statut) {
   const c = ST.clients.find(x => x.id == id);
   if (c) { c.statut = statut; c.updated_at = new Date().toISOString(); }
@@ -2335,18 +2796,123 @@ function sv2(id,v){const el=document.getElementById(id);if(el&&v!=null)el.textCo
 // ═══════════════════════════════════════════════════
 
 function switchEditor(tab, chip) {
-  document.querySelectorAll('#pg-form-editor .chip').forEach(c=>c.classList.remove('on'));
+  document.querySelectorAll('#pg-form-editor .chip').forEach(function(c){c.classList.remove('on');});
   if(chip) chip.classList.add('on');
-  ['bilan','tests','parcours'].forEach(t => {
-    const el = document.getElementById('editor-'+t);
+  ['bilan','tests','parcours','suites'].forEach(function(t) {
+    var el = document.getElementById('editor-'+t);
     if(el) el.style.display = t === tab ? 'block' : 'none';
   });
   if(tab==='bilan') renderSectionsEditor('bilan');
   if(tab==='tests') renderSectionsEditor('tests');
   if(tab==='parcours') renderParcoursEditor();
+  if(tab==='suites') renderSuitesEditor();
 }
 
 // ── SECTIONS EDITOR ────────────────────────────────
+
+// ═══════════════════════════════════════════════════
+// ÉDITEUR DE SUITES
+// ═══════════════════════════════════════════════════
+function renderSuitesEditor() {
+  var el = document.getElementById('suites-editor-list');
+  if (!el) return;
+  var suites = loadSuiteOptions();
+  el.innerHTML = '';
+  suites.forEach(function(s, i) {
+    var row = document.createElement('div');
+    row.className = 'form-field-editor';
+    row.style.cssText = 'display:flex;align-items:center;gap:9px;padding:11px 13px;margin-bottom:8px;background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2)';
+
+    // Emoji
+    var icoInp = document.createElement('input');
+    icoInp.type = 'text';
+    icoInp.value = s.ico || '📌';
+    icoInp.style.cssText = 'width:52px;text-align:center;font-size:18px;padding:6px';
+    icoInp.onchange = function() { suites[i].ico = this.value; saveSuiteOptions(suites); };
+    row.appendChild(icoInp);
+
+    // Label
+    var lblInp = document.createElement('input');
+    lblInp.type = 'text';
+    lblInp.value = s.label;
+    lblInp.style.flex = '1';
+    lblInp.onchange = function() { suites[i].label = this.value; saveSuiteOptions(suites); };
+    row.appendChild(lblInp);
+
+    // Phase (badge)
+    var phaseSel = document.createElement('select');
+    phaseSel.style.cssText = 'font-size:11px;padding:5px 7px;min-width:80px';
+    [
+      {v:'reset', l:'Reset'},
+      {v:'sculpt', l:'Sculpt'},
+      {v:'health', l:'Health'},
+      {v:'cont', l:'Continue'},
+      {v:'null', l:'Libre'}
+    ].forEach(function(opt) {
+      var o = document.createElement('option');
+      o.value = opt.v;
+      o.textContent = opt.l;
+      if ((s.phaseKey||'null') === opt.v) o.selected = true;
+      phaseSel.appendChild(o);
+    });
+    phaseSel.onchange = function() {
+      suites[i].phaseKey = this.value === 'null' ? null : this.value;
+      saveSuiteOptions(suites);
+    };
+    row.appendChild(phaseSel);
+
+    // Boutons
+    var btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;gap:4px';
+    [{t:'↑', fn:function(){if(i>0){var tmp=suites[i-1];suites[i-1]=suites[i];suites[i]=tmp;saveSuiteOptions(suites);renderSuitesEditor();}}},
+     {t:'↓', fn:function(){if(i<suites.length-1){var tmp=suites[i+1];suites[i+1]=suites[i];suites[i]=tmp;saveSuiteOptions(suites);renderSuitesEditor();}}},
+     {t:'✕', fn:function(){dlgConfirm('Supprimer cette suite ?','Supprimer').then(function(r){if(!r.confirmed)return;suites.splice(i,1);saveSuiteOptions(suites);renderSuitesEditor();});}}
+    ].forEach(function(item) {
+      var b = document.createElement('button');
+      b.className = 'ffe-btn';
+      b.textContent = item.t;
+      b.onclick = item.fn;
+      btns.appendChild(b);
+    });
+    row.appendChild(btns);
+    el.appendChild(row);
+  });
+}
+
+function addSuiteOption() {
+  showDialog({
+    title: '＋ Nouvelle suite',
+    inputs: [
+      {id:'ico',   label:'Emoji',       type:'text',   value:'📌', placeholder:'📌'},
+      {id:'label', label:'Libellé',     type:'text',   placeholder:'Ex: ACTIV PROGRAM'},
+      {id:'phase', label:'Phase cible', type:'select', value:'reset',
+       options:['reset|Phase Reset','sculpt|Phase Sculpt','health|Phase Health','cont|ACTIV CONTINUE','null|Libre (toutes)']}
+    ],
+    confirmLabel: 'Ajouter'
+  }).then(function(r) {
+    if (!r.confirmed || !r.values.label.trim()) return;
+    var suites = loadSuiteOptions();
+    suites.push({
+      key: 'custom_'+Date.now(),
+      ico: r.values.ico || '📌',
+      label: r.values.label.trim(),
+      phaseKey: r.values.phase === 'null' ? null : r.values.phase
+    });
+    saveSuiteOptions(suites);
+    renderSuitesEditor();
+    toast('ok', 'Suite ajoutée');
+  });
+}
+
+function resetSuiteOptions() {
+  dlgConfirm('Réinitialiser les suites ?','Réinitialiser').then(function(r) {
+    if (!r.confirmed) return;
+    localStorage.removeItem('ba_suite_opts');
+    renderSuitesEditor();
+    toast('ok', 'Suites réinitialisées');
+  });
+}
+
 function renderSectionsEditor(formKey) {
   const def = loadFormDef(formKey);
   const container = document.getElementById(formKey+'-sections-editor');
