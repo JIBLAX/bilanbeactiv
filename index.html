@@ -589,6 +589,7 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
       <div class="sb-ni" data-pg="clients" onclick="showPg('clients')"><div class="sb-ni-ico">👥</div><div class="sb-ni-lbl">Clients</div></div>
       <div class="sb-ni" data-pg="offres" onclick="showPg('offres')"><div class="sb-ni-ico">💼</div><div class="sb-ni-lbl">Offres</div></div>
       <div class="sb-ni" data-pg="pq" onclick="showPg('pq')"><div class="sb-ni-ico">➕</div><div class="sb-ni-lbl">Nouveau Bilan</div></div>
+      <div class="sb-ni" data-pg="pro" onclick="showPg('pro')"><div class="sb-ni-ico">🏢</div><div class="sb-ni-lbl">Nouveau Pro</div></div>
       <div class="sb-ni" data-pg="bilan" onclick="showPg('bilan')"><div class="sb-ni-ico">📋</div><div class="sb-ni-lbl">Bilan</div></div>
       <div class="sb-ni" data-pg="tests" onclick="showPg('tests')"><div class="sb-ni-ico">📏</div><div class="sb-ni-lbl">Tests</div></div>
       <div class="sb-ni" data-pg="rapport" onclick="showPg('rapport')"><div class="sb-ni-ico">🤖</div><div class="sb-ni-lbl">Rapport IA</div></div>
@@ -625,7 +626,7 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
       <div class="lbl">Coach JM · BE ACTIV</div>
       <div class="title">BE <b>ACTIV</b> | <b>BILAN CRM</b></div>
     </div>
-    <button class="hero-cta" onclick="newClient();showPg('pq')">＋ Nouveau Bilan</button>
+    <div style="display:flex;flex-direction:column;gap:8px"><button class="hero-cta" onclick="newClient();showPg('pq')">＋ Nouveau Bilan</button><button style="background:rgba(255,255,255,.18);border:none;color:#fff;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:9px 18px;border-radius:50px;cursor:pointer;letter-spacing:.3px" onclick="showPg('pro')">🏢 Nouveau Pro / Structure</button></div>
   </div>
   <div class="sh no-mt">📊 Activité <span id="home-year" style="font-size:10px;color:var(--tx3);font-weight:400;margin-left:3px"></span></div>
   <div class="kpi-grid">
@@ -871,6 +872,77 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   </div>
 </div>
 
+<!-- ══════ PAGE NOUVEAU PRO / STRUCTURE ══════ -->
+<div class="pg" id="pg-pro">
+  <div class="page-title">🏢 Nouveau client Pro / Structure</div>
+  <div class="card">
+    <div class="sh no-mt">🏢 Identification</div>
+    <div class="f"><label>Nom de la structure / entreprise</label><input id="pro-nom" type="text" placeholder="Le Labow, Association X…"></div>
+    <div class="g2">
+      <div class="f"><label>Contact (prénom nom)</label><input id="pro-contact" type="text" placeholder="Prénom Nom"></div>
+      <div class="f"><label>Téléphone</label><input id="pro-tel" type="tel" placeholder="06 xx xx xx xx"></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>Email</label><input id="pro-email" type="email" placeholder="contact@structure.fr"></div>
+      <div class="f"><label>Ville</label><input id="pro-ville" type="text" placeholder="Grenoble"></div>
+    </div>
+    <div class="f"><label>Type de structure</label>
+      <select id="pro-type">
+        <option value="">— Choisir —</option>
+        <option>Association sportive</option>
+        <option>Entreprise / CE</option>
+        <option>École / Université</option>
+        <option>Collectivité</option>
+        <option>Salle de sport / Club</option>
+        <option>Autre</option>
+      </select>
+    </div>
+    <div class="f"><label>Nombre de personnes concernées</label><input id="pro-nb" type="number" placeholder="Ex: 12" min="1"></div>
+  </div>
+
+  <div class="card">
+    <div class="sh no-mt">💼 Offre & Contrat</div>
+    <div class="f"><label>Offre sélectionnée</label>
+      <select id="pro-offre">
+        <option value="">— Choisir une offre —</option>
+        <option>CARDIO MOUV – STRUCTURE</option>
+        <option>ACTIV TRAINING GROUP</option>
+        <option>COURS COLLECTIFS ENTREPRISE</option>
+        <option>COACHING GROUPE</option>
+        <option>OFFRE SUR MESURE</option>
+      </select>
+    </div>
+    <div class="g2">
+      <div class="f"><label>Montant (€)</label><input id="pro-montant" type="number" placeholder="0"></div>
+      <div class="f"><label>Fréquence</label>
+        <select id="pro-freq">
+          <option value="ponctuel">Ponctuel</option>
+          <option value="mensuel">Mensuel</option>
+          <option value="trimestriel">Trimestriel</option>
+          <option value="annuel">Annuel</option>
+        </select>
+      </div>
+    </div>
+    <div class="f"><label>Date de début</label><input id="pro-date" type="date"></div>
+    <div class="f"><label>Notes / contexte</label><textarea id="pro-notes" rows="3" placeholder="Contexte, besoins spécifiques, historique…"></textarea></div>
+  </div>
+
+  <div class="card">
+    <div class="sh no-mt">📡 Source</div>
+    <div class="chk-item"><input type="radio" name="pro-source" value="Fitness Park"><div class="radio-box"></div><span class="chk-lbl">Fitness Park</span></div>
+    <div class="chk-item"><input type="radio" name="pro-source" value="Réseau pro"><div class="radio-box"></div><span class="chk-lbl">Réseau professionnel</span></div>
+    <div class="chk-item"><input type="radio" name="pro-source" value="Bouche à Oreille"><div class="radio-box"></div><span class="chk-lbl">Bouche à Oreille</span></div>
+    <div class="chk-item"><input type="radio" name="pro-source" value="Instagram"><div class="radio-box"></div><span class="chk-lbl">Instagram / Réseaux sociaux</span></div>
+    <div class="chk-item"><input type="radio" name="pro-source" value="Partenariat"><div class="radio-box"></div><span class="chk-lbl">Partenariat</span></div>
+    <div class="chk-item"><input type="radio" name="pro-source" value="Autre"><div class="radio-box"></div><span class="chk-lbl">Autre</span></div>
+  </div>
+
+  <div class="brow" style="margin-bottom:20px">
+    <button class="btn btn-dk" onclick="showPg('home')">← Annuler</button>
+    <button class="btn btn-bx" onclick="saveProClient()">💾 Créer le dossier Pro</button>
+  </div>
+</div>
+
     </div><!-- /scroller -->
 
     <!-- MOBILE BOTTOM NAV -->
@@ -890,6 +962,7 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
         
         
         
+        <button class="btn btn-dk btn-w btn-sm" onclick="closeMore();showPg('pro')">🏢 Nouveau Pro</button>
         <button class="btn btn-dk btn-w btn-sm" onclick="closeMore();openModal('cfg')">⚙️ Configuration</button>
       </div>
       <button class="btn btn-bx btn-w btn-sm" onclick="closeMore()">Fermer</button>
@@ -981,6 +1054,36 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 <div id="toast"></div>
 
 <script>
+// ═══════════════════════════════════════════════════
+// DONNÉES IMPORTÉES — CRM + FINANCES
+// ═══════════════════════════════════════════════════
+var IMPORTED_CLIENTS = [{"id": "crm_st_phanie_poitevin_1", "prenom": "Stéphanie", "nom": "POITEVIN", "sex": "F", "source": "FITNESS PARK", "rdvType": "VISIO", "rdvStatut": "Présent", "date": "2025-09-10", "objectif": "FATLOSS", "objections": [], "offres": "ACTIV PROGRAM STANDARD", "statut": "Closé", "notes": "HYPER MOTIVEE", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.676796", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_catherine_fernandez_2", "prenom": "Catherine", "nom": "FERNANDEZ", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2025-09-17", "objectif": "FATLOSS", "objections": [], "offres": "ACTIV PROGRAM STANDARD", "statut": "Closé", "notes": "Renforcer chevilles, énergie et perte de poids, plan sport", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.676925", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_kimberley_della_gloria_3", "prenom": "Kimberley", "nom": "DELLA GLORIA", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2025-09-23", "objectif": "FATLOSS", "objections": ["REFLEXION"], "offres": "", "statut": "Non closé", "notes": "A CHOISI SON AMIE COMME COACH", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.677060", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_margaux_denis_4", "prenom": "Margaux", "nom": "DENIS", "sex": "F", "source": "FITNESS PARK", "rdvType": "VISIO", "rdvStatut": "Présent", "date": "2025-09-23", "objectif": "FATLOSS", "objections": [], "offres": "", "statut": "Non closé", "notes": "JAMAIS REPONDU MALGRES RELANCE", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.677184", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_david_zephir_5", "prenom": "David", "nom": "ZEPHIR", "sex": "H", "source": "FITNESS PARK", "rdvType": "", "rdvStatut": "", "date": "", "objectif": "", "objections": [], "offres": "", "statut": "À relancer", "notes": "JAMAIS CONTACTER", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.677271", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_aur_lie_dault_6", "prenom": "Aurélie", "nom": "DAULT", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2025-09-25", "objectif": "FATLOSS", "objections": [], "offres": "", "statut": "Non closé", "notes": "Bléssée absence au moins 6 mois", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.677374", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_v_ronique_sanchez_7", "prenom": "Véronique", "nom": "SANCHEZ", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Absent", "date": "2025-09-26", "objectif": "FATLOSS", "objections": [], "offres": "", "statut": "Non closé", "notes": "JAMAIS REPONDU", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.677486", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_morgane_dibilio_8", "prenom": "Morgane", "nom": "DIBILIO", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2025-09-26", "objectif": "FATLOSS", "objections": [], "offres": "ACTIV PROGRAM HYBRIDE (3 FOIS)", "statut": "Closé", "notes": "HYPER MOTIVEE", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.677594", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_nollan_gobber_9", "prenom": "Nollan", "nom": "GOBBER", "sex": "H", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2025-09-07", "objectif": "SCULPT", "objections": ["BUDGET"], "offres": "", "statut": "Non closé", "notes": "JAMAIS REPONDU MALGRES INTERET", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.677696", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_cam_lia_djebaili_10", "prenom": "Camélia", "nom": "DJEBAILI", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2025-09-10", "objectif": "SCULPT", "objections": ["BUDGET"], "offres": "ACTIV PROGRAM STANDARD +", "statut": "Closé", "notes": "Peur mais Nibel m’a aidé à l’avoir, mais plus de nouvelles après paiement.", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.677806", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_janna_11", "prenom": "Janna", "nom": "", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2025-11-03", "objectif": "SCULPT", "objections": [], "offres": "A LA CARTE", "statut": "Closé", "notes": "Concluant mais attention aux hésitations", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.677908", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_sofia_bizet_12", "prenom": "Sofia", "nom": "BIZET", "sex": "F", "source": "BOUCHE A OREILLE", "rdvType": "VISIO", "rdvStatut": "Présent", "date": "2025-11-03", "objectif": "HEALTH", "objections": ["BUDGET"], "offres": "", "statut": "Non closé", "notes": "SILENCE RADIO – Accord Verbal mais Pas pris son numéro, Ghosting après appel, j’ai trop était pas serein sur mes offres", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.678025", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_vanessa_joly_13", "prenom": "Vanessa", "nom": "JOLY", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2025-11-13", "objectif": "FATLOSS", "objections": ["BUDGET"], "offres": "", "statut": "Non closé", "notes": "Pas d’argent actuellement peut etre Janvier", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.678136", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_antoinette_14", "prenom": "Antoinette", "nom": "", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Absent", "date": "2025-11-13", "objectif": "", "objections": [], "offres": "", "statut": "Non closé", "notes": "PROSPECT KO Non qualifié.", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.678234", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_jason_15", "prenom": "Jason", "nom": "", "sex": "H", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2025-11-13", "objectif": "SCULPT", "objections": [], "offres": "TIPS PAYANT", "statut": "Closé", "notes": "Interessé seulement pour des conseils, j’ai réussi à le faire payer un truc.", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.678332", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_julie_hulin_16", "prenom": "Julie", "nom": "HULIN", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2025-11-16", "objectif": "SCULPT", "objections": ["BUDGET"], "offres": "", "statut": "Non closé", "notes": "", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.678428", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_juliette_roulet_17", "prenom": "Juliette", "nom": "ROULET", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2025-11-20", "objectif": "FATLOSS", "objections": ["BUDGET"], "offres": "", "statut": "Non closé", "notes": "Interessée mais pas d’argent et il y avait sa mère au RDV. Plus jamais.", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.678541", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_hugo_patria_18", "prenom": "Hugo", "nom": "PATRIA", "sex": "H", "source": "FITNESS PARK", "rdvType": "APPEL", "rdvStatut": "Présent", "date": "2025-11-18", "objectif": "SCULPT", "objections": ["BUDGET"], "offres": "", "statut": "Non closé", "notes": "Relancer LE 29 NOVEMBRE 2025", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.678642", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_zouhire_essawidi_19", "prenom": "Zouhire", "nom": "ESSAWIDI", "sex": "H", "source": "INSTAGRAM", "rdvType": "VISIO", "rdvStatut": "Absent", "date": "2025-11-27", "objectif": "FATLOSS", "objections": [], "offres": "", "statut": "Non closé", "notes": "SILENCE RADIO", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.678739", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_audrey_cimadomo_20", "prenom": "Audrey", "nom": "CIMADOMO", "sex": "F", "source": "COURS COLLECTIFS", "rdvType": "APPEL", "rdvStatut": "Présent", "date": "2025-12-04", "objectif": "STRONG", "objections": [], "offres": "A LA CARTE", "statut": "Closé", "notes": "Super partante pour apprendre", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.678836", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_youri_21", "prenom": "Youri", "nom": "", "sex": "H", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Absent", "date": "2025-12-09", "objectif": "FATLOSS", "objections": [], "offres": "", "statut": "Non closé", "notes": "A décider d’annuler le rdv 1h après la discussion pour s’entrainer avec son ami, pourtant super chaud à la base", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.678934", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_v_ronique_magnin_22", "prenom": "Véronique", "nom": "MAGNIN", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2025-12-19", "objectif": "FATLOSS", "objections": [], "offres": "ACTIV PROGRAM STANDARD +", "statut": "Closé", "notes": "Rendez vous très bien passer, elle veut retrouver une vie énergique et changer phsiquement, le bilan doit être modifié car trop long sinon", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.679051", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_virginie_gachon_23", "prenom": "Virginie", "nom": "GACHON", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2026-01-15", "objectif": "FATLOSS", "objections": [], "offres": "ACTIV PROGRAM STANDARD +", "statut": "Closé", "notes": "Rendez vous TOP et naturel !", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.679158", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_emmanuel_dumaine_24", "prenom": "Emmanuel", "nom": "DUMAINE", "sex": "H", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2026-01-15", "objectif": "FATLOSS", "objections": ["REFLEXION"], "offres": "", "statut": "Non closé", "notes": "Pas le budget, trop dépendn=ant de la décision de sa femme. Prospect particulier…", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.679263", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_amandine_meghan_25", "prenom": "Amandine", "nom": "MEGHAN", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2026-02-05", "objectif": "SCULPT", "objections": [], "offres": "ACTIV PROGRAM STANDARD", "statut": "Closé", "notes": "Lets go", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.679377", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_patricia_26", "prenom": "Patricia", "nom": "", "sex": "F", "source": "BOUCHE A OREILLE", "rdvType": "PHYSIQUE", "rdvStatut": "Absent", "date": "", "objectif": "FATLOSS", "objections": [], "offres": "", "statut": "Non closé", "notes": "", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.679463", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_murielle_amon_27", "prenom": "Murielle", "nom": "AMON", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2026-02-13", "objectif": "SCULPT", "objections": [], "offres": "JM PASS", "statut": "Closé", "notes": "Fluide, bien présenté et bien connecté, la présentation des modes facilite la vente", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.679566", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_naima_boughdiri_28", "prenom": "Naima", "nom": "BOUGHDIRI", "sex": "F", "source": "FITNESS PARK", "rdvType": "APPEL", "rdvStatut": "Présent", "date": "2026-02-17", "objectif": "FATLOSS", "objections": [], "offres": "", "statut": "Non closé", "notes": "Fluide, bien présenté et bien connecté, mais au dernier moment avant le jourJ a annulé, désagréable au téléphone, tant pis.", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.679666", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_leila_ayoubian_29", "prenom": "Leila", "nom": "AYOUBIAN", "sex": "F", "source": "FITNESS PARK", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2026-02-06", "objectif": "SCULPT", "objections": [], "offres": "JM PASS", "statut": "Closé", "notes": "Fluide, bien présenté et bien connecté, la présentation des modes facilite la vente", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.679762", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_nah_ma_roche_30", "prenom": "Nahéma", "nom": "ROCHE", "sex": "F", "source": "INSTAGRAM", "rdvType": "PHYSIQUE", "rdvStatut": "Présent", "date": "2026-02-13", "objectif": "FATLOSS", "objections": [], "offres": "ACTIV PROGRAM ONLINE (3 FOIS)", "statut": "Closé", "notes": "Fluide, bien présenté et bien connecté, la présentation des modes facilite la vente", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.679858", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "crm_a_cha_fall_31", "prenom": "Aïcha", "nom": "FALL", "sex": "F", "source": "FITNESS PARK", "rdvType": "APPEL", "rdvStatut": "Présent", "date": "", "objectif": "HEALTH", "objections": ["BUDGET"], "offres": "", "statut": "Non closé", "notes": "J’aurai du laisser le rdv en physique, elle voulait payé 50€ peut être que j’aurai du lui proposer un programme totalement autonome.", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.679945", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "fin_agathe_bourbonnais_0", "prenom": "Agathe", "nom": "Bourbonnais", "sex": "", "source": "", "rdvType": "", "rdvStatut": "", "date": "", "objectif": "", "objections": [], "offres": "A LA CARTE (EXCLUSIV)", "statut": "Closé", "notes": "Importé depuis FINANCES", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.692462", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "fin_le_labow_1", "isPro": true, "structureName": "Le Labow", "profil_code": "PRO", "profil_label": "Structure / Entreprise", "prenom": "Le", "nom": "Labow", "sex": "", "source": "", "rdvType": "", "rdvStatut": "", "date": "", "objectif": "", "objections": [], "offres": "CARDIO MOUV – STRUCTURE", "statut": "Closé", "notes": "Importé depuis FINANCES", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.692483", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "fin_crystelle_scarlata_2", "prenom": "Crystelle", "nom": "Scarlata", "sex": "", "source": "", "rdvType": "", "rdvStatut": "", "date": "", "objectif": "", "objections": [], "offres": "JM PASS SAP DOMICILE, VISIO A LA CARTE", "statut": "Closé", "notes": "Importé depuis FINANCES", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.692500", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "fin_david_icarre_3", "prenom": "David", "nom": "Icarre", "sex": "", "source": "", "rdvType": "", "rdvStatut": "", "date": "", "objectif": "", "objections": [], "offres": "JM PASS SAP DOMICILE", "statut": "Closé", "notes": "Importé depuis FINANCES", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.692507", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "fin_yann_mongaburu_4", "prenom": "Yann", "nom": "Mongaburu", "sex": "", "source": "", "rdvType": "", "rdvStatut": "", "date": "", "objectif": "", "objections": [], "offres": "JM PASS SAP DOMICILE", "statut": "Closé", "notes": "Importé depuis FINANCES", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.692516", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "fin_arnaud_etitia_5", "prenom": "Arnaud", "nom": "Etitia", "sex": "", "source": "", "rdvType": "", "rdvStatut": "", "date": "", "objectif": "", "objections": [], "offres": "JM PASS, JM PASS SAP DOMICILE", "statut": "Closé", "notes": "Importé depuis FINANCES", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.692523", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "fin_alice_didier_6", "prenom": "Alice", "nom": "Didier", "sex": "", "source": "", "rdvType": "", "rdvStatut": "", "date": "", "objectif": "", "objections": [], "offres": "JM PASS SAP DOMICILE", "statut": "Closé", "notes": "Importé depuis FINANCES", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.692529", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "fin_amandine_loiseau_7", "prenom": "Amandine", "nom": "Loiseau", "sex": "", "source": "", "rdvType": "", "rdvStatut": "", "date": "", "objectif": "", "objections": [], "offres": "ACTIV PROGRAM STANDARD", "statut": "Closé", "notes": "Importé depuis FINANCES", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.692535", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}, {"id": "fin_teddy_lukunku_8", "prenom": "Teddy", "nom": "Lukunku", "sex": "", "source": "", "rdvType": "", "rdvStatut": "", "date": "", "objectif": "", "objections": [], "offres": "ACTIV PROGRAM STANDARD +", "statut": "Closé", "notes": "Importé depuis FINANCES", "profil_code": "", "profil_label": "", "score_global": null, "montant": null, "updated_at": "2026-03-21T15:04:49.692542", "phaseRuns": [{"phaseKey": "reset", "certified": false, "offreId": null, "jaugeVal": 0}], "cycle": 1, "phases": []}];
+
+function injectImportedClients() {
+  var existing = localStorage.getItem('ba_clients_v8');
+  var existingList = [];
+  try { if(existing) existingList = JSON.parse(existing); } catch(e) {}
+  
+  var added = 0;
+  IMPORTED_CLIENTS.forEach(function(c) {
+    var found = existingList.find(function(x) {
+      return (x.prenom && c.prenom && x.prenom.toLowerCase() === c.prenom.toLowerCase() &&
+              x.nom && c.nom && x.nom.toLowerCase() === c.nom.toLowerCase());
+    });
+    if (!found) {
+      existingList.unshift(c);
+      added++;
+    }
+  });
+  
+  if (added > 0) {
+    localStorage.setItem('ba_clients_v8', JSON.stringify(existingList));
+    ST.clients = existingList;
+    console.log('Import: ' + added + ' clients ajoutés');
+  }
+  return added;
+}
+
 // ═══════════════════════════════════════════════════
 // SYSTÈME DIALOG (remplace prompt/confirm)
 // ═══════════════════════════════════════════════════
@@ -1695,7 +1798,7 @@ window.onload = function() {
   if(sessionStorage.getItem('ba_pin')==='1') {
     const s=document.getElementById('pin-screen'); if(s) s.style.display='none';
   }
-  loadConfig(); setupChips();
+  loadConfig(); setupChips(); injectImportedClients();
   const lc=localStorage.getItem('ba_clients_v8');
   if(lc) try{ST.clients=JSON.parse(lc);}catch(e){}
   const lr=localStorage.getItem('ba_rdvs_v8');
@@ -2082,6 +2185,163 @@ function sendEmail(){
 // ═══════════════════════════════════════════════════
 // CLIENTS
 // ═══════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════
+// CLIENT PRO / STRUCTURE
+// ═══════════════════════════════════════════════════
+function saveProClient() {
+  var nom = gv('pro-nom');
+  if (!nom) { toast('err', 'Nom de la structure requis'); return; }
+
+  var contact = gv('pro-contact');
+  var parts = contact.split(' ');
+  var prenom = parts[0] || nom;
+  var nomFam = parts.slice(1).join(' ') || '';
+
+  var dateVal = gv('pro-date') || new Date().toISOString().split('T')[0];
+
+  var client = {
+    id: 'pro_' + Date.now(),
+    isPro: true,
+    structureName: nom,
+    prenom: prenom,
+    nom: nomFam || nom,
+    tel: gv('pro-tel'),
+    email: gv('pro-email'),
+    ville: gv('pro-ville'),
+    proType: gv('pro-type'),
+    proNbPersonnes: gv('pro-nb'),
+    source: (function(){var el=document.querySelector('input[name="pro-source"]:checked');return el?el.value:'';}()),
+    rdvType: '',
+    rdvStatut: '',
+    date: dateVal,
+    offres: gv('pro-offre'),
+    montant: gv('pro-montant') ? parseFloat(gv('pro-montant')) : null,
+    proFreq: gv('pro-freq'),
+    notes: gv('pro-notes'),
+    statut: 'Closé',
+    profil_code: 'PRO',
+    profil_label: 'Structure / Entreprise',
+    score_global: null,
+    objectif: '',
+    objections: [],
+    phaseRuns: [],
+    cycle: 0,
+    phases: [],
+    updated_at: new Date().toISOString()
+  };
+
+  var idx = ST.clients.findIndex(function(c){ return c.id === client.id; });
+  if (idx >= 0) ST.clients[idx] = client; else ST.clients.unshift(client);
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(client);
+
+  // Reset form
+  ['pro-nom','pro-contact','pro-tel','pro-email','pro-ville','pro-nb','pro-montant','pro-notes'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  ['pro-type','pro-offre','pro-freq'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.selectedIndex=0;
+  });
+  document.querySelectorAll('input[name="pro-source"]').forEach(function(el){el.checked=false;});
+
+  toast('ok', '✅ ' + nom + ' ajouté comme client Pro');
+  showPg('clients');
+  renderClients();
+}
+
+
+function renderProClientModal(id, c, container) {
+  // Title
+  var titleEl = document.createElement('div');
+  titleEl.className = 'mdl-t';
+  titleEl.innerHTML = '🏢 ' + (c.structureName || c.prenom + ' ' + c.nom);
+  var closeBtn = document.createElement('button');
+  closeBtn.className = 'mdl-x'; closeBtn.textContent = '✕';
+  closeBtn.onclick = function(){ closeModal('client'); };
+  titleEl.appendChild(closeBtn);
+  container.appendChild(titleEl);
+
+  // Info card
+  var infoCard = document.createElement('div');
+  infoCard.className = 'card';
+  infoCard.style.marginBottom = '13px';
+  infoCard.innerHTML =
+    '<div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">🏢 Structure</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">' +
+    '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Type</div><div style="font-weight:600">'+( c.proType||'—')+'</div></div>' +
+    '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Personnes</div><div style="font-weight:600">'+(c.proNbPersonnes||'—')+'</div></div>' +
+    '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Contact</div><div style="font-weight:600">'+(c.prenom||'')+' '+(c.nom||'')+'</div></div>' +
+    '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Ville</div><div style="font-weight:600">'+(c.ville||'—')+'</div></div>' +
+    (c.tel ? '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Tél</div><div style="font-weight:600">'+c.tel+'</div></div>' : '') +
+    (c.email ? '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600">'+c.email+'</div></div>' : '') +
+    '</div>';
+  container.appendChild(infoCard);
+
+  // Offre card
+  if (c.offres || c.montant) {
+    var offreCard = document.createElement('div');
+    offreCard.className = 'card';
+    offreCard.style.marginBottom = '13px';
+    offreCard.innerHTML =
+      '<div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">💼 Offre</div>' +
+      '<div style="font-weight:700;font-size:15px;color:var(--bx);margin-bottom:5px">'+(c.offres||'—')+'</div>' +
+      (c.montant ? '<div style="font-size:13px;color:var(--tx2)">'+(c.montant)+'€ <span style="color:var(--tx3);font-size:11px">/ '+(c.proFreq||'ponctuel')+'</span></div>' : '') +
+      (c.notes ? '<div style="font-size:12px;color:var(--tx3);margin-top:8px;font-style:italic;line-height:1.5">'+c.notes+'</div>' : '');
+    container.appendChild(offreCard);
+  }
+
+  // Statut
+  var statutLabel = document.createElement('div');
+  statutLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px';
+  statutLabel.textContent = 'Statut commercial';
+  container.appendChild(statutLabel);
+
+  var statutWrap = document.createElement('div');
+  statutWrap.style.cssText = 'display:flex;flex-direction:column;gap:7px;margin-bottom:13px';
+  ['Non closé','Closé','À relancer','Refusé'].forEach(function(s) {
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-dk btn-w btn-sm';
+    btn.textContent = s;
+    btn.style.borderColor = c.statut===s ? 'var(--bx)' : 'var(--rim3)';
+    btn.style.fontWeight = c.statut===s ? '700' : '400';
+    btn.dataset.statut = s; btn.dataset.cid = id;
+    btn.onclick = function(){ updateStatutParcours(this.dataset.cid, this.dataset.statut); };
+    statutWrap.appendChild(btn);
+  });
+  container.appendChild(statutWrap);
+
+  // Modifier
+  var editBtn = document.createElement('button');
+  editBtn.className = 'btn btn-dk btn-w btn-sm';
+  editBtn.textContent = '✏️ Modifier la fiche Pro';
+  editBtn.onclick = function(){
+    closeModal('client');
+    prefillProForm(c);
+    showPg('pro');
+  };
+  container.appendChild(editBtn);
+}
+
+function prefillProForm(c) {
+  var el = function(id){ return document.getElementById(id); };
+  if(el('pro-nom')) el('pro-nom').value = c.structureName || c.prenom + ' ' + c.nom;
+  if(el('pro-contact')) el('pro-contact').value = c.prenom + ' ' + c.nom;
+  if(el('pro-tel')) el('pro-tel').value = c.tel || '';
+  if(el('pro-email')) el('pro-email').value = c.email || '';
+  if(el('pro-ville')) el('pro-ville').value = c.ville || '';
+  if(el('pro-type')) el('pro-type').value = c.proType || '';
+  if(el('pro-nb')) el('pro-nb').value = c.proNbPersonnes || '';
+  if(el('pro-offre')) el('pro-offre').value = c.offres || '';
+  if(el('pro-montant')) el('pro-montant').value = c.montant || '';
+  if(el('pro-freq')) el('pro-freq').value = c.proFreq || 'ponctuel';
+  if(el('pro-notes')) el('pro-notes').value = c.notes || '';
+  // Source
+  document.querySelectorAll('input[name="pro-source"]').forEach(function(inp){
+    inp.checked = inp.value === c.source;
+  });
+}
+
 function saveClient(){
   const b=collectBilan(),r=ST.finalReport;
   if(!b.prenom&&!b.nom){toast('err','⚠️ Prénom/nom requis');return;}
@@ -2114,7 +2374,8 @@ function renderClients(){
   if(!list.length){document.getElementById('clients-list').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun client</div><div class="empty-s">Créez votre premier dossier.</div></div>';return;}
   const sp={'Closé':'pill-G','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R'};
   document.getElementById('clients-list').innerHTML=list.map(c=>{
-    const init=((c.prenom||'?')[0]+(c.nom||'?')[0]).toUpperCase();
+    var init = c.isPro ? '🏢' : ((c.prenom||'?')[0]+(c.nom||'?')[0]).toUpperCase();
+    var displayName = c.isPro ? (c.structureName || c.prenom+' '+c.nom) : (c.prenom||'')+' '+(c.nom||'');
     const dt=c.updated_at?new Date(c.updated_at).toLocaleDateString('fr-FR'):'';
     return'<div class="ccrd" onclick="openClient(\''+c.id+'\')"><div class="cav">'+init+'</div><div class="cinfo"><div class="cname">'+c.prenom+' '+c.nom+'</div><div class="cmeta">'+(c.ville||'—')+' · '+((c.offres||'').split(',')[0].trim()||'—')+' · '+dt+'</div></div><div class="cbadges">'+(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')+(c.statut?'<span class="pill '+(sp[c.statut]||'')+'" style="font-size:10px">'+c.statut+'</span>':'')+(c.score_global!=null?'<span style="font-size:11px;color:var(--tx3)">★ '+c.score_global+'</span>':'')+'</div></div>';
   }).join('');
@@ -2252,6 +2513,13 @@ function renderClientModal(id) {
 
   var container = document.getElementById('m-client-body');
   container.innerHTML = '';
+
+  // === CLIENT PRO : fiche simplifiée ===
+  if (c.isPro) {
+    renderProClientModal(id, c, container);
+    openModal('client');
+    return;
+  }
 
   // Title
   var titleEl = document.createElement('div');
