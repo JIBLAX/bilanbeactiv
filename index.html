@@ -36,7 +36,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;background:var(--bg)}
-body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font-smoothing:antialiased;height:100%;background:var(--bg)}
+body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font-smoothing:antialiased;height:100%;height:100dvh;background:var(--bg);overflow:hidden}
 
 /* ═══════════════════════════════════════════════════
    PIN SCREEN
@@ -63,7 +63,7 @@ body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font
 /* ═══════════════════════════════════════════════════
    RESPONSIVE LAYOUT
 ═══════════════════════════════════════════════════ */
-#app{display:flex;height:100vh;overflow:hidden}
+#app{display:flex;height:100dvh;height:100vh;overflow:hidden}
 
 /* Sidebar (PC/tablette) */
 #sidebar{width:220px;flex-shrink:0;background:var(--bx);display:flex;flex-direction:column;transition:width .25s}
@@ -507,8 +507,8 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 input, select, textarea { font-size: 16px !important; touch-action: manipulation; }
 body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 /* Espace bas sécurisé */
-#nav-mobile { padding-bottom: max(10px, env(safe-area-inset-bottom, 10px)); }
-.pg { padding-bottom: max(80px, calc(60px + env(safe-area-inset-bottom, 20px))); }
+#nav-mobile { padding-bottom: max(6px, env(safe-area-inset-bottom, 6px)); }
+.pg { padding-bottom: max(70px, calc(58px + env(safe-area-inset-bottom, 0px))); }
 /* Retirer config du topbar mobile */
 .tb-cfg-hide { display: none !important; }
 
@@ -1677,6 +1677,12 @@ function saveOffreField(id, field, val) {
   o[field] = val;
   saveOffres(offres);
   renderBilanOffresList();
+  // Mettre à jour le header de la fiche offre sans re-render complet
+  var card = document.getElementById('ocard_'+id);
+  if (card) {
+    var nameEl = card.querySelector('.occ-view div div div:first-child');
+    if (nameEl && field==='name') nameEl.textContent = val;
+  }
 }
 
 function saveOffreTypeField(id, typeVal) {
@@ -1798,7 +1804,12 @@ window.onload = function() {
   if(sessionStorage.getItem('ba_pin')==='1') {
     const s=document.getElementById('pin-screen'); if(s) s.style.display='none';
   }
-  loadConfig(); setupChips(); injectImportedClients();
+  loadConfig(); setupChips();
+  // N'importer qu'une seule fois (flag en localStorage)
+  if (!localStorage.getItem('ba_imported_v1')) {
+    var added = injectImportedClients();
+    if (added >= 0) localStorage.setItem('ba_imported_v1', '1');
+  }
   const lc=localStorage.getItem('ba_clients_v8');
   if(lc) try{ST.clients=JSON.parse(lc);}catch(e){}
   const lr=localStorage.getItem('ba_rdvs_v8');
@@ -2044,11 +2055,45 @@ function collectTests(){
 // ═══════════════════════════════════════════════════
 async function callAI(system,user,model,maxTokens){
   model=model||'claude-haiku-4-5-20251001';maxTokens=maxTokens||1400;
-  if(!ST.apiKey){toast('err','⚠️ Clé API manquante');openModal('cfg');throw new Error('No API key');}
-  const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':ST.apiKey,'anthropic-version':'2023-06-01'},body:JSON.stringify({model,max_tokens:maxTokens,system,messages:[{role:'user',content:user}]})});
-  const data=await res.json();if(data.error)throw new Error(data.error.message);
-  const raw=(data.content&&data.content[0]&&data.content[0].text)||'';
-  try{return JSON.parse(raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim());}catch(e){throw new Error('Réponse IA invalide');}
+
+  // Détecter si on est sur Vercel (production) ou dans Claude (preview)
+  var isVercel = window.location.hostname !== 'claude.ai'
+    && !window.location.hostname.includes('claude.ai')
+    && window.location.protocol !== 'blob:';
+
+  var raw='';
+
+  if (isVercel) {
+    // Appel via Vercel Function /api/chat — pas de CORS, clé API côté serveur
+    var res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({system:system, user:user, model:model, max_tokens:maxTokens})
+    });
+    if(!res.ok) {
+      var errTxt = await res.text();
+      throw new Error('Erreur serveur: ' + errTxt.slice(0,100));
+    }
+    var data = await res.json();
+    raw = (data.content && data.content[0] && data.content[0].text) || data.text || '';
+  } else {
+    // Appel direct (Claude preview ou clé configurée manuellement)
+    if(!ST.apiKey){toast('err','⚠️ Clé API manquante');openModal('cfg');throw new Error('No API key');}
+    var res2 = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':ST.apiKey,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:model,max_tokens:maxTokens,system:system,messages:[{role:'user',content:user}]})
+    });
+    var data2 = await res2.json();
+    if(data2.error) throw new Error(data2.error.message);
+    raw = (data2.content && data2.content[0] && data2.content[0].text) || '';
+  }
+
+  try{
+    return JSON.parse(raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim());
+  }catch(e){
+    throw new Error('Réponse IA invalide: '+raw.slice(0,80));
+  }
 }
 
 async function analyzePQ(){
@@ -2342,6 +2387,43 @@ function prefillProForm(c) {
   });
 }
 
+
+// ═══════════════════════════════════════════════════
+// MODIFIER INFOS CLIENT
+// ═══════════════════════════════════════════════════
+function openEditClientModal(clientId) {
+  var c = ST.clients.find(function(x){return x.id==clientId;});
+  if (!c) return;
+  showDialog({
+    title: '✏️ Modifier ' + (c.prenom||'') + ' ' + (c.nom||''),
+    inputs: [
+      {id:'prenom',  label:'Prénom',     type:'text',   value: c.prenom||''},
+      {id:'nom',     label:'Nom',        type:'text',   value: c.nom||''},
+      {id:'tel',     label:'Téléphone',  type:'text',   value: c.tel||''},
+      {id:'email',   label:'Email',      type:'email',  value: c.email||''},
+      {id:'ville',   label:'Ville',      type:'text',   value: c.ville||''},
+      {id:'prof',    label:'Profession', type:'text',   value: c.profession||''},
+      {id:'notes',   label:'Notes',      type:'textarea', value: c.notes||''}
+    ],
+    confirmLabel: 'Enregistrer'
+  }).then(function(r) {
+    if (!r.confirmed) return;
+    c.prenom     = r.values.prenom.trim()  || c.prenom;
+    c.nom        = r.values.nom.trim()     || c.nom;
+    c.tel        = r.values.tel.trim();
+    c.email      = r.values.email.trim();
+    c.ville      = r.values.ville.trim();
+    c.profession = r.values.prof.trim();
+    c.notes      = r.values.notes.trim();
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    renderClients();
+    renderClientModal(clientId);
+    toast('ok', '✅ Infos mises à jour');
+  });
+}
+
 function saveClient(){
   const b=collectBilan(),r=ST.finalReport;
   if(!b.prenom&&!b.nom){toast('err','⚠️ Prénom/nom requis');return;}
@@ -2382,13 +2464,18 @@ function renderClients(){
 }
 
 function openClient(id) {
-  const c = ST.clients.find(x => x.id == id);
+  var c = ST.clients.find(function(x){ return x.id == id; });
   if (!c) return;
   ST.clientId = c.id;
   ST.pqSummary = c.pq_summary;
   ST.bilanSummary = c.bilan_summary;
   ST.finalReport = c.final_report;
-  renderClientModal(id);
+  try {
+    renderClientModal(id);
+  } catch(e) {
+    toast('err', 'Erreur: ' + e.message);
+    console.error('renderClientModal error:', e);
+  }
 }
 
 function openFromSaved(){
@@ -2453,15 +2540,34 @@ const PHASES_BASE = [
   {id:'certified',     ico:'🏆', lbl:'Certification',      days:0, isCert:true}
 ];
 
+var PHASES_C1 = PHASES_BASE;
+var PHASES_C2 = PHASES_BASE;
+
 const PHASES_CONTINUE = [
   {id:'cont_suivi',    ico:'♾️', lbl:'Suivi mensuel',      days:30, isContinue:true},
   {id:'cont_bilan',    ico:'📊', lbl:'Bilan progression',  days:30, isContinue:true},
   {id:'cont_renouv',   ico:'🔁', lbl:'Renouvellement',     days:30, isContinue:true}
 ];
 
+
+function loadPhasesCustom() {
+  try {
+    var s = localStorage.getItem('ba_phases_custom');
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  // Par défaut : tout basé sur PHASES_BASE (défini avant cette fonction)
+  var base = PHASES_BASE.map(function(p){ return Object.assign({}, p); });
+  var cont = PHASES_CONTINUE.map(function(p){ return Object.assign({}, p); });
+  return { base: base, c1: base, c2: base, cont: cont };
+}
+
+function savePhasesCustom(phases) {
+  try {
+    localStorage.setItem('ba_phases_custom', JSON.stringify(phases));
+  } catch(e) {}
+}
+
 // Rétro-compat (utilisé dans quelques endroits)
-// PHASES_C1 alias removed (use PHASES_BASE)
-// PHASES_C2 alias removed (use PHASES_BASE)
 
 function getClientPhasesAll(c) {
   // Chaque "run" de phase = un bloc d'étapes PHASES_BASE
@@ -2894,6 +3000,15 @@ function renderClientModal(id) {
   container.appendChild(duoSection);
 
   // CTA rapport
+  // Bouton modifier infos de base
+  var editInfoBtn = document.createElement('button');
+  editInfoBtn.className = 'btn btn-dk btn-w btn-sm';
+  editInfoBtn.style.marginBottom = '9px';
+  editInfoBtn.textContent = '✏️ Modifier les infos';
+  editInfoBtn.dataset.cid = id;
+  editInfoBtn.onclick = function(){ openEditClientModal(this.dataset.cid); };
+  container.appendChild(editInfoBtn);
+
   var brow2 = document.createElement('div');
   brow2.className = 'brow';
   if (c.final_report) {
