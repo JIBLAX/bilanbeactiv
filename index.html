@@ -1884,7 +1884,6 @@ window.onload = function() {
   ST.statsYear=new Date().getFullYear();
   const rdvDate=document.getElementById('rdv-date');
   if(rdvDate) rdvDate.value=new Date().toISOString().split('T')[0];
-  loadPhases();
   renderBilanForm();
   renderTestsForm();
   loadFromSupabase();
@@ -2674,12 +2673,12 @@ const PHASE_LABELS = {
 
 // RUN 1 — Universel pour TOUS les clients
 const RUN_1 = [
-  {id:'rdv-bilan',     ico:'📅', lbl:'RDV Bilan',         days:0},
-  {id:'go-contrat',    ico:'✍️', lbl:'GO Contrat',         days:0},
-  {id:'contrat-signe', ico:'📄', lbl:'Contrat signé',      days:0},
-  {id:'paiement',      ico:'💳', lbl:'Paiement validé',    days:0},
-  {id:'tests',         ico:'📏', lbl:'Tests physiques',    days:0, optionnel:true},
-  {id:'run1-done',     ico:'✅', lbl:'Run 1 validé',       days:0, isMilestone:true}
+  {id:'rdv-bilan',     ico:'📅', lbl:'RDV Bilan',       days:0},
+  {id:'go-contrat',    ico:'✍️', lbl:'GO Contrat',       days:0},
+  {id:'contrat-signe', ico:'📄', lbl:'Contrat signé',    days:0},
+  {id:'paiement',      ico:'💳', lbl:'Paiement validé',  days:0},
+  {id:'tests',         ico:'📏', lbl:'Tests',            days:0, optionnel:true},
+  {id:'run1-done',     ico:'✅', lbl:'Run 1 validé',     days:0, isMilestone:true}
 ];
 
 // RUN 2+ — Étapes programme ACTIV (Reset/Hybride/Online/Program)
@@ -2762,627 +2761,291 @@ function getClientPhasesAll(c) {
   if (!c.phaseRuns || c.phaseRuns.length === 0) {
     c.phaseRuns = [{phaseKey:'run1', offreId:null, jaugeVal:0, certified:false}];
   }
+
+  var custom = loadPhasesCustom();
   var all = [];
+
   c.phaseRuns.forEach(function(run, ri) {
     var steps;
+
     if (ri === 0) {
-      // Run 1 : universel
-      steps = loadPhasesCustom().run1 || RUN_1;
-      // Si l'offre ne nécessite pas de tests → marquer optionnel
-      var offres = loadOffres();
-      var selOffre = run.offreId ? offres.find(function(o){return o.id===run.offreId;}) : null;
-      if (selOffre && selOffre.test === 'none') {
-        steps = steps.filter(function(s){ return s.id !== 'tests'; });
+      // Run 1 universel — filtrer Tests si offre ne les requiert pas
+      steps = (custom.run1 || RUN_1).map(function(p){ return Object.assign({},p); });
+      if (run.offreId) {
+        var offres = loadOffres();
+        var o = offres.find(function(x){ return x.id === run.offreId; });
+        if (o && o.test === 'none') {
+          steps = steps.filter(function(s){ return s.id !== 'tests'; });
+        }
       }
+    } else if (run.phaseKey === 'cont') {
+      steps = (custom.cont || PHASES_CONTINUE).map(function(p){ return Object.assign({},p); });
     } else {
-      // Run 2+ : selon type d'offre
+      // Run 2+ selon type d'offre
       var offres2 = loadOffres();
-      var selOffre2 = run.offreId ? offres2.find(function(o){return o.id===run.offreId;}) : null;
-      var runType = selOffre2 ? getRunType(selOffre2.name) : 'programme';
-      if (run.phaseKey === 'cont') {
-        steps = loadPhasesCustom().cont || PHASES_CONTINUE;
-      } else {
-        steps = runType === 'programme'
-          ? (loadPhasesCustom().programme || RUN_PROGRAMME)
-          : (loadPhasesCustom().suivi || RUN_SUIVI);
-      }
+      var o2 = run.offreId ? offres2.find(function(x){ return x.id===run.offreId; }) : null;
+      var isProgramme = o2 ? getRunType(o2.name) === 'programme' : true;
+      steps = isProgramme
+        ? (custom.programme || RUN_PROGRAMME).map(function(p){ return Object.assign({},p); })
+        : (custom.suivi    || RUN_SUIVI).map(function(p){ return Object.assign({},p); });
     }
+
     steps.forEach(function(p) {
       all.push(Object.assign({}, p, {
         id: p.id + '_r' + ri,
         runIdx: ri,
-        phaseKey: run.phaseKey || (ri === 0 ? 'run1' : 'reset')
+        phaseKey: run.phaseKey || (ri===0 ? 'run1' : 'reset')
       }));
     });
   });
+
   return all;
 }
+
 
 function renderClientModal(id) {
   var c = ST.clients.find(function(x){ return x.id == id; });
   if (!c) return;
 
-  // Migrate ancien format vers phaseRuns
+  // PRO
+  if (c.isPro) { renderProClientModal(id, c, document.getElementById('m-client-body')); openModal('client'); return; }
+  // PROSPECT
+  if (c.statut !== 'Closé') { renderProspectModal(id, c, document.getElementById('m-client-body')); openModal('client'); return; }
+
+  // Initialiser phaseRuns si besoin
   if (!c.phaseRuns || c.phaseRuns.length === 0) {
-    c.phaseRuns = [{phaseKey:'reset', certified:false, offreId:c['offreC1']||null, jaugeVal:c['jaugeC1']||0}];
-    if ((c.cycle||1) >= 2) c.phaseRuns.push({phaseKey:'sculpt', certified:false, offreId:c['offreC2']||null, jaugeVal:c['jaugeC2']||0});
-    if ((c.cycle||1) >= 3) c.phaseRuns.push({phaseKey:'health', certified:false, offreId:c['offreC3']||null, jaugeVal:c['jaugeC3']||0});
+    c.phaseRuns = [{phaseKey:'run1', offreId:null, jaugeVal:0, certified:false}];
   }
-
-  var allPhases = getClientPhasesAll(c);
-  if (!c.phases) c.phases = [];
-  while (c.phases.length < allPhases.length) {
-    var ph2 = allPhases[c.phases.length];
-    c.phases.push({id:ph2.id, done:false, startDate:null});
-  }
-
-  var doneCount = c.phases.filter(function(p){return p.done;}).length;
-  var pct = allPhases.length > 0 ? Math.round(doneCount / allPhases.length * 100) : 0;
-  var currentIdx = c.phases.reduce(function(acc,p,i){return p.done?i+1:acc;}, 0);
-  var currentRunIdx = c.phaseRuns.length - 1;
-  var currentRun = c.phaseRuns[currentRunIdx];
-  var currentPhaseKey = currentRun ? currentRun.phaseKey : 'reset';
-  var pl = PHASE_LABELS[currentPhaseKey] || PHASE_LABELS.reset;
 
   var container = document.getElementById('m-client-body');
   container.innerHTML = '';
 
-  // === CLIENT PRO : fiche simplifiée ===
-  if (c.isPro) {
-    renderProClientModal(id, c, container);
-    openModal('client');
-    return;
-  }
-
-  // === PROSPECT (non closé) : fiche simplifiée sans parcours ===
-  if (c.statut !== 'Closé') {
-    renderProspectModal(id, c, container);
-    openModal('client');
-    return;
-  }
-
-  // Title
+  // ── Titre
   var titleEl = document.createElement('div');
   titleEl.className = 'mdl-t';
-  titleEl.innerHTML = c.prenom + ' ' + c.nom;
+  titleEl.innerHTML = (c.prenom||'') + ' ' + (c.nom||'');
   var closeBtn = document.createElement('button');
   closeBtn.className = 'mdl-x'; closeBtn.textContent = '✕';
   closeBtn.onclick = function(){ closeModal('client'); };
   titleEl.appendChild(closeBtn);
   container.appendChild(titleEl);
 
-  // Phase courante badge
-  var phaseBadge = document.createElement('div');
-  phaseBadge.style.cssText = 'display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:50px;border:1.5px solid var(--rim);background:rgba(139,21,32,.05);margin-bottom:10px';
-  phaseBadge.innerHTML = '<span style="font-size:18px">'+pl.ico+'</span>'
-    + '<div><div style="font-weight:700;font-size:13px;color:var(--bx)">'+pl.name+'</div>'
-    + '<div style="font-size:10px;color:var(--tx3)">Run '+c.phaseRuns.length+' · '+(currentRun&&currentRun.certified?'Certifié':'En cours')+'</div></div>';
-  container.appendChild(phaseBadge);
-
-  // Pills
+  // ── Pills résumé
   var pills = document.createElement('div');
-  pills.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px';
-  var sp = {'Closé':'pill-G','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R'};
-  if (c.profil_code) pills.innerHTML += '<span class="pill pill-bx">'+c.profil_code+'</span>';
-  if (c.statut) pills.innerHTML += '<span class="pill '+(sp[c.statut]||'')+'">'+c.statut+'</span>';
-  if (c.montant) pills.innerHTML += '<span class="pill pill-Y">'+c.montant+'€</span>';
-  pills.innerHTML += '<span class="pill pill-B">'+pct+'%</span>';
-
-  // Certs obtenues
-  var certs = c.phaseRuns.filter(function(r){return r.certified;});
-  if (certs.length > 0) {
-    certs.forEach(function(r) {
-      var pl2 = PHASE_LABELS[r.phaseKey];
-      if (pl2 && pl2.cert) pills.innerHTML += '<span class="pill pill-G" style="font-size:9px">🏆 '+pl2.cert+'</span>';
-    });
-  }
+  pills.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px';
+  var certCount = c.phaseRuns.filter(function(r){ return r.certified; }).length;
+  pills.innerHTML = '<span class="pill pill-G">Closé</span>'
+    + (certCount > 0 ? '<span class="pill pill-bx">'+certCount+' certif'+( certCount>1?'s':'')+'</span>' : '')
+    + (c.profil_code && c.profil_code !== 'PRO' ? '<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.profil_code+'</span>' : '');
   container.appendChild(pills);
 
-  // Duo/groupe liens
-  if (c.linkedClients && c.linkedClients.length > 0) {
-    var duoDiv = document.createElement('div');
-    duoDiv.style.cssText = 'background:rgba(26,110,219,.05);border:1.5px solid rgba(26,110,219,.18);border-radius:var(--r2);padding:10px 12px;margin-bottom:10px;font-size:12px';
-    var linkedNames = c.linkedClients.map(function(lid) {
-      var linked = ST.clients.find(function(x){return x.id===lid;});
-      return linked ? linked.prenom+' '+linked.nom : '—';
-    }).join(', ');
-    duoDiv.innerHTML = '<span style="font-weight:700;color:var(--B)">👥 Duo/Groupe avec : </span>' + linkedNames
-      + (c.groupeOffre ? ' <span style="color:var(--tx3)">· '+c.groupeOffre+'</span>' : '');
-    container.appendChild(duoDiv);
+  // ── Runs
+  var allPhases = getClientPhasesAll(c);
+  while (c.phases && c.phases.length < allPhases.length) {
+    c.phases.push({id: allPhases[c.phases.length].id, done:false, startDate:null});
   }
+  if (!c.phases) c.phases = allPhases.map(function(p){ return {id:p.id,done:false,startDate:null}; });
 
-  // Barre globale
-  var pbar = document.createElement('div');
-  pbar.className = 'parcours-pct';
-  pbar.innerHTML = '<div class="parcours-pct-fill" style="width:'+pct+'%"></div>';
-  container.appendChild(pbar);
+  var currentRunIdx = c.phaseRuns.length - 1;
 
-  // Toggle anciens runs
-  var toggleBtn = document.createElement('button');
-  toggleBtn.className = 'btn btn-dk btn-sm';
-  toggleBtn.style.cssText = 'margin:10px 0 8px;font-size:11px';
-  toggleBtn.textContent = 'Afficher tous les runs ('+c.phaseRuns.length+')';
-  var allVisible = false;
-  toggleBtn.onclick = function() {
-    allVisible = !allVisible;
-    container.querySelectorAll('.cycle-body').forEach(function(b) {
-      var isLast = b.dataset.runIdx == (c.phaseRuns.length-1).toString();
-      b.classList.toggle('open', allVisible || isLast);
-    });
-    toggleBtn.textContent = allVisible
-      ? 'Masquer anciens runs'
-      : 'Afficher tous les runs ('+c.phaseRuns.length+')';
-  };
-  container.appendChild(toggleBtn);
-
-  // === UN ACCORDÉON PAR RUN ===
-  var customBase = loadPhasesCustom().base || PHASES_BASE;
-  var phaseOffset = 0;
+  // Vérifier si Run 1 est entièrement validé
+  var run1Phases = getClientPhasesAll(c).filter(function(p){ return p.runIdx === 0; });
+  var run1Done = run1Phases.every(function(p, i){
+    return c.phases[i] && c.phases[i].done;
+  });
 
   c.phaseRuns.forEach(function(run, ri) {
-    var pl3 = PHASE_LABELS[run.phaseKey] || PHASE_LABELS.reset;
-    var isLast = ri === c.phaseRuns.length - 1;
-    var runPhases = customBase.map(function(p){
-      return Object.assign({}, p, {id:p.id+'_r'+ri, runIdx:ri, phaseKey:run.phaseKey});
-    });
-    var runDone = runPhases.filter(function(_,i){
-      return c.phases[phaseOffset+i] && c.phases[phaseOffset+i].done;
-    }).length;
-    var runPct = Math.round(runDone/runPhases.length*100);
+    var isCurrentRun = ri === currentRunIdx;
+    var runPhases = allPhases.filter(function(p){ return p.runIdx === ri; });
+    var phaseOffset = allPhases.filter(function(p){ return p.runIdx < ri; }).length;
 
-    var sec = document.createElement('div');
-    sec.className = 'cycle-section';
+    var doneCnt = runPhases.filter(function(p,i){ return c.phases[phaseOffset+i] && c.phases[phaseOffset+i].done; }).length;
+    var pct = runPhases.length > 0 ? Math.round(doneCnt/runPhases.length*100) : 0;
+    var allDone = doneCnt === runPhases.length;
 
-    var hd = document.createElement('div');
-    hd.className = 'cycle-header' + (isLast ? ' active-cycle' : '');
-    hd.onclick = function(){
-      var body = sec.querySelector('.cycle-body');
-      body.classList.toggle('open');
-    };
-
+    // Label du run
     var offres = loadOffres();
-    var runOffre = run.offreId ? offres.find(function(o){return o.id===run.offreId;}) : null;
-    var offresub = runOffre ? runOffre.name+' · '+runOffre.price+'€' : (ri===0 ? 'Choisir offre ↓' : 'Aucune offre');
-    var runLabel = ri === 0 ? 'Run 1 — Entrée' : ('Run '+(ri+1)+' — '+(runOffre ? getRunType(runOffre.name)==='programme' ? 'Programme' : 'Suivi' : ''));
-    var runIco = ri === 0 ? '🚪' : (runOffre ? (getRunType(runOffre.name)==='programme' ? '🔴' : '💼') : '📋');
+    var runOffre = run.offreId ? offres.find(function(o){ return o.id===run.offreId; }) : null;
+    var runLabel = ri === 0 ? 'Run 1 — Entrée' : ('Run '+(ri+1)+' — '+(runOffre ? runOffre.name.split(' ').slice(0,3).join(' ') : 'Programme'));
+    var runIco = ri === 0 ? '🚪' : (runOffre && getRunType(runOffre.name)==='suivi' ? '💼' : '🔴');
 
-    hd.innerHTML = '<div class="cycle-header-ico">'+runIco+'</div>'
-      + '<div class="cycle-header-info">'
-      + '<div class="cycle-header-title">'+runLabel+(isLast?' <span style="font-size:9px;background:var(--bx);color:#fff;padding:2px 6px;border-radius:50px;margin-left:4px">EN COURS</span>':'')+(run.certified?' <span style="font-size:9px;background:var(--G);color:#fff;padding:2px 6px;border-radius:50px;margin-left:4px">🏆</span>':'')+'</div>'
-      + '<div class="cycle-header-sub">'+offresub+' · '+runDone+'/'+runPhases.length+' étapes</div>'
-      + '<div class="cycle-progress"><div class="cycle-progress-fill" style="width:'+runPct+'%"></div></div>'
-      + '</div>'
-      + '<span style="color:var(--tx4);font-size:11px;margin-left:4px">▼</span>';
-    sec.appendChild(hd);
+    // Accordéon
+    var acc = document.createElement('div');
+    acc.style.cssText = 'background:var(--bg2);border:1.5px solid '+(isCurrentRun?'var(--bx)':'var(--rim3)')+';border-radius:var(--r2);margin-bottom:10px;overflow:hidden';
 
-    var body = document.createElement('div');
-    body.className = 'cycle-body' + (isLast ? ' open' : '');
-    body.dataset.runIdx = ri;
-
-    // Sélecteur offre
-    var offreRow = document.createElement('div');
-    offreRow.style.cssText = 'margin-bottom:11px';
-    var offreLbl = document.createElement('label');
-    offreLbl.textContent = 'Offre de ce run';
-    offreRow.appendChild(offreLbl);
-    var offreSel = document.createElement('select');
-    offreSel.style.marginTop = '5px';
-    offreSel.innerHTML = '<option value="">— Choisir —</option>';
-    offres.filter(function(o){return o.parcours||o.isAbonnement;}).forEach(function(o){
-      var opt = document.createElement('option');
-      opt.value = o.id;
-      opt.textContent = o.name+' — '+o.price+'€ · '+o.durVal+' '+o.durUnit;
-      if (run.offreId === o.id) opt.selected = true;
-      offreSel.appendChild(opt);
-    });
-    var capturedRi = ri;
-    offreSel.onchange = function() {
-      c.phaseRuns[capturedRi].offreId = this.value;
-      c.updated_at = new Date().toISOString();
-      localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-      renderClientModal(id);
+    // Header accordéon
+    var hd = document.createElement('div');
+    hd.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;'+(isCurrentRun?'background:rgba(139,21,32,.04)':'');
+    hd.onclick = function(){
+      var body = acc.querySelector('.run-body');
+      var isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'block';
     };
-    offreRow.appendChild(offreSel);
-    body.appendChild(offreRow);
 
-    // Jauge offre
-    if (run.offreId) {
-      var selOffre = offres.find(function(o){return o.id===run.offreId;});
-      if (selOffre) {
-        var jv = run.jaugeVal || 0;
-        var jpct = Math.min(100, Math.round(jv/selOffre.durVal*100));
-        var capturedRi2 = ri;
-        var jDiv = document.createElement('div');
-        jDiv.className = 'offre-jauge';
-        jDiv.innerHTML = '<div class="offre-jauge-top">'
-          + '<div class="offre-jauge-name">'+selOffre.name+'</div>'
-          + '<div class="offre-jauge-pct" id="jpct_'+ri+'">'+jv+'/'+selOffre.durVal+' '+selOffre.durUnit+'</div>'
-          + '</div>'
-          + '<div class="offre-jauge-bar"><div class="offre-jauge-fill" id="jfill_'+ri+'" style="width:'+jpct+'%"></div></div>'
-          + '<div class="offre-jauge-controls">'
-          + '<button class="jauge-btn" data-ri="'+ri+'" data-cid="'+id+'" data-d="-1" onclick="updateJaugeRun(this)">−</button>'
-          + '<span style="font-size:12px;color:var(--tx3);flex:1;text-align:center">'+jpct+'% accompli</span>'
-          + '<button class="jauge-btn" data-ri="'+ri+'" data-cid="'+id+'" data-d="1" onclick="updateJaugeRun(this)">＋</button>'
-          + '</div>';
-        body.appendChild(jDiv);
-      }
+    var pbar = '<div style="height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:4px"><div style="height:100%;width:'+pct+'%;background:'+(allDone?'var(--G)':'var(--bx)')+';border-radius:2px;transition:width .3s"></div></div>';
+    hd.innerHTML = '<span style="font-size:18px">'+runIco+'</span>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-weight:700;font-size:13.5px;color:'+(isCurrentRun?'var(--bx)':'var(--tx)')+'">'
+      + runLabel
+      + (isCurrentRun ? '<span style="font-size:9px;background:var(--bx);color:#fff;padding:2px 6px;border-radius:50px;margin-left:6px">EN COURS</span>' : '')
+      + (allDone && !isCurrentRun ? '<span style="font-size:9px;background:var(--G);color:#fff;padding:2px 6px;border-radius:50px;margin-left:6px">✓</span>' : '')
+      + '</div>'
+      + '<div style="font-size:11px;color:var(--tx3);margin-top:1px">'+doneCnt+'/'+runPhases.length+' étapes'+( runOffre ? ' · '+runOffre.name.split(' ').slice(0,3).join(' ') : '')+' </div>'
+      + pbar + '</div>'
+      + '<span style="color:var(--tx4);font-size:11px">'+(isCurrentRun?'▼':'▶')+'</span>';
+    acc.appendChild(hd);
+
+    // Body accordéon
+    var body = document.createElement('div');
+    body.className = 'run-body';
+    body.style.cssText = 'padding:12px 14px;border-top:1px solid var(--rim3);display:'+(isCurrentRun?'block':'none');
+
+    // Sélecteur offre (Run 1 uniquement)
+    if (ri === 0) {
+      var offreLbl = document.createElement('label');
+      offreLbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px';
+      offreLbl.textContent = 'Offre choisie';
+      body.appendChild(offreLbl);
+      var offreSel = document.createElement('select');
+      offreSel.style.marginBottom = '12px';
+      offreSel.innerHTML = '<option value="">— Choisir —</option>';
+      loadOffres().forEach(function(o) {
+        var opt = document.createElement('option');
+        opt.value = o.id;
+        opt.textContent = o.name + ' — ' + o.price + '€';
+        if (run.offreId === o.id) opt.selected = true;
+        offreSel.appendChild(opt);
+      });
+      offreSel.onchange = function() {
+        c.phaseRuns[ri].offreId = this.value;
+        c.updated_at = new Date().toISOString();
+        localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+        renderClientModal(id);
+      };
+      body.appendChild(offreSel);
     }
 
-    // Thermomètre
-    var thLabel = document.createElement('div');
-    thLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin:10px 0 8px';
-    thLabel.textContent = 'Étapes du run';
-    body.appendChild(thLabel);
-
-    var wrap = document.createElement('div');
-    wrap.className = 'parcours-wrap';
-    var steps = document.createElement('div');
-    steps.className = 'parcours-steps';
-    var capturedOffset = phaseOffset;
+    // Thermomètre compact
+    var thWrap = document.createElement('div');
+    thWrap.className = 'parcours-wrap';
+    var thSteps = document.createElement('div');
+    thSteps.className = 'parcours-steps';
 
     runPhases.forEach(function(ph, i) {
-      var gi = capturedOffset + i;
+      var gi = phaseOffset + i;
       var isDone = c.phases[gi] && c.phases[gi].done;
-      var isActive = gi === currentIdx;
+      var isCur = gi === c.phases.reduce(function(acc,p,idx){ return p.done?idx+1:acc; }, 0);
       var ps = document.createElement('div');
-      ps.className = 'ps ' + (isDone?'done':isActive?'active':'locked');
-      ps.title = ph.lbl+(ph.days>0?' ('+ph.days+'j)':'');
+      ps.className = 'ps ' + (isDone?'done':isCur?'active':'locked');
+      ps.title = ph.lbl + (ph.days>0?' ('+ph.days+'j)':'');
       ps.dataset.gi = gi; ps.dataset.cid = id;
       ps.onclick = function(){ togglePhase(this.dataset.cid, parseInt(this.dataset.gi)); };
       ps.innerHTML = '<div class="ps-dot">'+(isDone?'✓':ph.ico)+'</div>'
-        +'<div class="ps-lbl">'+ph.lbl+(ph.days>0?'<br><span style="color:var(--bx3);font-size:7px">'+ph.days+'j</span>':'')+'</div>';
-      steps.appendChild(ps);
+        +'<div class="ps-lbl">'+ph.lbl+(ph.days>0?'<br><span style="font-size:7px;color:var(--bx3)">'+ph.days+'j</span>':'')+'</div>';
+      thSteps.appendChild(ps);
     });
-    wrap.appendChild(steps);
-    body.appendChild(wrap);
+    thWrap.appendChild(thSteps);
+    body.appendChild(thWrap);
 
-    // Certification automatique + choix de trajectoire
-    if (isLast) {
-      var lastPhDone = c.phases[capturedOffset+runPhases.length-1] && c.phases[capturedOffset+runPhases.length-1].done;
-      if (lastPhDone) {
-        // Auto-certifier RESET uniquement
-        // SCULPT/HEALTH = certification manuelle après 3 mois
-        var isReset = run.phaseKey === 'reset';
-        var isContinuePhase = pl3.isContinue;
-        var minDays = 90; // 3 mois minimum pour certifier sculpt/health
+    // Action si run actuel terminé
+    if (isCurrentRun && allDone) {
+      var actionDiv = document.createElement('div');
+      actionDiv.style.cssText = 'margin-top:12px;padding:12px;background:rgba(139,21,32,.05);border:1.5px solid var(--bx);border-radius:var(--r2);text-align:center';
 
-        // Calculer le nombre de jours depuis le démarrage du run
-        var runStartDate = (c.phases[capturedOffset] && c.phases[capturedOffset].startDate)
-          ? new Date(c.phases[capturedOffset].startDate)
-          : null;
-        var daysSinceStart = runStartDate
-          ? Math.floor((new Date() - runStartDate) / (1000*60*60*24))
-          : 999;
-        var minReached = daysSinceStart >= minDays;
-
-        if (isReset && !run.certified) {
-          // Auto-certifier Reset
+      if (ri === 0) {
+        // Run 1 terminé → activer Run 2
+        actionDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--bx);margin-bottom:8px">✅ Run 1 validé — Démarrer le programme ?</div>';
+        var startBtn = document.createElement('button');
+        startBtn.className = 'btn btn-bx btn-sm';
+        startBtn.textContent = runOffre ? ('▶ Démarrer ' + runOffre.name.split(' ').slice(0,3).join(' ')) : '▶ Démarrer Run 2';
+        startBtn.dataset.cid = id;
+        startBtn.onclick = function() { startRun2(this.dataset.cid); };
+        actionDiv.appendChild(startBtn);
+      } else if (run.phaseKey !== 'cont') {
+        // Run programme terminé → certification auto Reset + choix suite
+        if (!run.certified) {
           run.certified = true;
           c.updated_at = new Date().toISOString();
           localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
         }
-        var isContinuePhase = pl3.isContinue;
-        var actionDiv = document.createElement('div');
-        actionDiv.style.cssText = 'margin-top:12px;background:rgba(139,21,32,.05);border:1.5px solid var(--bx);border-radius:var(--r);padding:14px;text-align:center';
+        var pl = PHASE_LABELS[run.phaseKey] || PHASE_LABELS.reset;
+        var isReset = run.phaseKey === 'reset';
+        var isSculpt = run.phaseKey === 'sculpt';
 
-        // Certification — Reset auto, Sculpt/Health manuel après 3 mois
-        if (!isReset && !run.certified) {
-          // Sculpt ou Health : afficher statut + bouton certifier si 3 mois atteints
-          var daysLeft = Math.max(0, minDays - daysSinceStart);
-          if (!minReached) {
-            // Pas encore 3 mois — afficher le compte à rebours
-            actionDiv.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--bx);margin-bottom:6px">'
-              + pl3.ico + ' Toutes les étapes complètes !</div>'
-              + '<div style="font-size:12px;color:var(--tx3);margin-bottom:10px">Certification disponible dans <strong style="color:var(--bx)">'
-              + daysLeft + ' jour'+(daysLeft>1?'s':'')+'</strong> (3 mois minimum requis)</div>'
-              + '<div class="sbar" style="margin-bottom:0"><div class="sfill" style="width:'
-              + Math.round(daysSinceStart/minDays*100)+'%;background:var(--bx)"></div></div>';
-            body.appendChild(actionDiv);
-            return;
-          }
-          // 3 mois atteints — bouton certifier manuel
-          actionDiv.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--bx);margin-bottom:10px">'
-            + pl3.ico + ' 3 mois atteints — Certification disponible</div>';
-          var certBtn = document.createElement('button');
-          certBtn.className = 'btn btn-bx btn-w btn-sm';
-          certBtn.style.marginBottom = '12px';
-          certBtn.textContent = '🏆 Certifier ' + (pl3.cert || pl3.name);
-          certBtn.dataset.cid = id;
-          certBtn.onclick = function(){
-            var cc = ST.clients.find(function(x){return x.id==this.dataset.cid;}.bind(this));
-            if (cc && cc.phaseRuns) {
-              cc.phaseRuns[cc.phaseRuns.length-1].certified = true;
-              cc.updated_at = new Date().toISOString();
-              localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-              toast('ok', '🏆 ' + (pl3.cert||'Certification') + ' obtenue !');
-            }
-            renderClientModal(this.dataset.cid);
-          };
-          actionDiv.appendChild(certBtn);
-          body.appendChild(actionDiv);
-          return;
-        }
-
-        // Certified (auto Reset ou manuel Sculpt/Health) — afficher les suites
-        var certHtml = pl3.cert
-          ? '<div style="font-size:15px;font-weight:800;color:var(--bx);margin-bottom:3px">🏆 '+pl3.cert+'</div>'
-            + '<div style="font-size:11.5px;color:var(--tx3);margin-bottom:12px">Choisir la suite :</div>'
-          : '<div style="font-size:13px;font-weight:700;color:var(--bx);margin-bottom:12px">'+pl3.ico+' Choisir la suite :</div>';
-        actionDiv.innerHTML = certHtml;
+        actionDiv.innerHTML = '<div style="font-weight:800;font-size:14px;color:var(--bx);margin-bottom:3px">🏆 '+(pl.cert||'Certification')+'</div>'
+          + '<div style="font-size:11.5px;color:var(--tx3);margin-bottom:10px">Quelle est la suite ?</div>';
 
         var suites = loadSuiteOptions();
         suites.forEach(function(s) {
           var btn = document.createElement('button');
           btn.className = 'btn btn-dk btn-w btn-sm';
-          btn.style.cssText = 'margin-bottom:7px;text-align:left;justify-content:flex-start';
-          btn.textContent = s.ico+' '+s.label;
-          btn.dataset.cid = id;
-          btn.dataset.suitekey = s.key;
-          btn.dataset.phasekeyval = s.phaseKey || run.phaseKey;
-          btn.onclick = function(){
-            activateCycle2(this.dataset.cid, 'suite', {
-              suiteKey: this.dataset.suitekey,
-              phaseKey: this.dataset.phasekeyval
-            });
-          };
+          btn.style.cssText = 'margin-bottom:6px;text-align:left;justify-content:flex-start';
+          btn.textContent = s.ico + ' ' + s.label;
+          btn.dataset.cid = id; btn.dataset.suitekey = s.key; btn.dataset.phasekey = s.phaseKey || run.phaseKey;
+          btn.onclick = function() { activateCycle2(this.dataset.cid, 'suite', {suiteKey:this.dataset.suitekey, phaseKey:this.dataset.phasekey}); };
           actionDiv.appendChild(btn);
         });
-
-        body.appendChild(actionDiv);
       }
+      body.appendChild(actionDiv);
     }
 
-    sec.appendChild(body);
-    container.appendChild(sec);
-    phaseOffset += runPhases.length;
+    acc.appendChild(body);
+    container.appendChild(acc);
   });
 
-  // Statut
-  var statutLabel = document.createElement('div');
-  statutLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin:12px 0 8px';
-  statutLabel.textContent = 'Statut commercial';
-  container.appendChild(statutLabel);
-  var statutWrap = document.createElement('div');
-  statutWrap.style.cssText = 'display:flex;flex-direction:column;gap:7px;margin-bottom:13px';
-  ['Non closé','Closé','À relancer','Refusé'].forEach(function(s) {
-    var btn = document.createElement('button');
-    btn.className = 'btn btn-dk btn-w btn-sm';
-    btn.textContent = s;
-    btn.style.borderColor = c.statut===s ? 'var(--bx)' : 'var(--rim3)';
-    btn.style.fontWeight = c.statut===s ? '700' : '400';
-    btn.dataset.statut = s; btn.dataset.cid = id;
-    btn.onclick = function(){ updateStatutParcours(this.dataset.cid, this.dataset.statut); };
-    statutWrap.appendChild(btn);
-  });
-  container.appendChild(statutWrap);
-
-  // Lier à un autre client
-  var duoSection = document.createElement('div');
-  duoSection.style.cssText = 'margin-bottom:13px';
-  var duoLabel = document.createElement('div');
-  duoLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px';
-  duoLabel.textContent = '👥 Coaching Duo / Groupe';
-  duoSection.appendChild(duoLabel);
-  var duoSel = document.createElement('select');
-  duoSel.style.marginBottom = '7px';
-  duoSel.innerHTML = '<option value="">— Lier à un client —</option>';
-  ST.clients.filter(function(x){return x.id!==id;}).forEach(function(x){
-    var opt = document.createElement('option');
-    opt.value = x.id;
-    opt.textContent = x.prenom+' '+x.nom+(x.ville?' · '+x.ville:'');
-    if (c.linkedClients && c.linkedClients.includes(x.id)) opt.selected = true;
-    duoSel.appendChild(opt);
-  });
-  duoSel.onchange = function() {
-    if (!this.value) return;
-    if (!c.linkedClients) c.linkedClients = [];
-    if (!c.linkedClients.includes(this.value)) {
-      c.linkedClients.push(this.value);
-      // Lier aussi l'autre
-      var other = ST.clients.find(function(x){return x.id===duoSel.value;});
-      if (other) { if(!other.linkedClients) other.linkedClients=[]; if(!other.linkedClients.includes(id)) other.linkedClients.push(id); }
-      c.updated_at = new Date().toISOString();
-      localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-      toast('ok', 'Lien créé');
-      renderClientModal(id);
-    }
-  };
-  duoSection.appendChild(duoSel);
-
-  if (c.linkedClients && c.linkedClients.length > 0) {
-    c.linkedClients.forEach(function(lid) {
-      var linked = ST.clients.find(function(x){return x.id===lid;});
-      if (!linked) return;
-      var row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg3);border-radius:var(--r3);margin-bottom:5px;font-size:13px';
-      row.innerHTML = '<span style="font-size:16px">👤</span><span style="flex:1;font-weight:600">'+linked.prenom+' '+linked.nom+'</span>'
-        + '<span style="font-size:11px;color:var(--tx3)">'+(linked.statut||'')+'</span>';
-      var unlinkBtn = document.createElement('button');
-      unlinkBtn.className = 'ffe-btn';
-      unlinkBtn.textContent = '✕';
-      unlinkBtn.dataset.lid = lid;
-      unlinkBtn.dataset.cid = id;
-      unlinkBtn.onclick = function(){
-        c.linkedClients = c.linkedClients.filter(function(x){return x!==this.dataset.lid;}.bind(this));
-        var other2 = ST.clients.find(function(x){return x.id===this.dataset.lid;}.bind(this));
-        if(other2 && other2.linkedClients) other2.linkedClients=other2.linkedClients.filter(function(x){return x!==id;});
-        localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-        renderClientModal(id);
-      };
-      row.appendChild(unlinkBtn);
-      duoSection.appendChild(row);
-    });
+  // ── Bouton "Voir anciens runs" si > 1 run
+  if (c.phaseRuns.length > 1) {
+    var toggleOld = document.createElement('button');
+    toggleOld.className = 'btn btn-dk btn-sm';
+    toggleOld.style.cssText = 'width:100%;margin-bottom:12px;font-size:11px';
+    toggleOld.textContent = 'Voir historique des runs (' + (c.phaseRuns.length-1) + ')';
+    var oldVisible = false;
+    toggleOld.onclick = function() {
+      oldVisible = !oldVisible;
+      var bodies = container.querySelectorAll('.run-body');
+      bodies.forEach(function(b, i) {
+        if (i < bodies.length - 1) b.style.display = oldVisible ? 'block' : 'none';
+      });
+      toggleOld.textContent = oldVisible ? 'Masquer historique' : 'Voir historique des runs ('+(c.phaseRuns.length-1)+')';
+    };
+    // Insérer avant le premier accordéon
+    container.insertBefore(toggleOld, container.children[2]);
   }
-  container.appendChild(duoSection);
 
-  // CTA rapport
-  // Bouton modifier infos de base
-  var editInfoBtn = document.createElement('button');
-  editInfoBtn.className = 'btn btn-dk btn-w btn-sm';
-  editInfoBtn.style.marginBottom = '9px';
-  editInfoBtn.textContent = '✏️ Modifier les infos';
-  editInfoBtn.dataset.cid = id;
-  editInfoBtn.onclick = function(){ openEditClientModal(this.dataset.cid); };
-  container.appendChild(editInfoBtn);
+  // ── Bouton modifier infos
+  var editBtn = document.createElement('button');
+  editBtn.className = 'btn btn-dk btn-w btn-sm';
+  editBtn.style.marginTop = '4px';
+  editBtn.textContent = '✏️ Modifier les infos';
+  editBtn.dataset.cid = id;
+  editBtn.onclick = function(){ openEditClientModal(this.dataset.cid); };
+  container.appendChild(editBtn);
 
-  var brow2 = document.createElement('div');
-  brow2.className = 'brow';
-  if (c.final_report) {
-    var rBtn = document.createElement('button');
-    rBtn.className='btn btn-bx btn-w'; rBtn.textContent='Voir rapport →';
-    rBtn.onclick=function(){closeModal('client');openFromSaved();};
-    brow2.appendChild(rBtn);
-  } else {
-    var bBtn = document.createElement('button');
-    bBtn.className='btn btn-dk btn-w'; bBtn.textContent='Compléter le bilan →';
-    bBtn.onclick=function(){closeModal('client');showPg('bilan');};
-    brow2.appendChild(bBtn);
-  }
-  container.appendChild(brow2);
   openModal('client');
 }
 
-
-function updateJaugeRun(btn) {
-  var clientId = btn.dataset.cid;
-  var ri = parseInt(btn.dataset.ri);
-  var delta = parseInt(btn.dataset.d)||0;
-  var c = ST.clients.find(function(x){return x.id==clientId;});
-  if (!c || !c.phaseRuns || !c.phaseRuns[ri]) return;
-  var run = c.phaseRuns[ri];
+function startRun2(clientId) {
+  var c = ST.clients.find(function(x){ return x.id==clientId; });
+  if (!c) return;
+  var run1 = c.phaseRuns[0];
   var offres = loadOffres();
-  var selOffre = offres.find(function(o){return o.id===run.offreId;});
-  if (!selOffre) return;
-  run.jaugeVal = Math.max(0, Math.min(selOffre.durVal, (run.jaugeVal||0) + delta));
-  c.updated_at = new Date().toISOString();
-  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-  var pct = Math.min(100, Math.round(run.jaugeVal/selOffre.durVal*100));
-  var fillEl = document.getElementById('jfill_'+ri);
-  var pctEl = document.getElementById('jpct_'+ri);
-  if(fillEl) fillEl.style.width = pct+'%';
-  if(pctEl) pctEl.textContent = run.jaugeVal+'/'+selOffre.durVal+' '+selOffre.durUnit;
-}
-
-function togglePhase(clientId, phaseIndex) {
-  const c = ST.clients.find(x => x.id == clientId);
-  if (!c) return;
-  const allPhases = getClientPhasesAll(c);
-  if (!c.phases || c.phases.length < allPhases.length) {
-    c.phases = allPhases.map(p => ({id:p.id, done:false, startDate:null}));
-  }
-  while (c.phases.length < allPhases.length) {
-    c.phases.push({id: allPhases[c.phases.length].id, done:false, startDate:null});
-  }
-  const ph = c.phases[phaseIndex];
-  ph.done = !ph.done;
-  if (ph.done && !ph.startDate) ph.startDate = new Date().toISOString().split('T')[0];
-  c.updated_at = new Date().toISOString();
-  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-  saveToSupabase(c);
-  renderClientModal(clientId);
-}
-
-function activateCycle2(clientId, action, param) {
-  var c = ST.clients.find(function(x){return x.id==clientId;});
-  if (!c) return;
-  if (!c.phaseRuns || c.phaseRuns.length===0) {
-    c.phaseRuns = [{phaseKey:'reset', certified:false, offreId:null, jaugeVal:0}];
-  }
-
-  var newPhaseKey = 'reset';
-
-  if (action === 'suite') {
-    // Suite choisie par le coach — phaseKey vient de la suite
-    newPhaseKey = (param && param.phaseKey) ? param.phaseKey : 'reset';
-    c.phaseRuns.push({
-      phaseKey: newPhaseKey,
-      certified: false,
-      offreId: null,
-      jaugeVal: 0,
-      suiteKey: param ? param.suiteKey : null,
-      label: param && param.suiteKey ? (loadSuiteOptions().find(function(s){return s.key===param.suiteKey;}) || {}).label : null
-    });
-    var pl = PHASE_LABELS[newPhaseKey] || {};
-    toast('ok', (pl.ico||'') + ' ' + (pl.name||'Nouveau cycle') + ' démarré !');
-  } else {
-    // Compat ancien code
-    var lastRun = c.phaseRuns[c.phaseRuns.length-1];
-    newPhaseKey = (action==='next_phase' && param) ? param : 'reset';
-    c.phaseRuns.push({phaseKey:newPhaseKey, certified:false, offreId:null, jaugeVal:0});
-    toast('ok','Nouveau cycle démarré !');
-  }
-
+  var o = run1.offreId ? offres.find(function(x){ return x.id===run1.offreId; }) : null;
+  var phaseKey = o && getRunType(o.name)==='programme' ? 'reset' : 'suivi';
+  c.phaseRuns.push({phaseKey:phaseKey, offreId:run1.offreId, jaugeVal:0, certified:false});
   c.cycle = c.phaseRuns.length;
-  var allPhases = getClientPhasesAll(c);
+  var allPh = getClientPhasesAll(c);
   if (!c.phases) c.phases = [];
-  while (c.phases.length < allPhases.length) {
-    var ph2 = allPhases[c.phases.length];
-    c.phases.push({id:ph2.id, done:false, startDate:null});
+  while (c.phases.length < allPh.length) {
+    c.phases.push({id:allPh[c.phases.length].id, done:false, startDate:null});
   }
   c.updated_at = new Date().toISOString();
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
   renderClientModal(clientId);
+  toast('ok', 'Run 2 démarré !');
 }
 
-function updateStatutParcours(id, statut) {
-  const c = ST.clients.find(x => x.id == id);
-  if (c) { c.statut = statut; c.updated_at = new Date().toISOString(); }
-  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-  fetch(ST.sbUrl+'/rest/v1/be_activ_clients?id=eq.'+id,{method:'PATCH',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey},body:JSON.stringify({statut,updated_at:new Date().toISOString()})}).catch(()=>{});
-  renderClientModal(id);
-  renderClients();
-  toast('ok', '✅ Statut mis à jour');
-}
 
-async function saveToSupabase(c){
-  if(!ST.sbUrl||!ST.sbKey)return;
-  try{
-    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,age:parseInt(c.age)||null,ville:c.ville,profession:c.profession,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offres:c.offres,pret_payer:c.pretPayer,montant:c.montant?parseFloat(c.montant):null,statut:c.statut,score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report}),updated_at:c.updated_at})});
-  }catch(e){}
-}
-async function loadFromSupabase(){
-  if(!ST.sbUrl||!ST.sbKey)return;
-  try{
-    const res=await fetch(ST.sbUrl+'/rest/v1/be_activ_clients?order=updated_at.desc&limit=500',{headers:{'apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey}});
-    if(!res.ok)return;const rows=await res.json();
-    rows.forEach(row=>{
-      let pq=null,bilan=null,final=null;
-      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;}catch(e){}
-      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,ville:row.ville,profession:row.profession,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offres,pretPayer:row.pret_payer,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,updated_at:row.updated_at};
-      const i=ST.clients.findIndex(c=>c.id===sc.id);if(i>=0)ST.clients[i]=sc;else ST.clients.unshift(sc);
-    });
-    localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
-    toast('info','☁️ '+rows.length+' clients synchronisés');
-  }catch(e){}
-}
-
-// ═══════════════════════════════════════════════════
-// NEW CLIENT
-// ═══════════════════════════════════════════════════
-function newClient(){
-  ST.clientId=null;ST.pqSummary=null;ST.bilanSummary=null;ST.finalReport=null;
-  document.getElementById('pq-result').style.display='none';
-  document.getElementById('pq-cta').style.display='none';
-  document.getElementById('bilan-result').style.display='none';
-  document.getElementById('bilan-cta').style.display='none';
-  document.getElementById('rpt-empty').style.display='block';
-  document.getElementById('rpt-content').style.display='none';
-  document.getElementById('rpt-actions').style.display='none';
-  renderBilanForm();renderTestsForm();
-  toast('info','✚ Nouveau dossier');
-}
-
-// ═══════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════
-function toggleMore() {
-  const m = document.getElementById('nav-more');
-  m.style.display = m.style.display === 'none' ? 'block' : 'none';
-}
-function closeMore() {
-  document.getElementById('nav-more').style.display = 'none';
-}
 function openModal(n){const m=document.getElementById('m-'+n);if(m)m.classList.add('open');}
 function closeModal(n){const m=document.getElementById('m-'+n);if(m)m.classList.remove('open');}
 document.querySelectorAll('.mbg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
@@ -3761,132 +3424,8 @@ function previewForm(formKey) {
 }
 
 function renderParcoursEditor() {
-  var el = document.getElementById('editor-parcours');
-  if (!el) return;
-  var phases = loadPhasesCustom();
-  var sections = [
-    {key:'run1',      label:'🚪 Run 1 — Entree (universel)',    desc:'Etapes communes a tous les clients'},
-    {key:'programme', label:'🔴 Run Programme (Reset/Hybride/Online/Program)', desc:'Etapes ACTIV avec certification'},
-    {key:'suivi',     label:'💼 Run Suivi (JM Pass, Cardio Mouv)', desc:'Etapes sans certification'},
-    {key:'cont',      label:'♾️ ACTIV CONTINUE',                  desc:'Etapes abonnement mensuel'}
-  ];
-
-  el.innerHTML = '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Run 1 universel pour tous. Run 2+ selon offre choisie.</p>';
-
-  sections.forEach(function(sec) {
-    var steps = phases[sec.key] || [];
-    var secDiv = document.createElement('div');
-    secDiv.style.marginBottom = '18px';
-
-    var secTitle = document.createElement('div');
-    secTitle.style.cssText = 'font-weight:700;font-size:13px;color:var(--bx);margin-bottom:3px';
-    secTitle.textContent = sec.label;
-    secDiv.appendChild(secTitle);
-
-    var secDesc = document.createElement('div');
-    secDesc.style.cssText = 'font-size:11px;color:var(--tx3);margin-bottom:8px';
-    secDesc.textContent = sec.desc;
-    secDiv.appendChild(secDesc);
-
-    var listDiv = document.createElement('div');
-    listDiv.id = 'phase-list-' + sec.key;
-
-    steps.forEach(function(ph, i) {
-      var row = document.createElement('div');
-      row.className = 'phase-editor-row';
-
-      var icoIn = document.createElement('input');
-      icoIn.type = 'text'; icoIn.value = ph.ico || '📌';
-      icoIn.style.cssText = 'width:40px;text-align:center;font-size:16px;padding:5px';
-      icoIn.dataset.key = sec.key; icoIn.dataset.idx = i; icoIn.dataset.field = 'ico';
-      icoIn.onchange = function(){ updatePhaseField(this.dataset.key, parseInt(this.dataset.idx), this.dataset.field, this.value); };
-      row.appendChild(icoIn);
-
-      var lblIn = document.createElement('input');
-      lblIn.className = 'phase-editor-lbl'; lblIn.type = 'text'; lblIn.value = ph.lbl || '';
-      lblIn.dataset.key = sec.key; lblIn.dataset.idx = i; lblIn.dataset.field = 'lbl';
-      lblIn.onchange = function(){ updatePhaseField(this.dataset.key, parseInt(this.dataset.idx), this.dataset.field, this.value); };
-      row.appendChild(lblIn);
-
-      var daysIn = document.createElement('input');
-      daysIn.className = 'phase-editor-days'; daysIn.type = 'number'; daysIn.value = ph.days || 0; daysIn.min = 0;
-      daysIn.dataset.key = sec.key; daysIn.dataset.idx = i; daysIn.dataset.field = 'days';
-      daysIn.onchange = function(){ updatePhaseField(this.dataset.key, parseInt(this.dataset.idx), this.dataset.field, this.value); };
-      row.appendChild(daysIn);
-
-      var btnWrap = document.createElement('div');
-      btnWrap.style.cssText = 'display:flex;gap:4px';
-      [{t:'↑',d:-1},{t:'↓',d:1}].forEach(function(item){
-        var b = document.createElement('button'); b.className='ffe-btn'; b.textContent=item.t;
-        b.dataset.key=sec.key; b.dataset.idx=i; b.dataset.dir=item.d;
-        b.onclick=function(){ movePhaseNew(this.dataset.key,parseInt(this.dataset.idx),parseInt(this.dataset.dir)); };
-        btnWrap.appendChild(b);
-      });
-      var delBtn = document.createElement('button'); delBtn.className='ffe-btn'; delBtn.textContent='✕';
-      delBtn.dataset.key=sec.key; delBtn.dataset.idx=i;
-      delBtn.onclick=function(){ deletePhaseNew(this.dataset.key,parseInt(this.dataset.idx)); };
-      btnWrap.appendChild(delBtn);
-      row.appendChild(btnWrap);
-      listDiv.appendChild(row);
-    });
-
-    secDiv.appendChild(listDiv);
-
-    var addBtn = document.createElement('button');
-    addBtn.className='btn btn-dk btn-sm'; addBtn.style.cssText='margin-top:6px;font-size:11px';
-    addBtn.textContent='＋ Ajouter etape'; addBtn.dataset.key=sec.key;
-    addBtn.onclick=function(){ addPhaseNew(this.dataset.key); };
-    secDiv.appendChild(addBtn);
-
-    var dvd = document.createElement('div'); dvd.className='dvd';
-    secDiv.appendChild(dvd);
-    el.appendChild(secDiv);
-  });
-}
-
-function updatePhaseField(key, idx, field, val) {
-  var phases = loadPhasesCustom();
-  if (!phases[key] || !phases[key][idx]) return;
-  phases[key][idx][field] = field === 'days' ? (parseInt(val)||0) : val;
-  savePhasesCustom(phases);
-}
-
-function movePhaseNew(key, idx, dir) {
-  var phases = loadPhasesCustom();
-  var arr = phases[key]; if (!arr) return;
-  var newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= arr.length) return;
-  var tmp = arr[idx]; arr[idx] = arr[newIdx]; arr[newIdx] = tmp;
-  savePhasesCustom(phases); renderParcoursEditor();
-}
-
-function deletePhaseNew(key, idx) {
-  dlgConfirm('Supprimer cette etape ?','Supprimer').then(function(r){
-    if (!r.confirmed) return;
-    var phases = loadPhasesCustom();
-    phases[key].splice(idx, 1);
-    savePhasesCustom(phases); renderParcoursEditor();
-    toast('ok','Etape supprimee');
-  });
-}
-
-function addPhaseNew(key) {
-  showDialog({
-    title: 'Nouvelle etape',
-    inputs:[
-      {id:'ico',  label:'Emoji', type:'text', value:'X'},
-      {id:'lbl',  label:'Nom',   type:'text', placeholder:'Ex: Bilan mensuel'},
-      {id:'days', label:'Duree jours (0=instantane)', type:'number', value:'0'}
-    ],
-    confirmLabel:'Ajouter'
-  }).then(function(r){
-    if (!r.confirmed || !r.values.lbl.trim()) return;
-    var phases = loadPhasesCustom();
-    if (!phases[key]) phases[key] = [];
-    phases[key].push({id:'ph_'+Date.now(), ico:r.values.ico||'X', lbl:r.values.lbl.trim(), days:parseInt(r.values.days)||0});
-    savePhasesCustom(phases); renderParcoursEditor();
-    toast('ok','Etape ajoutee');
-  });
+  renderPhaseList('c1', PHASES_C1, 'parcours-c1-editor');
+  renderPhaseList('c2', PHASES_C2, 'parcours-c2-editor');
 }
 
 function renderPhaseList(cycle, phases, containerId) {
@@ -4000,6 +3539,110 @@ function isSectionActiveForProgramme(sec, programme) {
 }
 
 
+
+// ═══ FONCTIONS RESTAURÉES ═══
+
+async function loadFromSupabase(){
+  if(!ST.sbUrl||!ST.sbKey)return;
+  try{
+    const res=await fetch(ST.sbUrl+'/rest/v1/be_activ_clients?order=updated_at.desc&limit=500',{headers:{'apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey}});
+    if(!res.ok)return;const rows=await res.json();
+    rows.forEach(row=>{
+      let pq=null,bilan=null,final=null;
+      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;}catch(e){}
+      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,ville:row.ville,profession:row.profession,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offres,pretPayer:row.pret_payer,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,updated_at:row.updated_at};
+      const i=ST.clients.findIndex(c=>c.id===sc.id);if(i>=0)ST.clients[i]=sc;else ST.clients.unshift(sc);
+    });
+    localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
+    toast('info','☁️ '+rows.length+' clients synchronisés');
+  }catch(e){}
+}
+
+function loadSuiteOptions() {
+  try { var s=localStorage.getItem('ba_suite_opts'); if(s) return JSON.parse(s); } catch(e){}
+  return SUITE_OPTIONS_DEFAULT.map(function(o){return Object.assign({},o);});
+}
+
+function saveSuiteOptions(arr) { localStorage.setItem('ba_suite_opts', JSON.stringify(arr)); }
+
+function activateCycle2(clientId, action, param) {
+  var c = ST.clients.find(function(x){return x.id==clientId;});
+  if (!c) return;
+  if (!c.phaseRuns || c.phaseRuns.length===0) {
+    c.phaseRuns = [{phaseKey:'reset', certified:false, offreId:null, jaugeVal:0}];
+  }
+
+  var newPhaseKey = 'reset';
+
+  if (action === 'suite') {
+    // Suite choisie par le coach — phaseKey vient de la suite
+    newPhaseKey = (param && param.phaseKey) ? param.phaseKey : 'reset';
+    c.phaseRuns.push({
+      phaseKey: newPhaseKey,
+      certified: false,
+      offreId: null,
+      jaugeVal: 0,
+      suiteKey: param ? param.suiteKey : null,
+      label: param && param.suiteKey ? (loadSuiteOptions().find(function(s){return s.key===param.suiteKey;}) || {}).label : null
+    });
+    var pl = PHASE_LABELS[newPhaseKey] || {};
+    toast('ok', (pl.ico||'') + ' ' + (pl.name||'Nouveau cycle') + ' démarré !');
+  } else {
+    // Compat ancien code
+    var lastRun = c.phaseRuns[c.phaseRuns.length-1];
+    newPhaseKey = (action==='next_phase' && param) ? param : 'reset';
+    c.phaseRuns.push({phaseKey:newPhaseKey, certified:false, offreId:null, jaugeVal:0});
+    toast('ok','Nouveau cycle démarré !');
+  }
+
+  c.cycle = c.phaseRuns.length;
+  var allPhases = getClientPhasesAll(c);
+  if (!c.phases) c.phases = [];
+  while (c.phases.length < allPhases.length) {
+    var ph2 = allPhases[c.phases.length];
+    c.phases.push({id:ph2.id, done:false, startDate:null});
+  }
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  renderClientModal(clientId);
+}
+
+function togglePhase(clientId, phaseIndex) {
+  const c = ST.clients.find(x => x.id == clientId);
+  if (!c) return;
+  const allPhases = getClientPhasesAll(c);
+  if (!c.phases || c.phases.length < allPhases.length) {
+    c.phases = allPhases.map(p => ({id:p.id, done:false, startDate:null}));
+  }
+  while (c.phases.length < allPhases.length) {
+    c.phases.push({id: allPhases[c.phases.length].id, done:false, startDate:null});
+  }
+  const ph = c.phases[phaseIndex];
+  ph.done = !ph.done;
+  if (ph.done && !ph.startDate) ph.startDate = new Date().toISOString().split('T')[0];
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  renderClientModal(clientId);
+}
+
+function updateStatutParcours(id, statut) {
+  const c = ST.clients.find(x => x.id == id);
+  if (c) { c.statut = statut; c.updated_at = new Date().toISOString(); }
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  fetch(ST.sbUrl+'/rest/v1/be_activ_clients?id=eq.'+id,{method:'PATCH',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey},body:JSON.stringify({statut,updated_at:new Date().toISOString()})}).catch(()=>{});
+  renderClientModal(id);
+  renderClients();
+  toast('ok', '✅ Statut mis à jour');
+}
+
+async function saveToSupabase(c){
+  if(!ST.sbUrl||!ST.sbKey)return;
+  try{
+    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,age:parseInt(c.age)||null,ville:c.ville,profession:c.profession,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offres:c.offres,pret_payer:c.pretPayer,montant:c.montant?parseFloat(c.montant):null,statut:c.statut,score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report}),updated_at:c.updated_at})});
+  }catch(e){}
+}
 </script>
 </body>
 </html>
