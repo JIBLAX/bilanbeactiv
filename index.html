@@ -560,6 +560,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .c2-separator{text-align:center;font-size:11px;font-weight:700;color:var(--bx);letter-spacing:1px;text-transform:uppercase;padding:8px 0;margin:4px 0;border-top:1.5px dashed var(--rim);border-bottom:1.5px dashed var(--rim)}
 
 
+.offre-card-compact{background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r);padding:16px;margin-bottom:11px;box-shadow:var(--sh);transition:border-color .15s}
 .offre-card-compact:hover{border-color:var(--rim)}
 
 .cycle-section{margin-bottom:14px}
@@ -751,7 +752,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <div class="pg" id="pg-offres">
   <div class="page-title" style="justify-content:space-between">
     <span>💼 Catalogue des Offres</span>
-    <button onclick="addOffre()" title="Ajouter une offre" style="width:36px;height:36px;border-radius:10px;background:var(--bx);color:#fff;border:none;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(139,21,32,.25);flex-shrink:0;transition:all .15s" onmouseover="this.style.background='var(--bx3)'" onmouseout="this.style.background='var(--bx)'">＋</button>
+    <button onclick="addOffre()" title="Ajouter une offre" style="width:36px;height:36px;border-radius:10px;background:var(--bx);color:#fff;border:none;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(139,21,32,.25);flex-shrink:0;transition:background .15s" class="btn-add-offre">＋</button>
   </div>
   <p style="font-size:13px;color:var(--tx3);margin-bottom:16px">Modifiez nom, durée, prix et modalités de paiement. Les offres sont connectées au bilan et aux statistiques.</p>
   <div id="offres-list"></div>
@@ -1092,13 +1093,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
 
 <!-- MODAL APERÇU -->
-<div class="mbg" id="m-preview">
-  <div class="mdl" style="border-radius:var(--r);max-height:92vh">
-    <div class="mdl-t" id="preview-title">Aperçu <button class="mdl-x" onclick="closeModal('preview')">&#x2715;</button></div>
-    <div id="preview-body" style="overflow-y:auto;max-height:72vh;padding-right:2px"></div>
-    <div style="margin-top:14px"><button class="btn btn-dk btn-w btn-sm" onclick="closeModal('preview')">Fermer</button></div>
-  </div>
-</div>
+
 
 <div id="toast"></div>
 
@@ -1108,9 +1103,18 @@ function deleteOffre(id) {
 }
 
 function addOffre() {
-  const offres=loadOffres();
-  offres.push({id:'o'+Date.now(),name:'Nouvelle offre',price:0,durVal:1,durUnit:'mois',paiement:1});
-  saveOffres(offres); renderOffresPage(); renderBilanOffresList();
+  var offres = loadOffres();
+  var newId = 'o' + Date.now();
+  offres.push({id: newId, name: 'Nouvelle offre', price: 0, durVal: 1, durUnit: 'mois', paiement: 1, parcours: true, alaCarte: false, isAbonnement: false, test: 'none'});
+  saveOffres(offres);
+  renderOffresPage();
+  renderBilanOffresList();
+  // Auto-ouvre le mode édition sur la nouvelle carte
+  setTimeout(function(){ toggleOffreEdit(newId); }, 50);
+  // Scroll vers le bas pour voir la nouvelle offre
+  var scroller = document.getElementById('scroller');
+  if (scroller) setTimeout(function(){ scroller.scrollTop = scroller.scrollHeight; }, 80);
+  toast('ok', '✅ Offre ajoutée');
 }
 
 var currentClientTab = 'prospects';
@@ -1219,7 +1223,8 @@ function startRun2(clientId) {
   localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
   saveToSupabase(c);
   renderClientModal(clientId);
-  toast('ok','Run 2 démarré !');
+  var offreName = o ? o.name : 'le programme';
+  toast('ok', '🚀 ' + offreName + ' démarré !');
 }
 
 const RUN_1 = [
@@ -3350,6 +3355,83 @@ function deletePhaseNew(key,idx){
 }
 
 function openMore(){ toggleMore(); }
+
+// ═══════════════════════════════════════════════════
+// TOGGLE PHASE (coche/décoche une étape du parcours)
+// ═══════════════════════════════════════════════════
+function togglePhase(clientId, globalIdx) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  if (!c.phases) c.phases = [];
+  if (!c.phases[globalIdx]) c.phases[globalIdx] = { done: false, startDate: null };
+  c.phases[globalIdx].done = !c.phases[globalIdx].done;
+  if (c.phases[globalIdx].done && !c.phases[globalIdx].startDate) {
+    c.phases[globalIdx].startDate = new Date().toISOString().split('T')[0];
+  }
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  renderClientModal(clientId);
+}
+
+// ═══════════════════════════════════════════════════
+// UPDATE STATUT PARCOURS
+// ═══════════════════════════════════════════════════
+function updateStatutParcours(clientId, newStatut) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  c.statut = newStatut;
+  // Si on close → init phaseRuns si vide
+  if (newStatut === 'Closé' && (!c.phaseRuns || c.phaseRuns.length === 0)) {
+    c.phaseRuns = [{ phaseKey: 'reset', certified: false, offreId: null, jaugeVal: 0 }];
+  }
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  renderClients();
+  toast('ok', '✅ Statut mis à jour : ' + newStatut);
+}
+
+// ═══════════════════════════════════════════════════
+// ACTIVATE CYCLE 2 (démarre un run suivant)
+// ═══════════════════════════════════════════════════
+function activateCycle2(clientId, mode, opts) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  // Certifier le run actuel
+  var currentRunIdx = c.phaseRuns.length - 1;
+  c.phaseRuns[currentRunIdx].certified = true;
+
+  var offres = loadOffres();
+  var currentRun = c.phaseRuns[currentRunIdx];
+  var phaseKey = (opts && opts.phaseKey) ? opts.phaseKey : (currentRun.phaseKey || 'reset');
+
+  // Déterminer l'offre du prochain run
+  var offreId = (opts && opts.offreId) ? opts.offreId : currentRun.offreId;
+
+  c.phaseRuns.push({
+    phaseKey: phaseKey,
+    offreId: offreId,
+    jaugeVal: 0,
+    certified: false,
+    suiteKey: (opts && opts.suiteKey) ? opts.suiteKey : null,
+    startDate: new Date().toISOString().split('T')[0]
+  });
+  c.cycle = c.phaseRuns.length;
+
+  // Étendre le tableau phases
+  var allPh = getClientPhasesAll(c);
+  if (!c.phases) c.phases = [];
+  while (c.phases.length < allPh.length) {
+    c.phases.push({ id: allPh[c.phases.length].id, done: false, startDate: null });
+  }
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  renderClientModal(clientId);
+  toast('ok', '🚀 Nouveau cycle démarré !');
+}
+
 </script>
 </body>
 </html>
