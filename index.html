@@ -35,8 +35,8 @@
   --sh2:0 2px 8px rgba(0,0,0,.08),0 8px 24px rgba(139,21,32,.08);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{height:100%;background:var(--bg)}
-body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font-smoothing:antialiased;height:100%;height:100dvh;background:var(--bg);overflow:hidden}
+html{height:100%;height:100dvh;background:var(--bg)}
+body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font-smoothing:antialiased;height:100%;height:100dvh;background:var(--bg);overflow:hidden;position:fixed;width:100%}
 
 /* ═══════════════════════════════════════════════════
    PIN SCREEN
@@ -63,11 +63,11 @@ body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font
 /* ═══════════════════════════════════════════════════
    RESPONSIVE LAYOUT
 ═══════════════════════════════════════════════════ */
-#app{display:flex;height:100dvh;height:100vh;overflow:hidden}
+#app{display:flex;height:100%;height:100dvh;overflow:hidden;position:relative}
 
 /* Sidebar (PC/tablette) */
 #sidebar{width:220px;flex-shrink:0;background:var(--bx);display:flex;flex-direction:column;transition:width .25s}
-.sb-brand{padding:calc(22px + env(safe-area-inset-top, 0px)) 20px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-brand{padding:calc(16px + env(safe-area-inset-top, 0px)) 20px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
 .sb-brand-name{font-size:16px;font-weight:300;color:rgba(255,255,255,.9);line-height:1.2}
 .sb-brand-name b{font-weight:800}
 .sb-brand-name .sep{color:rgba(255,255,255,.35);font-weight:300}
@@ -88,7 +88,7 @@ body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font
 
 /* Main content */
 #main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-#topbar-mobile{display:none;align-items:center;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top, 0px)) 16px 10px;background:#fff;border-bottom:1px solid var(--rim3);flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+#topbar-mobile{display:none;align-items:center;justify-content:space-between;padding-top:calc(12px + env(safe-area-inset-top, 0px));padding-left:16px;padding-right:16px;padding-bottom:10px;background:#fff;border-bottom:1px solid var(--rim3);flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 .tb-brand{font-size:15px;font-weight:300;color:var(--tx)}
 .tb-brand b{font-weight:800;color:var(--bx)}
 .tb-brand .sep{color:var(--tx4);font-weight:300}
@@ -105,7 +105,7 @@ body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font
 #scroller::-webkit-scrollbar-thumb{background:var(--rim2);border-radius:3px}
 
 /* Mobile bottom nav */
-#nav-mobile{display:none;background:#fff;border-top:1px solid var(--rim3);padding:6px 2px calc(6px + env(safe-area-inset-bottom,0px));flex-shrink:0}
+#nav-mobile{display:none;background:#fff;border-top:1px solid var(--rim3);padding-top:6px;padding-left:2px;padding-right:2px;padding-bottom:calc(6px + env(safe-area-inset-bottom, 0px));flex-shrink:0}
 .nm-ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:5px 2px;border-radius:9px;transition:background .15s}
 .nm-ni.on .nm-ico{color:var(--bx)}
 .nm-ni.on .nm-lbl{color:var(--bx)}
@@ -132,7 +132,7 @@ body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font
 .pg.on{display:block}
 .pg-wide{max-width:1100px}
 @keyframes pgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:768px){.pg{padding:14px 14px 60px}}
+@media(max-width:768px){.pg{padding:14px 14px 80px}}
 
 /* ═══════════════════════════════════════════════════
    TYPOGRAPHY & SECTIONS
@@ -401,7 +401,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 @media(max-width:768px){#toast{bottom:76px}}
 .note{font-size:12px;color:var(--tx3);line-height:1.6;font-style:italic;margin-top:6px}
 .highlight{background:var(--bx-light);border:1px solid var(--rim);border-radius:var(--r2);padding:12px 14px;margin-bottom:13px;font-size:13px;color:var(--tx2);line-height:1.6}
-#cfg-banner{background:var(--R-l);border:1.5px solid rgba(214,48,49,.2);border-radius:var(--r2);padding:11px 15px;margin:0 24px 14px;font-size:13px;color:var(--R);cursor:pointer;display:flex;align-items:center;gap:9px}
+#cfg-banner{background:var(--R-l);border:1.5px solid rgba(214,48,49,.2);border-radius:var(--r2);padding:11px 15px;margin:0 0 0;font-size:13px;color:var(--R);cursor:pointer;display:flex;align-items:center;gap:9px}
 
 /* ═══════════════════════════════════════════════════
    IMPORT/EXPORT
@@ -507,8 +507,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 input, select, textarea { font-size: 16px !important; touch-action: manipulation; }
 body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 /* Espace bas sécurisé */
-#nav-mobile { padding-bottom: max(6px, env(safe-area-inset-bottom, 6px)); }
-.pg { padding-bottom: max(70px, calc(58px + env(safe-area-inset-bottom, 0px))); }
 /* Retirer config du topbar mobile */
 .tb-cfg-hide { display: none !important; }
 
@@ -613,11 +611,12 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
       </div>
     </div>
 
-    <div id="cfg-banner" onclick="openModal('cfg')" style="display:none;margin-top:14px">
-      ⚠️ <div><strong>Clé API Anthropic requise</strong> — Appuyez pour configurer</div>
+    
     </div>
 
     <div id="scroller">
+<div id="cfg-banner" onclick="openModal('cfg')" style="display:none;margin-top:14px">
+      ⚠️ <div><strong>Clé API Anthropic requise</strong> — Appuyez pour configurer</div>
 
 <!-- ══════ PAGE ACCUEIL ══════ -->
 <div class="pg on" id="pg-home">
