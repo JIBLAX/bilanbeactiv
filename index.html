@@ -2731,15 +2731,16 @@ function savePhasesCustom(phases) {
 // Rétro-compat (utilisé dans quelques endroits)
 
 function getClientPhasesAll(c) {
-  // Chaque "run" de phase = un bloc d'étapes PHASES_BASE
-  // c.phaseRuns = [{phaseKey:'reset'|'sculpt'|'health'|'cont', certified:bool, offreId, jaugeVal}]
+  // Run 0 = étapes d'entrée (RUN_1 : RDV Bilan → Tests physiques)
+  // Run 1+ = programme complet (PHASES_BASE selon offre)
   if (!c.phaseRuns || c.phaseRuns.length === 0) {
     c.phaseRuns = [{phaseKey:'reset', certified:false, offreId:null, jaugeVal:0}];
   }
   var all = [];
   var customBase = loadPhasesCustom().base || PHASES_BASE;
   c.phaseRuns.forEach(function(run, ri) {
-    customBase.forEach(function(p) {
+    var stepsSource = (ri === 0) ? RUN_1 : customBase;
+    stepsSource.forEach(function(p) {
       all.push(Object.assign({}, p, {
         id: p.id+'_r'+ri,
         runIdx: ri,
@@ -2747,7 +2748,6 @@ function getClientPhasesAll(c) {
       }));
     });
   });
-  // Si dernier run est certifié ET phase != health → les phases suivantes sont disponibles via activateCycle2
   return all;
 }
 
@@ -2809,8 +2809,8 @@ function renderClientModal(id) {
 
     var offres = loadOffres();
     var runOffre = run.offreId ? offres.find(function(o){ return o.id===run.offreId; }) : null;
-    var runLabel = ri===0 ? 'Run 1 — Entrée' : ('Run '+(ri+1)+' — '+(runOffre ? runOffre.name.split(' ').slice(0,3).join(' ') : 'Programme'));
-    var runIco = ri===0 ? '🚪' : (runOffre && !runOffre.parcours ? '💼' : '🔴');
+    var runLabel = ri===0 ? 'RDV Bilan' : ('Run '+(ri+1)+' — '+(runOffre ? runOffre.name : 'Programme'));
+    var runIco = ri===0 ? '📅' : (runOffre && !runOffre.parcours ? '💼' : '🔴');
 
     // Accordéon
     var acc = document.createElement('div');
@@ -2831,7 +2831,7 @@ function renderClientModal(id) {
       + (isCurrentRun?'<span style="font-size:9px;background:var(--bx);color:#fff;padding:2px 6px;border-radius:50px;margin-left:6px">EN COURS</span>':'')
       + (allDone&&!isCurrentRun?'<span style="font-size:9px;background:var(--G);color:#fff;padding:2px 6px;border-radius:50px;margin-left:6px">✓</span>':'')
       + '</div>'
-      + '<div style="font-size:11px;color:var(--tx3);margin-top:1px">'+doneCnt+'/'+runPhases.length+' étapes'+(runOffre?' · '+runOffre.name.split(' ').slice(0,3).join(' '):'')+'</div>'
+      + '<div style="font-size:11px;color:var(--tx3);margin-top:1px">'+(ri===0?'Entrée client · ':'')+doneCnt+'/'+runPhases.length+' étapes'+(runOffre&&ri>0?' · '+runOffre.name:'')+'</div>'
       + pbar+'</div>'
       + '<span style="color:var(--tx4);font-size:11px">'+(isCurrentRun?'▼':'▶')+'</span>';
     acc.appendChild(hd);
@@ -2889,7 +2889,7 @@ function renderClientModal(id) {
       var actionDiv = document.createElement('div');
       actionDiv.style.cssText = 'margin-top:12px;padding:12px;background:rgba(139,21,32,.05);border:1.5px solid var(--bx);border-radius:var(--r2);text-align:center';
       if (ri === 0) {
-        actionDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--bx);margin-bottom:8px">✅ Run 1 validé — Démarrer le programme ?</div>';
+        actionDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--bx);margin-bottom:8px">✅ Entrée validée — Démarrer le programme ?</div>';
         var startBtn = document.createElement('button');
         startBtn.className = 'btn btn-bx btn-sm';
         startBtn.textContent = runOffre ? ('▶ Démarrer '+runOffre.name.split(' ').slice(0,3).join(' ')) : '▶ Démarrer Run 2';
