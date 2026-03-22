@@ -730,27 +730,21 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
 <!-- ══════ PAGE CLIENTS ══════ -->
 <div class="pg" id="pg-clients">
+  <div style="display:flex;gap:0;margin-bottom:16px;background:var(--bg3);border-radius:10px;padding:3px">
+    <button id="tab-prospects" onclick="switchClientTab('prospects')" style="flex:1;padding:9px 12px;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:var(--bx);color:#fff;transition:all .2s">👤 Prospects</button>
+    <button id="tab-clients" onclick="switchClientTab('clients')" style="flex:1;padding:9px 12px;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:var(--tx3);transition:all .2s">✅ Clients</button>
+  </div>
   <div class="srch">
-    <input class="srch-i" type="search" placeholder="🔍  Rechercher un client…" id="srch-i" oninput="renderClients()">
+    <input class="srch-i" type="search" placeholder="🔍  Rechercher…" id="srch-i" oninput="renderClients()">
     <button class="btn btn-bx btn-sm" onclick="newClient();showPg('pq')">＋</button>
   </div>
   <div class="chips" id="chips-statut">
     <div class="chip on" data-v="all">Tous</div>
     <div class="chip" data-v="Non closé">Non closé</div>
-    <div class="chip" data-v="Closé">Closé</div>
     <div class="chip" data-v="À relancer">À relancer</div>
     <div class="chip" data-v="Refusé">Refusé</div>
   </div>
-  <div class="chips" id="chips-profil">
-    <div class="chip on" data-v="all">Tous profils</div>
-    <div class="chip" data-v="P1">P1</div><div class="chip" data-v="P2">P2</div>
-    <div class="chip" data-v="P3">P3</div><div class="chip" data-v="P4">P4</div>
-    <div class="chip" data-v="P5">P5</div><div class="chip" data-v="P6">P6</div>
-    <div class="chip" data-v="P7">P7</div><div class="chip" data-v="P8">P8</div>
-    <div class="chip" data-v="P9">P9</div><div class="chip" data-v="P10">P10</div>
-    <div class="chip" data-v="P11">P11</div><div class="chip" data-v="P12">P12</div>
-  </div>
-  <div id="clients-list"><div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun client</div><div class="empty-s">Créez votre premier dossier.</div></div></div>
+  <div id="clients-list"></div>
 </div>
 
 <!-- ══════ PAGE OFFRES ══════ -->
@@ -1107,6 +1101,124 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <div id="toast"></div>
 
 <script>
+var currentClientTab = 'prospects';
+function switchClientTab(tab) {
+  currentClientTab = tab;
+  var btnP = document.getElementById('tab-prospects');
+  var btnC = document.getElementById('tab-clients');
+  var chips = document.getElementById('chips-statut');
+  if (!btnP || !btnC) return;
+  if (tab === 'prospects') {
+    btnP.style.background='var(--bx)'; btnP.style.color='#fff';
+    btnC.style.background='transparent'; btnC.style.color='var(--tx3)';
+    if(chips) chips.style.display='flex';
+  } else {
+    btnC.style.background='var(--bx)'; btnC.style.color='#fff';
+    btnP.style.background='transparent'; btnP.style.color='var(--tx3)';
+    if(chips) chips.style.display='none';
+  }
+  ST.filterStatut='all';
+  document.querySelectorAll('#chips-statut .chip').forEach(function(c){c.classList.toggle('on',c.dataset.v==='all');});
+  renderClients();
+}
+
+function deleteClient(clientId) {
+  dlgConfirm('Supprimer définitivement ce dossier ?','Supprimer').then(function(r){
+    if(!r.confirmed) return;
+    ST.clients = ST.clients.filter(function(c){return c.id!==clientId;});
+    localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
+    closeModal('client');
+    renderClients();
+    toast('ok','Dossier supprimé');
+  });
+}
+
+function renderProspectModal(id, c, container) {
+  var sp={'Closé':'pill-G','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R'};
+  var titleEl=document.createElement('div'); titleEl.className='mdl-t';
+  titleEl.innerHTML=(c.prenom||'')+' '+(c.nom||'');
+  var closeBtn=document.createElement('button'); closeBtn.className='mdl-x'; closeBtn.textContent='✕';
+  closeBtn.onclick=function(){closeModal('client');}; titleEl.appendChild(closeBtn);
+  container.appendChild(titleEl);
+
+  var pills=document.createElement('div'); pills.style.cssText='display:flex;gap:5px;flex-wrap:wrap;margin-bottom:13px';
+  pills.innerHTML='<span class="pill '+(sp[c.statut]||'pill-B')+'">'+(c.statut||'Prospect')+'</span>'
+    +(c.source?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.source+'</span>':'')
+    +(c.objectif?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.objectif+'</span>':'');
+  container.appendChild(pills);
+
+  var infoCard=document.createElement('div'); infoCard.className='card'; infoCard.style.marginBottom='12px';
+  var dateStr=c.date?new Date(c.date).toLocaleDateString('fr-FR'):'—';
+  infoCard.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">'
+    +'<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">RDV</div><div style="font-weight:600">'+dateStr+(c.rdvType?' · '+c.rdvType:'')+'</div></div>'
+    +'<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Présence</div><div style="font-weight:600">'+(c.rdvStatut||'—')+'</div></div>'
+    +(c.ville?'<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Ville</div><div style="font-weight:600">'+c.ville+'</div></div>':'')
+    +'</div>';
+  if(c.notes) infoCard.innerHTML+='<div style="font-size:12px;color:var(--tx3);margin-top:8px;font-style:italic;border-top:1px solid var(--rim3);padding-top:8px">'+c.notes+'</div>';
+  container.appendChild(infoCard);
+
+  if(c.objections&&c.objections.filter(Boolean).length>0){
+    var objDiv=document.createElement('div'); objDiv.className='card'; objDiv.style.cssText='margin-bottom:12px;background:var(--R-l);border-color:rgba(214,48,49,.2)';
+    objDiv.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--R);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">⚠️ Objection</div><div style="font-size:13px;color:var(--tx2)">'+c.objections.filter(Boolean).join(', ')+'</div>';
+    container.appendChild(objDiv);
+  }
+
+  var sLabel=document.createElement('div'); sLabel.style.cssText='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px';
+  sLabel.textContent='Statut'; container.appendChild(sLabel);
+  var sWrap=document.createElement('div'); sWrap.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:13px';
+  var colors={'Non closé':'var(--B)','Closé':'var(--G)','À relancer':'var(--Y)','Refusé':'var(--R)'};
+  ['Non closé','Closé','À relancer','Refusé'].forEach(function(s){
+    var btn=document.createElement('button'); var isA=c.statut===s;
+    btn.style.cssText='border:1.5px solid '+(isA?colors[s]:'var(--rim3)')+';background:'+(isA?colors[s]+'1a':'var(--bg3)')+';color:'+(isA?colors[s]:'var(--tx3)')+';font-weight:'+(isA?'700':'400')+';border-radius:50px;padding:8px 10px;font-family:Outfit,sans-serif;font-size:12px;cursor:pointer';
+    btn.textContent=s; btn.dataset.statut=s; btn.dataset.cid=id;
+    btn.onclick=function(){
+      updateStatutParcours(this.dataset.cid,this.dataset.statut);
+      if(this.dataset.statut==='Closé'){closeModal('client');setTimeout(function(){switchClientTab('clients');},300);}
+      else{var cc=ST.clients.find(function(x){return x.id==id;});if(cc)renderProspectModal(id,cc,container);}
+    };
+    sWrap.appendChild(btn);
+  });
+  container.appendChild(sWrap);
+
+  var delBtn=document.createElement('button'); delBtn.className='btn btn-R btn-w btn-sm'; delBtn.style.marginBottom='8px';
+  delBtn.textContent='🗑 Supprimer ce dossier'; delBtn.dataset.cid=id;
+  delBtn.onclick=function(){deleteClient(this.dataset.cid);};
+  container.appendChild(delBtn);
+
+  var editBtn=document.createElement('button'); editBtn.className='btn btn-dk btn-w btn-sm';
+  editBtn.textContent='✏️ Modifier'; editBtn.dataset.cid=id;
+  editBtn.onclick=function(){openEditClientModal(this.dataset.cid);};
+  container.appendChild(editBtn);
+}
+
+function startRun2(clientId) {
+  var c=ST.clients.find(function(x){return x.id==clientId;});
+  if(!c) return;
+  var run1=c.phaseRuns[0];
+  var offres=loadOffres();
+  var o=run1.offreId?offres.find(function(x){return x.id===run1.offreId;}):null;
+  var phaseKey=o&&o.parcours?'reset':'suivi';
+  c.phaseRuns.push({phaseKey:phaseKey,offreId:run1.offreId,jaugeVal:0,certified:false});
+  c.cycle=c.phaseRuns.length;
+  var allPh=getClientPhasesAll(c);
+  if(!c.phases) c.phases=[];
+  while(c.phases.length<allPh.length){c.phases.push({id:allPh[c.phases.length].id,done:false,startDate:null});}
+  c.updated_at=new Date().toISOString();
+  localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  renderClientModal(clientId);
+  toast('ok','Run 2 démarré !');
+}
+
+const RUN_1 = [
+  {id:'rdv-bilan',     ico:'📅', lbl:'RDV Bilan',      days:0},
+  {id:'go-contrat',    ico:'✍️', lbl:'GO Contrat',      days:0},
+  {id:'contrat-signe', ico:'📄', lbl:'Contrat signé',   days:0},
+  {id:'paiement',      ico:'💳', lbl:'Paiement validé', days:0},
+  {id:'tests',         ico:'📏', lbl:'Tests',           days:0, optionnel:true},
+  {id:'run1-done',     ico:'✅', lbl:'Run 1 validé',    days:0, isMilestone:true}
+];
+
 // ═══════════════════════════════════════════════════
 // DONNÉES IMPORTÉES — CRM + FINANCES
 // ═══════════════════════════════════════════════════
@@ -2046,11 +2158,11 @@ function togAcc(name) {
 // CHIPS
 // ═══════════════════════════════════════════════════
 function setupChips() {
-  ['chips-statut','chips-profil'].forEach(gid=>{
-    const filterKey=gid.includes('statut')?'filterStatut':'filterProfil';
-    document.querySelectorAll('#'+gid+' .chip').forEach(c=>{
-      c.onclick=()=>{document.querySelectorAll('#'+gid+' .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');ST[filterKey]=c.dataset.v;renderClients();};
-    });
+  document.querySelectorAll('#chips-statut .chip').forEach(function(c){
+    c.onclick=function(){
+      document.querySelectorAll('#chips-statut .chip').forEach(function(x){x.classList.remove('on');});
+      c.classList.add('on'); ST.filterStatut=c.dataset.v; renderClients();
+    };
   });
 }
 
@@ -2480,12 +2592,15 @@ function saveClient(){
 }
 
 function renderClients(){
-  const srch=(document.getElementById('srch-i')?.value||'').toLowerCase();
-  const list=ST.clients.filter(c=>{
-    const ms=!srch||(c.prenom+' '+c.nom+' '+(c.ville||'')).toLowerCase().includes(srch);
-    const mv=ST.filterStatut==='all'||c.statut===ST.filterStatut;
-    const mp=ST.filterProfil==='all'||c.profil_code===ST.filterProfil;
-    return ms&&mv&&mp;
+  var srchEl=document.getElementById('srch-i');
+  var srch=(srchEl?srchEl.value:'').toLowerCase();
+  var isProspectTab=currentClientTab==='prospects';
+  var prospectStatuts=['Non closé','À relancer','Refusé',''];
+  var list=ST.clients.filter(function(c){
+    var ms=!srch||((c.prenom||'')+' '+(c.nom||'')+' '+(c.ville||'')+' '+(c.structureName||'')).toLowerCase().includes(srch);
+    var mv=ST.filterStatut==='all'||c.statut===ST.filterStatut;
+    var tabMatch=isProspectTab?(!c.statut||prospectStatuts.includes(c.statut)):(c.statut==='Closé');
+    return ms&&mv&&tabMatch;
   });
   if(!list.length){document.getElementById('clients-list').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun client</div><div class="empty-s">Créez votre premier dossier.</div></div>';return;}
   const sp={'Closé':'pill-G','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R'};
@@ -2628,6 +2743,13 @@ function getClientPhasesAll(c) {
 function renderClientModal(id) {
   var c = ST.clients.find(function(x){ return x.id == id; });
   if (!c) return;
+
+  // === PROSPECT : fiche simplifiée ===
+  if (c.statut !== 'Closé') {
+    renderProspectModal(id, c, container);
+    openModal('client');
+    return;
+  }
 
   // Migrate ancien format vers phaseRuns
   if (!c.phaseRuns || c.phaseRuns.length === 0) {
