@@ -10,6 +10,70 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
+/* ═══ LAYOUT GLOBAL ═══ */
+*, *::before, *::after { box-sizing: border-box; }
+html { height: 100%; }
+body {
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  color: var(--tx);
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  background: var(--bg);
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  height: 100svh;
+  overflow: hidden;
+}
+* { touch-action: pan-x pan-y; }
+input, select, textarea { touch-action: manipulation; }
+#app {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+#scroller {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg);
+  min-height: 0;
+}
+#topbar-mobile {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: max(12px, env(safe-area-inset-top, 12px));
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 10px;
+  background: #fff;
+  border-bottom: 1px solid var(--rim3);
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+}
+#nav-mobile {
+  display: none;
+  background: #fff;
+  border-top: 1px solid var(--rim3);
+  flex-shrink: 0;
+  padding-top: 6px;
+  padding-left: 2px;
+  padding-right: 2px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+}
+
 /* ═══════════════════════════════════════════════════
    DESIGN SYSTEM — Light Glacé
 ═══════════════════════════════════════════════════ */
@@ -35,9 +99,6 @@
   --sh2:0 2px 8px rgba(0,0,0,.08),0 8px 24px rgba(139,21,32,.08);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{height:100%;height:100dvh;background:var(--bg)}
-body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font-smoothing:antialiased;height:100%;height:100dvh;background:var(--bg);overflow:hidden;position:fixed;width:100%}
-
 /* ═══════════════════════════════════════════════════
    PIN SCREEN
 ═══════════════════════════════════════════════════ */
@@ -63,7 +124,7 @@ body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font
 /* ═══════════════════════════════════════════════════
    RESPONSIVE LAYOUT
 ═══════════════════════════════════════════════════ */
-#app{display:flex;height:100%;height:100dvh;overflow:hidden;position:relative}
+
 
 /* Sidebar (PC/tablette) */
 #sidebar{width:220px;flex-shrink:0;background:var(--bx);display:flex;flex-direction:column;transition:width .25s}
@@ -87,8 +148,6 @@ body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font
 .sb-cfg-btn:hover{background:rgba(255,255,255,.1);color:#fff}
 
 /* Main content */
-#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-#topbar-mobile{display:none;align-items:center;justify-content:space-between;padding-top:calc(12px + env(safe-area-inset-top, 0px));padding-left:16px;padding-right:16px;padding-bottom:10px;background:#fff;border-bottom:1px solid var(--rim3);flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 .tb-brand{font-size:15px;font-weight:300;color:var(--tx)}
 .tb-brand b{font-weight:800;color:var(--bx)}
 .tb-brand .sep{color:var(--tx4);font-weight:300}
@@ -99,13 +158,11 @@ body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font
 .ico-btn{width:34px;height:34px;border-radius:8px;background:var(--bg3);border:1px solid var(--rim3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:all .15s}
 .ico-btn:hover{background:var(--bg4)}
 
-#scroller{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;background:var(--bg)}
 #scroller::-webkit-scrollbar{width:6px}
 #scroller::-webkit-scrollbar-track{background:transparent}
 #scroller::-webkit-scrollbar-thumb{background:var(--rim2);border-radius:3px}
 
 /* Mobile bottom nav */
-#nav-mobile{display:none;background:#fff;border-top:1px solid var(--rim3);padding-top:6px;padding-left:2px;padding-right:2px;padding-bottom:calc(6px + env(safe-area-inset-bottom, 0px));flex-shrink:0}
 .nm-ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:5px 2px;border-radius:9px;transition:background .15s}
 .nm-ni.on .nm-ico{color:var(--bx)}
 .nm-ni.on .nm-lbl{color:var(--bx)}
@@ -128,11 +185,11 @@ body{font-family:'Outfit',sans-serif;font-size:15px;color:var(--tx);-webkit-font
 /* ═══════════════════════════════════════════════════
    PAGES
 ═══════════════════════════════════════════════════ */
-.pg{display:none;padding:24px;max-width:900px;margin:0 auto;width:100%;animation:pgIn .2s ease}
+.pg{display:none;padding:24px 28px;max-width:100%;width:100%;animation:pgIn .2s ease}
 .pg.on{display:block}
-.pg-wide{max-width:1100px}
+.pg-wide{max-width:100%}
 @keyframes pgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:768px){.pg{padding:14px 14px 80px}}
+@media(max-width:768px){.pg{padding:14px 14px max(80px, calc(60px + env(safe-area-inset-bottom,0px)))}}
 
 /* ═══════════════════════════════════════════════════
    TYPOGRAPHY & SECTIONS
@@ -502,15 +559,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .phase-editor-days{width:56px;font-size:12px;text-align:center}
 .c2-separator{text-align:center;font-size:11px;font-weight:700;color:var(--bx);letter-spacing:1px;text-transform:uppercase;padding:8px 0;margin:4px 0;border-top:1.5px dashed var(--rim);border-bottom:1.5px dashed var(--rim)}
 
-/* Désactiver zoom partout */
-* { touch-action: pan-x pan-y; }
-input, select, textarea { font-size: 16px !important; touch-action: manipulation; }
-body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-/* Espace bas sécurisé */
-/* Retirer config du topbar mobile */
-.tb-cfg-hide { display: none !important; }
 
-.offre-card-compact{background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh);transition:border-color .15s}
 .offre-card-compact:hover{border-color:var(--rim)}
 
 .cycle-section{margin-bottom:14px}
@@ -534,6 +583,13 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .offre-jauge-controls{display:flex;gap:6px;align-items:center}
 .jauge-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--rim3);background:var(--bg3);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .12s;font-family:'Outfit',sans-serif}
 .jauge-btn:hover{border-color:var(--bx);background:var(--bx-light)}
+
+@media(min-width:1200px){
+  .pg{padding:28px 40px;max-width:960px;}
+}
+@media(min-width:769px) and (max-width:1199px){
+  .pg{padding:20px 24px;max-width:100%;}
+}
 </style>
 </head>
 <body>
@@ -588,9 +644,9 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
       <div class="sb-ni" data-pg="offres" onclick="showPg('offres')"><div class="sb-ni-ico">💼</div><div class="sb-ni-lbl">Offres</div></div>
       <div class="sb-ni" data-pg="pq" onclick="showPg('pq')"><div class="sb-ni-ico">➕</div><div class="sb-ni-lbl">Nouveau Bilan</div></div>
       <div class="sb-ni" data-pg="pro" onclick="showPg('pro')"><div class="sb-ni-ico">🏢</div><div class="sb-ni-lbl">Nouveau Pro</div></div>
-      <div class="sb-ni" data-pg="bilan" onclick="showPg('bilan')"><div class="sb-ni-ico">📋</div><div class="sb-ni-lbl">Bilan</div></div>
-      <div class="sb-ni" data-pg="tests" onclick="showPg('tests')"><div class="sb-ni-ico">📏</div><div class="sb-ni-lbl">Tests</div></div>
-      <div class="sb-ni" data-pg="rapport" onclick="showPg('rapport')"><div class="sb-ni-ico">🤖</div><div class="sb-ni-lbl">Rapport IA</div></div>
+
+
+
       <div class="sb-ni" data-pg="io" onclick="showPg('io')"><div class="sb-ni-ico">⬆️</div><div class="sb-ni-lbl">Import / Export</div></div>
       <div class="sb-ni" data-pg="form-editor" onclick="showPg('form-editor')"><div class="sb-ni-ico">✏️</div><div class="sb-ni-lbl">Éditeurs</div></div>
     </nav>
@@ -611,12 +667,10 @@ body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
       </div>
     </div>
 
-    
-    </div>
-
     <div id="scroller">
 <div id="cfg-banner" onclick="openModal('cfg')" style="display:none;margin-top:14px">
       ⚠️ <div><strong>Clé API Anthropic requise</strong> — Appuyez pour configurer</div>
+    </div>
 
 <!-- ══════ PAGE ACCUEIL ══════ -->
 <div class="pg on" id="pg-home">
