@@ -2662,10 +2662,8 @@ function openFromSaved(){
 // PARCOURS CLIENT — PHASES
 // ═══════════════════════════════════════════════════
 // ═══════════════════════════════════════
-// PHASES — RESET / SCULPT / HEALTH
+// PHASES — STRUCTURE DU PARCOURS
 // ═══════════════════════════════════════
-// Les phases C2/C3 partagent les mêmes étapes que C1
-// Le coach décide : continuer la phase ou certifier → suivante
 
 const PHASE_LABELS = {
   reset:  {name:'PHASE RESET',  ico:'🔴', cert:'CERTIFIED RESET',  color:'var(--R)'},
@@ -2674,53 +2672,66 @@ const PHASE_LABELS = {
   cont:   {name:'ACTIV CONTINUE', ico:'♾️', cert:null, color:'var(--bx)', isContinue:true}
 };
 
-// Suites possibles après certification — modifiables dans l'éditeur
-// Chaque item: {key, label, ico, phaseKey}
-// phaseKey = null → même phase (offre libre)
-var SUITE_OPTIONS_DEFAULT = [
-  {key:'activ_reset_online',   label:'ACTIV RESET ONLINE',   ico:'🔴', phaseKey:'reset'},
-  {key:'activ_reset_hybride',  label:'ACTIV RESET HYBRIDE',  ico:'🔴', phaseKey:'reset'},
-  {key:'activ_program',        label:'ACTIV PROGRAM',        ico:'📗', phaseKey:'sculpt'},
-  {key:'activ_continue_sculpt',label:'ACTIV CONTINUE — SCULPT', ico:'🟡♾️', phaseKey:'sculpt'},
-  {key:'activ_continue_health',label:'ACTIV CONTINUE — HEALTH', ico:'🟢♾️', phaseKey:'health'},
-  {key:'activ_continue_reset', label:'ACTIV CONTINUE — RESET',  ico:'🔴♾️', phaseKey:'reset'},
-  {key:'jm_pass_coaching',     label:'JM PASS COACHING',     ico:'💪', phaseKey:null},
-  {key:'cardio_mouv',          label:'CARDIO MOUV Pass/Pack', ico:'🎵', phaseKey:null},
-  {key:'activ_training',       label:'ACTIV TRAINING',       ico:'⚡', phaseKey:null}
-];
-
-function loadSuiteOptions() {
-  try { var s=localStorage.getItem('ba_suite_opts'); if(s) return JSON.parse(s); } catch(e){}
-  return SUITE_OPTIONS_DEFAULT.map(function(o){return Object.assign({},o);});
-}
-function saveSuiteOptions(arr) { localStorage.setItem('ba_suite_opts', JSON.stringify(arr)); }
-
-
-// Étapes communes à toutes les phases (personnalisables dans l'éditeur)
-const PHASES_BASE = [
+// RUN 1 — Universel pour TOUS les clients
+const RUN_1 = [
   {id:'rdv-bilan',     ico:'📅', lbl:'RDV Bilan',         days:0},
   {id:'go-contrat',    ico:'✍️', lbl:'GO Contrat',         days:0},
   {id:'contrat-signe', ico:'📄', lbl:'Contrat signé',      days:0},
   {id:'paiement',      ico:'💳', lbl:'Paiement validé',    days:0},
-  {id:'tests',         ico:'📏', lbl:'Tests physiques',    days:0},
-  {id:'onboarding',    ico:'🚀', lbl:'Onboarding',         days:0},
-  {id:'diag',          ico:'🔍', lbl:'Diagnostique',       days:0},
-  {id:'fondation',     ico:'🧱', lbl:'Fondation S1-S2',    days:14},
-  {id:'optim',         ico:'⚡', lbl:'Optimisation S3-S8', days:42},
-  {id:'maintien',      ico:'🎯', lbl:'Maintien S9-S10',    days:14},
-  {id:'liberte',       ico:'🌟', lbl:'Liberté S11',        days:7},
-  {id:'retour',        ico:'🔄', lbl:'Retour S12',         days:7},
-  {id:'certified',     ico:'🏆', lbl:'Certification',      days:0, isCert:true}
+  {id:'tests',         ico:'📏', lbl:'Tests physiques',    days:0, optionnel:true},
+  {id:'run1-done',     ico:'✅', lbl:'Run 1 validé',       days:0, isMilestone:true}
 ];
 
-var PHASES_C1 = PHASES_BASE;
-var PHASES_C2 = PHASES_BASE;
+// RUN 2+ — Étapes programme ACTIV (Reset/Hybride/Online/Program)
+// Utilisé pour toutes les offres parcours
+const RUN_PROGRAMME = [
+  {id:'diag',      ico:'🔍', lbl:'Diagnostique',       days:0},
+  {id:'fondation', ico:'🧱', lbl:'Fondation S1-S2',    days:14},
+  {id:'optim',     ico:'⚡', lbl:'Optimisation S3-S8', days:42},
+  {id:'maintien',  ico:'🎯', lbl:'Maintien S9-S10',    days:14},
+  {id:'liberte',   ico:'🌟', lbl:'Liberté S11',        days:7},
+  {id:'retour',    ico:'🔄', lbl:'Retour S12',         days:7},
+  {id:'certified', ico:'🏆', lbl:'Certification',      days:0, isCert:true}
+];
 
+// RUN 2+ — Étapes suivi simple (JM PASS, CARDIO MOUV, etc.)
+const RUN_SUIVI = [
+  {id:'onboarding', ico:'🚀', lbl:'Démarrage',    days:0},
+  {id:'suivi1',     ico:'📊', lbl:'Suivi mi-parcours', days:30},
+  {id:'bilan-fin',  ico:'🔄', lbl:'Bilan de fin',  days:0}
+];
+
+// ACTIV CONTINUE
 const PHASES_CONTINUE = [
-  {id:'cont_suivi',    ico:'♾️', lbl:'Suivi mensuel',      days:30, isContinue:true},
-  {id:'cont_bilan',    ico:'📊', lbl:'Bilan progression',  days:30, isContinue:true},
-  {id:'cont_renouv',   ico:'🔁', lbl:'Renouvellement',     days:30, isContinue:true}
+  {id:'cont_suivi',  ico:'♾️', lbl:'Suivi mensuel',     days:30, isContinue:true},
+  {id:'cont_bilan',  ico:'📊', lbl:'Bilan progression', days:30, isContinue:true},
+  {id:'cont_renouv', ico:'🔁', lbl:'Renouvellement',    days:30, isContinue:true}
 ];
+
+// Offres qui déclenchent le RUN PROGRAMME (avec certification possible)
+const OFFRES_PROGRAMME = [
+  'ACTIV RESET ONLINE','ACTIV RESET HYBRIDE','ACTIV PROGRAM STANDARD',
+  'ACTIV PROGRAM STANDARD +','ACTIV PROGRAM ONLINE','ACTIV PROGRAM HYBRIDE',
+  'ACTIV PROGRAM ONLINE (3 FOIS)','ACTIV PROGRAM HYBRIDE (3 FOIS)',
+  'ACTIV PROGRAM ONLINE (1 MOIS)','ACTIV PROGRAM HYBRIDE (1 MOIS)',
+  'ACTIV CONTINUE'
+];
+
+function getRunType(offreName) {
+  if (!offreName) return 'suivi';
+  var name = offreName.toUpperCase();
+  for (var i = 0; i < OFFRES_PROGRAMME.length; i++) {
+    if (name.includes(OFFRES_PROGRAMME[i].toUpperCase().split(' ').slice(0,3).join(' '))) {
+      return 'programme';
+    }
+  }
+  return 'suivi';
+}
+
+// Rétro-compat
+var PHASES_BASE = RUN_PROGRAMME;
+var PHASES_C1 = RUN_1;
+var PHASES_C2 = RUN_PROGRAMME;
 
 
 function loadPhasesCustom() {
@@ -2728,10 +2739,15 @@ function loadPhasesCustom() {
     var s = localStorage.getItem('ba_phases_custom');
     if (s) return JSON.parse(s);
   } catch(e) {}
-  // Par défaut : tout basé sur PHASES_BASE (défini avant cette fonction)
-  var base = PHASES_BASE.map(function(p){ return Object.assign({}, p); });
-  var cont = PHASES_CONTINUE.map(function(p){ return Object.assign({}, p); });
-  return { base: base, c1: base, c2: base, cont: cont };
+  return {
+    run1:       RUN_1.map(function(p){ return Object.assign({},p); }),
+    programme:  RUN_PROGRAMME.map(function(p){ return Object.assign({},p); }),
+    suivi:      RUN_SUIVI.map(function(p){ return Object.assign({},p); }),
+    cont:       PHASES_CONTINUE.map(function(p){ return Object.assign({},p); }),
+    base:       RUN_PROGRAMME.map(function(p){ return Object.assign({},p); }),
+    c1:         RUN_1.map(function(p){ return Object.assign({},p); }),
+    c2:         RUN_PROGRAMME.map(function(p){ return Object.assign({},p); })
+  };
 }
 
 function savePhasesCustom(phases) {
@@ -2743,26 +2759,44 @@ function savePhasesCustom(phases) {
 // Rétro-compat (utilisé dans quelques endroits)
 
 function getClientPhasesAll(c) {
-  // Chaque "run" de phase = un bloc d'étapes PHASES_BASE
-  // c.phaseRuns = [{phaseKey:'reset'|'sculpt'|'health'|'cont', certified:bool, offreId, jaugeVal}]
   if (!c.phaseRuns || c.phaseRuns.length === 0) {
-    c.phaseRuns = [{phaseKey:'reset', certified:false, offreId:null, jaugeVal:0}];
+    c.phaseRuns = [{phaseKey:'run1', offreId:null, jaugeVal:0, certified:false}];
   }
   var all = [];
-  var customBase = loadPhasesCustom().base || PHASES_BASE;
   c.phaseRuns.forEach(function(run, ri) {
-    customBase.forEach(function(p) {
+    var steps;
+    if (ri === 0) {
+      // Run 1 : universel
+      steps = loadPhasesCustom().run1 || RUN_1;
+      // Si l'offre ne nécessite pas de tests → marquer optionnel
+      var offres = loadOffres();
+      var selOffre = run.offreId ? offres.find(function(o){return o.id===run.offreId;}) : null;
+      if (selOffre && selOffre.test === 'none') {
+        steps = steps.filter(function(s){ return s.id !== 'tests'; });
+      }
+    } else {
+      // Run 2+ : selon type d'offre
+      var offres2 = loadOffres();
+      var selOffre2 = run.offreId ? offres2.find(function(o){return o.id===run.offreId;}) : null;
+      var runType = selOffre2 ? getRunType(selOffre2.name) : 'programme';
+      if (run.phaseKey === 'cont') {
+        steps = loadPhasesCustom().cont || PHASES_CONTINUE;
+      } else {
+        steps = runType === 'programme'
+          ? (loadPhasesCustom().programme || RUN_PROGRAMME)
+          : (loadPhasesCustom().suivi || RUN_SUIVI);
+      }
+    }
+    steps.forEach(function(p) {
       all.push(Object.assign({}, p, {
-        id: p.id+'_r'+ri,
+        id: p.id + '_r' + ri,
         runIdx: ri,
-        phaseKey: run.phaseKey
+        phaseKey: run.phaseKey || (ri === 0 ? 'run1' : 'reset')
       }));
     });
   });
-  // Si dernier run est certifié ET phase != health → les phases suivantes sont disponibles via activateCycle2
   return all;
 }
-
 
 function renderClientModal(id) {
   var c = ST.clients.find(function(x){ return x.id == id; });
@@ -2908,11 +2942,13 @@ function renderClientModal(id) {
 
     var offres = loadOffres();
     var runOffre = run.offreId ? offres.find(function(o){return o.id===run.offreId;}) : null;
-    var offresub = runOffre ? runOffre.name+' · '+runOffre.price+'€' : 'Aucune offre';
+    var offresub = runOffre ? runOffre.name+' · '+runOffre.price+'€' : (ri===0 ? 'Choisir offre ↓' : 'Aucune offre');
+    var runLabel = ri === 0 ? 'Run 1 — Entrée' : ('Run '+(ri+1)+' — '+(runOffre ? getRunType(runOffre.name)==='programme' ? 'Programme' : 'Suivi' : ''));
+    var runIco = ri === 0 ? '🚪' : (runOffre ? (getRunType(runOffre.name)==='programme' ? '🔴' : '💼') : '📋');
 
-    hd.innerHTML = '<div class="cycle-header-ico">'+pl3.ico+'</div>'
+    hd.innerHTML = '<div class="cycle-header-ico">'+runIco+'</div>'
       + '<div class="cycle-header-info">'
-      + '<div class="cycle-header-title">'+pl3.name+' — Run '+(ri+1)+(isLast?' <span style="font-size:9px;background:var(--bx);color:#fff;padding:2px 6px;border-radius:50px;margin-left:4px">ACTUEL</span>':'')+(run.certified?' <span style="font-size:9px;background:var(--G);color:#fff;padding:2px 6px;border-radius:50px;margin-left:4px">🏆</span>':'')+'</div>'
+      + '<div class="cycle-header-title">'+runLabel+(isLast?' <span style="font-size:9px;background:var(--bx);color:#fff;padding:2px 6px;border-radius:50px;margin-left:4px">EN COURS</span>':'')+(run.certified?' <span style="font-size:9px;background:var(--G);color:#fff;padding:2px 6px;border-radius:50px;margin-left:4px">🏆</span>':'')+'</div>'
       + '<div class="cycle-header-sub">'+offresub+' · '+runDone+'/'+runPhases.length+' étapes</div>'
       + '<div class="cycle-progress"><div class="cycle-progress-fill" style="width:'+runPct+'%"></div></div>'
       + '</div>'
@@ -3725,8 +3761,132 @@ function previewForm(formKey) {
 }
 
 function renderParcoursEditor() {
-  renderPhaseList('c1', PHASES_C1, 'parcours-c1-editor');
-  renderPhaseList('c2', PHASES_C2, 'parcours-c2-editor');
+  var el = document.getElementById('editor-parcours');
+  if (!el) return;
+  var phases = loadPhasesCustom();
+  var sections = [
+    {key:'run1',      label:'🚪 Run 1 — Entree (universel)',    desc:'Etapes communes a tous les clients'},
+    {key:'programme', label:'🔴 Run Programme (Reset/Hybride/Online/Program)', desc:'Etapes ACTIV avec certification'},
+    {key:'suivi',     label:'💼 Run Suivi (JM Pass, Cardio Mouv)', desc:'Etapes sans certification'},
+    {key:'cont',      label:'♾️ ACTIV CONTINUE',                  desc:'Etapes abonnement mensuel'}
+  ];
+
+  el.innerHTML = '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Run 1 universel pour tous. Run 2+ selon offre choisie.</p>';
+
+  sections.forEach(function(sec) {
+    var steps = phases[sec.key] || [];
+    var secDiv = document.createElement('div');
+    secDiv.style.marginBottom = '18px';
+
+    var secTitle = document.createElement('div');
+    secTitle.style.cssText = 'font-weight:700;font-size:13px;color:var(--bx);margin-bottom:3px';
+    secTitle.textContent = sec.label;
+    secDiv.appendChild(secTitle);
+
+    var secDesc = document.createElement('div');
+    secDesc.style.cssText = 'font-size:11px;color:var(--tx3);margin-bottom:8px';
+    secDesc.textContent = sec.desc;
+    secDiv.appendChild(secDesc);
+
+    var listDiv = document.createElement('div');
+    listDiv.id = 'phase-list-' + sec.key;
+
+    steps.forEach(function(ph, i) {
+      var row = document.createElement('div');
+      row.className = 'phase-editor-row';
+
+      var icoIn = document.createElement('input');
+      icoIn.type = 'text'; icoIn.value = ph.ico || '📌';
+      icoIn.style.cssText = 'width:40px;text-align:center;font-size:16px;padding:5px';
+      icoIn.dataset.key = sec.key; icoIn.dataset.idx = i; icoIn.dataset.field = 'ico';
+      icoIn.onchange = function(){ updatePhaseField(this.dataset.key, parseInt(this.dataset.idx), this.dataset.field, this.value); };
+      row.appendChild(icoIn);
+
+      var lblIn = document.createElement('input');
+      lblIn.className = 'phase-editor-lbl'; lblIn.type = 'text'; lblIn.value = ph.lbl || '';
+      lblIn.dataset.key = sec.key; lblIn.dataset.idx = i; lblIn.dataset.field = 'lbl';
+      lblIn.onchange = function(){ updatePhaseField(this.dataset.key, parseInt(this.dataset.idx), this.dataset.field, this.value); };
+      row.appendChild(lblIn);
+
+      var daysIn = document.createElement('input');
+      daysIn.className = 'phase-editor-days'; daysIn.type = 'number'; daysIn.value = ph.days || 0; daysIn.min = 0;
+      daysIn.dataset.key = sec.key; daysIn.dataset.idx = i; daysIn.dataset.field = 'days';
+      daysIn.onchange = function(){ updatePhaseField(this.dataset.key, parseInt(this.dataset.idx), this.dataset.field, this.value); };
+      row.appendChild(daysIn);
+
+      var btnWrap = document.createElement('div');
+      btnWrap.style.cssText = 'display:flex;gap:4px';
+      [{t:'↑',d:-1},{t:'↓',d:1}].forEach(function(item){
+        var b = document.createElement('button'); b.className='ffe-btn'; b.textContent=item.t;
+        b.dataset.key=sec.key; b.dataset.idx=i; b.dataset.dir=item.d;
+        b.onclick=function(){ movePhaseNew(this.dataset.key,parseInt(this.dataset.idx),parseInt(this.dataset.dir)); };
+        btnWrap.appendChild(b);
+      });
+      var delBtn = document.createElement('button'); delBtn.className='ffe-btn'; delBtn.textContent='✕';
+      delBtn.dataset.key=sec.key; delBtn.dataset.idx=i;
+      delBtn.onclick=function(){ deletePhaseNew(this.dataset.key,parseInt(this.dataset.idx)); };
+      btnWrap.appendChild(delBtn);
+      row.appendChild(btnWrap);
+      listDiv.appendChild(row);
+    });
+
+    secDiv.appendChild(listDiv);
+
+    var addBtn = document.createElement('button');
+    addBtn.className='btn btn-dk btn-sm'; addBtn.style.cssText='margin-top:6px;font-size:11px';
+    addBtn.textContent='＋ Ajouter etape'; addBtn.dataset.key=sec.key;
+    addBtn.onclick=function(){ addPhaseNew(this.dataset.key); };
+    secDiv.appendChild(addBtn);
+
+    var dvd = document.createElement('div'); dvd.className='dvd';
+    secDiv.appendChild(dvd);
+    el.appendChild(secDiv);
+  });
+}
+
+function updatePhaseField(key, idx, field, val) {
+  var phases = loadPhasesCustom();
+  if (!phases[key] || !phases[key][idx]) return;
+  phases[key][idx][field] = field === 'days' ? (parseInt(val)||0) : val;
+  savePhasesCustom(phases);
+}
+
+function movePhaseNew(key, idx, dir) {
+  var phases = loadPhasesCustom();
+  var arr = phases[key]; if (!arr) return;
+  var newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= arr.length) return;
+  var tmp = arr[idx]; arr[idx] = arr[newIdx]; arr[newIdx] = tmp;
+  savePhasesCustom(phases); renderParcoursEditor();
+}
+
+function deletePhaseNew(key, idx) {
+  dlgConfirm('Supprimer cette etape ?','Supprimer').then(function(r){
+    if (!r.confirmed) return;
+    var phases = loadPhasesCustom();
+    phases[key].splice(idx, 1);
+    savePhasesCustom(phases); renderParcoursEditor();
+    toast('ok','Etape supprimee');
+  });
+}
+
+function addPhaseNew(key) {
+  showDialog({
+    title: 'Nouvelle etape',
+    inputs:[
+      {id:'ico',  label:'Emoji', type:'text', value:'X'},
+      {id:'lbl',  label:'Nom',   type:'text', placeholder:'Ex: Bilan mensuel'},
+      {id:'days', label:'Duree jours (0=instantane)', type:'number', value:'0'}
+    ],
+    confirmLabel:'Ajouter'
+  }).then(function(r){
+    if (!r.confirmed || !r.values.lbl.trim()) return;
+    var phases = loadPhasesCustom();
+    if (!phases[key]) phases[key] = [];
+    phases[key].push({id:'ph_'+Date.now(), ico:r.values.ico||'X', lbl:r.values.lbl.trim(), days:parseInt(r.values.days)||0});
+    savePhasesCustom(phases); renderParcoursEditor();
+    toast('ok','Etape ajoutee');
+  });
 }
 
 function renderPhaseList(cycle, phases, containerId) {
