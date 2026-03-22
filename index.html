@@ -749,10 +749,12 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
 <!-- ══════ PAGE OFFRES ══════ -->
 <div class="pg" id="pg-offres">
-  <div class="page-title">💼 Catalogue des Offres</div>
+  <div class="page-title" style="justify-content:space-between">
+    <span>💼 Catalogue des Offres</span>
+    <button onclick="addOffre()" title="Ajouter une offre" style="width:36px;height:36px;border-radius:10px;background:var(--bx);color:#fff;border:none;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(139,21,32,.25);flex-shrink:0;transition:all .15s" onmouseover="this.style.background='var(--bx3)'" onmouseout="this.style.background='var(--bx)'">＋</button>
+  </div>
   <p style="font-size:13px;color:var(--tx3);margin-bottom:16px">Modifiez nom, durée, prix et modalités de paiement. Les offres sont connectées au bilan et aux statistiques.</p>
   <div id="offres-list"></div>
-  <button class="btn btn-bx btn-sm" onclick="addOffre()">＋ Ajouter une offre</button>
 </div>
 
 <!-- ══════ PAGE PRÉ-QUALIF ══════ -->
@@ -1973,7 +1975,7 @@ window.onload = function() {
   ST.statsYear=new Date().getFullYear();
   const rdvDate=document.getElementById('rdv-date');
   if(rdvDate) rdvDate.value=new Date().toISOString().split('T')[0];
-  loadPhases();
+  loadPhasesCustom();
   renderBilanForm();
   renderTestsForm();
   loadFromSupabase();
