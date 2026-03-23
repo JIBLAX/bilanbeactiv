@@ -4015,6 +4015,86 @@ function mapStatutFromBusiness(statut, closing) {
   return map[statut] || 'Non closé';
 }
 
+
+// ═══════════════════════════════════════════════════
+// FONCTIONS MANQUANTES
+// ═══════════════════════════════════════════════════
+
+function onOffreChanged() {
+  renderTestsForm();
+}
+
+function isSectionActiveForProgramme(sec, programme) {
+  if (programme === 'none') return ['tf1','tf2','tf7','tf8'].includes(sec.id);
+  if (programme === '90') { if (sec.only360) return false; return true; }
+  if (programme === '360') { if (sec.only90) return false; return true; }
+  return true;
+}
+
+function buildFieldRow(formKey, def, si, fi, f) {
+  var row = document.createElement('div');
+  row.className = 'field-row';
+  var lbl = document.createElement('span');
+  lbl.className = 'field-row-lbl';
+  lbl.textContent = f.label || f.id;
+  row.appendChild(lbl);
+  var type = document.createElement('span');
+  type.className = 'field-row-type';
+  type.textContent = f.type || 'text';
+  row.appendChild(type);
+  var btns = document.createElement('div');
+  btns.className = 'field-row-btns';
+  [['\u2191', function(){ moveField(formKey, si, fi, -1); }],
+   ['\u2193', function(){ moveField(formKey, si, fi,  1); }],
+   ['\u2715', function(){ deleteField(formKey, si, fi); }]
+  ].forEach(function(item) {
+    var b = document.createElement('button');
+    b.className = 'ffe-btn'; b.textContent = item[0]; b.onclick = item[1];
+    btns.appendChild(b);
+  });
+  row.appendChild(btns);
+  return row;
+}
+
+function renderPhaseList(cycleKey, phasesArr, containerId) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  var phases = loadPhasesCustom();
+  var arr = phases[cycleKey] || phasesArr || [];
+  el.innerHTML = '';
+  arr.forEach(function(ph, idx) {
+    var row = document.createElement('div');
+    row.className = 'phase-editor-row';
+    var icoInp = document.createElement('input');
+    icoInp.type = 'text'; icoInp.className = 'phase-editor-ico'; icoInp.value = ph.ico || '\ud83d\udccc';
+    icoInp.onchange = function(){ updatePhaseField(cycleKey, idx, 'ico', this.value); };
+    row.appendChild(icoInp);
+    var lblInp = document.createElement('input');
+    lblInp.className = 'phase-editor-lbl'; lblInp.type = 'text'; lblInp.value = ph.lbl || '';
+    lblInp.onchange = function(){ updatePhaseField(cycleKey, idx, 'lbl', this.value); };
+    row.appendChild(lblInp);
+    var daysInp = document.createElement('input');
+    daysInp.className = 'phase-editor-days'; daysInp.type = 'number'; daysInp.value = ph.days || 0;
+    daysInp.onchange = function(){ updatePhaseField(cycleKey, idx, 'days', this.value); };
+    row.appendChild(daysInp);
+    var btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;gap:4px';
+    [['\u2191', function(){ movePhaseNew(cycleKey, idx, -1); }],
+     ['\u2193', function(){ movePhaseNew(cycleKey, idx,  1); }],
+     ['\u2715', function(){ deletePhaseNew(cycleKey, idx); }]
+    ].forEach(function(item) {
+      var b = document.createElement('button');
+      b.className = 'ffe-btn'; b.textContent = item[0]; b.onclick = item[1];
+      btns.appendChild(b);
+    });
+    row.appendChild(btns);
+    el.appendChild(row);
+  });
+}
+
 </script>
+
+<!-- TOAST NOTIFICATION -->
+<div id="toast"></div>
 </body>
 </html>
