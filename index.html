@@ -3377,9 +3377,79 @@ function togglePhase(clientId, globalIdx) {
 // ═══════════════════════════════════════════════════
 // UPDATE STATUT PARCOURS
 // ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+// SYNC → APP FINANCES (insert dans prospects)
+// ═══════════════════════════════════════════════════
+// ⚠️ Remplace VOTRE_USER_ID par ton UUID Supabase
+// (Dashboard Supabase → Authentication → Users)
+var FINANCES_USER_ID = 'ec07a77a-5378-416c-b971-91b65e594eb6';
+
+async function syncClientToFinances(c) {
+  var url = ST.sbUrl || SUPABASE_URL;
+  var key = ST.sbKey || SUPABASE_ANON;
+  if (!url || !key || FINANCES_USER_ID === 'VOTRE_USER_ID') return;
+
+  // Construire le nom complet
+  var fullName = ((c.prenom || '') + ' ' + (c.nom || '')).trim();
+  if (!fullName) return;
+
+  // Trouver le nom de l'offre depuis l'offreId du Run 1
+  var offreName = '';
+  if (c.offres) {
+    offreName = c.offres;
+  } else if (c.phaseRuns && c.phaseRuns[0] && c.phaseRuns[0].offreId) {
+    var offres = loadOffres();
+    var o = offres.find(function(x){ return x.id === c.phaseRuns[0].offreId; });
+    if (o) offreName = o.name;
+  }
+
+  // Payload minimal vers la table prospects de l'app Finances
+  var payload = {
+    id: 'beactiv_' + c.id,          // préfixe pour éviter les conflits d'ID
+    user_id: FINANCES_USER_ID,
+    name: fullName,
+    contact: c.tel || '',
+    age: c.age ? parseInt(c.age) : null,
+    objectif: c.objectif || '',
+    offre: offreName || '-',
+    prix_reel: c.montant ? parseFloat(c.montant) : 0,
+    closing: 'OUI',
+    statut: 'CLIENT',
+    sex: c.sex || 'F',
+    source: c.source || '',
+    notes: c.notes || '',
+    date: c.date || '',
+    type: c.rdvType || '',
+    presence: c.rdvStatut || '',
+    bilan_validated: false
+  };
+
+  try {
+    var res = await fetch(url + '/rest/v1/prospects', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': key,
+        'Authorization': 'Bearer ' + key,
+        'Prefer': 'resolution=merge-duplicates'  // upsert : pas de doublon si déjà existant
+      },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      toast('ok', '🔗 Client synchronisé → App Finances');
+    } else {
+      var err = await res.text();
+      console.warn('Sync Finances échouée:', err);
+    }
+  } catch(e) {
+    console.warn('Sync Finances erreur:', e);
+  }
+}
+
 function updateStatutParcours(clientId, newStatut) {
   var c = ST.clients.find(function(x){ return x.id == clientId; });
   if (!c) return;
+  var wasAlreadyClosed = c.statut === 'Closé';
   c.statut = newStatut;
   // Si on close → init phaseRuns si vide
   if (newStatut === 'Closé' && (!c.phaseRuns || c.phaseRuns.length === 0)) {
@@ -3388,6 +3458,10 @@ function updateStatutParcours(clientId, newStatut) {
   c.updated_at = new Date().toISOString();
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
+  // Sync vers App Finances uniquement au moment du closing (pas à chaque changement)
+  if (newStatut === 'Closé' && !wasAlreadyClosed) {
+    syncClientToFinances(c);
+  }
   renderClients();
   toast('ok', '✅ Statut mis à jour : ' + newStatut);
 }
