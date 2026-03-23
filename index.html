@@ -754,6 +754,17 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <span>💼 Catalogue des Offres</span>
     <button onclick="addOffre()" title="Ajouter une offre" style="width:36px;height:36px;border-radius:10px;background:var(--bx);color:#fff;border:none;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(139,21,32,.25);flex-shrink:0;transition:background .15s" class="btn-add-offre">＋</button>
   </div>
+  <div style="background:rgba(26,110,219,.07);border:1.5px solid rgba(26,110,219,.2);border-radius:10px;padding:13px 16px;margin-bottom:14px;font-size:13px;color:var(--B);display:flex;align-items:flex-start;gap:10px">
+    <span style="font-size:18px;flex-shrink:0">🔗</span>
+    <div>
+      <div style="font-weight:700;margin-bottom:3px">Synchronisation avec BE ACTIV BUSINESS</div>
+      <div style="color:var(--tx2);font-size:12px;line-height:1.5">Les offres sont synchronisées vers l'app Finances. Toute modification ici est répercutée automatiquement. Pour une gestion centralisée, créez et gérez vos offres depuis <strong>BE ACTIV BUSINESS</strong>.</div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn-B btn-sm" onclick="syncAllOffresToFinances()" style="font-size:12px;padding:6px 12px">📤 Pousser toutes les offres → Finances</button>
+        <button class="btn btn-dk btn-sm" onclick="pullOffresFromFinances()" style="font-size:12px;padding:6px 12px">📥 Importer les offres ← Finances</button>
+      </div>
+    </div>
+  </div>
   <p style="font-size:13px;color:var(--tx3);margin-bottom:16px">Modifiez nom, durée, prix et modalités de paiement. Les offres sont connectées au bilan et aux statistiques.</p>
   <div id="offres-list"></div>
 </div>
@@ -1030,6 +1041,20 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="f" style="margin-bottom:12px"><label>URL Supabase</label><input type="text" id="cfg-surl"></div>
     <div class="f" style="margin-bottom:12px"><label>Clé Anon Supabase</label><input type="password" id="cfg-skey"></div>
     <div class="f" style="margin-bottom:12px"><label>Service Role Key <span style="font-size:10px;color:var(--tx3);font-weight:400">(sync → App Finances)</span></label><input type="password" id="cfg-srole" placeholder="eyJ… — Dashboard Supabase → Settings → API"></div>
+    <div style="background:rgba(139,21,32,.05);border:1.5px solid var(--rim);border-radius:9px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--bx);text-transform:uppercase;letter-spacing:.8px;margin-bottom:9px">🔗 Synchronisation initiale</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <button class="btn btn-dk btn-sm btn-w" onclick="syncAllClientsToFinances();closeModal('cfg')" style="text-align:left;justify-content:flex-start;font-size:12px">
+          📤 Pousser tous les clients → App Finances
+        </button>
+        <button class="btn btn-dk btn-sm btn-w" onclick="syncAllOffresToFinances();closeModal('cfg')" style="text-align:left;justify-content:flex-start;font-size:12px">
+          📤 Pousser toutes les offres → App Finances
+        </button>
+        <button class="btn btn-dk btn-sm btn-w" onclick="pullOffresFromFinances();closeModal('cfg')" style="text-align:left;justify-content:flex-start;font-size:12px">
+          📥 Importer les offres ← App Finances
+        </button>
+      </div>
+    </div>
     <p class="note">La clé Anthropic reste dans votre navigateur uniquement.</p>
     <div class="brow" style="margin-top:16px">
       <button class="btn btn-dk" onclick="closeModal('cfg')">Annuler</button>
@@ -1101,22 +1126,44 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
 <script>
 function deleteOffre(id) {
-  saveOffres(loadOffres().filter(o=>o.id!==id)); renderOffresPage(); renderBilanOffresList(); toast('ok','✅ Supprimée');
+  var offres = loadOffres();
+  var o = offres.find(function(x){return x.id===id;});
+  saveOffres(offres.filter(function(x){return x.id!==id;}));
+  renderOffresPage();
+  renderBilanOffresList();
+  if (o) syncOffreToFinances('delete', o);
+  toast('ok','✅ Offre supprimée');
 }
 
 function addOffre() {
-  var offres = loadOffres();
-  var newId = 'o' + Date.now();
-  offres.push({id: newId, name: 'Nouvelle offre', price: 0, durVal: 1, durUnit: 'mois', paiement: 1, parcours: true, alaCarte: false, isAbonnement: false, test: 'none'});
-  saveOffres(offres);
-  renderOffresPage();
-  renderBilanOffresList();
-  // Auto-ouvre le mode édition sur la nouvelle carte
-  setTimeout(function(){ toggleOffreEdit(newId); }, 50);
-  // Scroll vers le bas pour voir la nouvelle offre
-  var scroller = document.getElementById('scroller');
-  if (scroller) setTimeout(function(){ scroller.scrollTop = scroller.scrollHeight; }, 80);
-  toast('ok', '✅ Offre ajoutée');
+  showDialog({
+    title: '💼 Nouvelle offre',
+    inputs: [
+      {id:'offre_name', label:'Nom de l\'offre', type:'text', placeholder:'Ex: ACTIV RESET 90J'},
+      {id:'offre_price', label:'Prix (€)', type:'number', placeholder:'Ex: 497'}
+    ],
+    confirmLabel: 'Créer l\'offre'
+  }).then(function(r) {
+    if (!r.confirmed || !r.values.offre_name.trim()) return;
+    var offres = loadOffres();
+    var newId = 'o' + Date.now();
+    offres.push({
+      id: newId,
+      name: r.values.offre_name.trim(),
+      price: parseFloat(r.values.offre_price) || 0,
+      durVal: 1, durUnit: 'mois', paiement: 1,
+      parcours: true, alaCarte: false, isAbonnement: false, test: 'none'
+    });
+    saveOffres(offres);
+    renderOffresPage();
+    renderBilanOffresList();
+    setTimeout(function(){ toggleOffreEdit(newId); }, 50);
+    var scroller = document.getElementById('scroller');
+    if (scroller) setTimeout(function(){ scroller.scrollTop = scroller.scrollHeight; }, 80);
+    toast('ok', '✅ Offre créée : ' + r.values.offre_name.trim());
+    // Sync vers App Finances si srKey disponible
+    syncOffreToFinances('create', {id:newId, name:r.values.offre_name.trim(), price:parseFloat(r.values.offre_price)||0});
+  });
 }
 
 var currentClientTab = 'prospects';
@@ -1658,11 +1705,11 @@ function renderField(f) {
     case 'radio':
       return '<div class="f">' + lbl + (f.options||[]).map(o => {
         const [val,lbl2] = o.includes('|') ? o.split('|') : [o,o];
-        return '<div class="chk-item"><input type="radio" name="' + f.name + '" value="' + val + '"><div class="radio-box"></div><span class="chk-lbl">' + lbl2 + '</span></div>';
+        return '<label class="chk-item" style="cursor:pointer"><input type="radio" name="' + f.name + '" value="' + val + '"><div class="radio-box"></div><span class="chk-lbl">' + lbl2 + '</span></label>';
       }).join('') + '</div>';
     case 'checkboxes':
       return '<div class="f">' + lbl + (f.options||[]).map(o =>
-        '<div class="chk-item"><input type="checkbox" value="' + o + '"><div class="chk-box"></div><span class="chk-lbl">' + o + '</span></div>'
+        '<label class="chk-item" style="cursor:pointer"><input type="checkbox" value="' + o + '"><div class="chk-box"></div><span class="chk-lbl">' + o + '</span></label>'
       ).join('') + '</div>';
     case 'days':
       return '<div class="f">' + lbl + '<div class="days-grid" style="margin-bottom:0">' +
@@ -1861,6 +1908,8 @@ function saveOffreField(id, field, val) {
   o[field] = val;
   saveOffres(offres);
   renderBilanOffresList();
+  // Sync vers App Finances
+  syncOffreToFinances('upsert', o);
   // Mettre à jour le header de la fiche offre sans re-render complet
   var card = document.getElementById('ocard_'+id);
   if (card) {
@@ -1878,6 +1927,7 @@ function saveOffreTypeField(id, typeVal) {
   o.isAbonnement = typeVal === 'abonnement';
   saveOffres(offres);
   renderBilanOffresList();
+  syncOffreToFinances('upsert', o);
 }
 
 function updateOffre(input) {
@@ -1895,7 +1945,7 @@ function renderBilanOffresList() {
   const el=document.getElementById('bilan-offres-list'); if(!el)return;
   const offres=loadOffres();
   el.innerHTML=offres.map(o =>
-    '<div class="chk-item"><input type="checkbox" value="' + o.name + '" onchange="onOffreChanged()"><div class="chk-box"></div><span class="chk-lbl">' + o.name + ' <span style="color:var(--tx3);font-size:11px">— ' + o.price + '€ · ' + o.durVal + ' ' + o.durUnit + (o.paiement>1?' · '+o.paiement+'× paiement':'') + (o.test&&o.test!=='none'?' · Test '+o.test+'°':'') + '</span></span></div>'
+    '<label class="chk-item" style="cursor:pointer"><input type="checkbox" value="' + o.name + '" onchange="onOffreChanged()"><div class="chk-box"></div><span class="chk-lbl">' + o.name + ' <span style="color:var(--tx3);font-size:11px">— ' + o.price + '€ · ' + o.durVal + ' ' + o.durUnit + (o.paiement>1?' · '+o.paiement+'× paiement':'') + (o.test&&o.test!=='none'?' · Test '+o.test+'°':'') + '</span></span></label>'
   ).join('');
 }
 
@@ -1985,7 +2035,13 @@ window.onload = function() {
   loadPhasesCustom();
   renderBilanForm();
   renderTestsForm();
+  // Activer auto-save brouillon bilan dès le chargement
+  setupBilanDraftAutosave();
   loadFromSupabase();
+  // Tenter de charger les offres depuis App Finances si configuré
+  if (ST.sbUrl && ST.sbKey) {
+    pullOffresFromFinances().catch(function(){});
+  }
 };
 
 // ═══════════════════════════════════════════════════
@@ -2021,7 +2077,29 @@ function showPg(name) {
   if(name==='stats'){renderStats();setTimeout(renderGraph,80);}
   if(name==='home'){updateKPIs();renderNextRDV();}
   if(name==='offres') renderOffresPage();
-  if(name==='bilan'){renderBilanForm();renderBilanOffresList();}
+  if(name==='pq') {
+    // Restaurer la pré-qualif si brouillon existe
+    var pqDraft = localStorage.getItem('ba_bilan_draft');
+    if (pqDraft) {
+      try {
+        var d = JSON.parse(pqDraft);
+        if (d['__pq_raw']) {
+          var el = document.getElementById('pq-raw');
+          if (el && !el.value) el.value = d['__pq_raw'];
+        }
+      } catch(e) {}
+    }
+  }
+  if(name==='bilan'){
+    renderBilanForm();renderBilanOffresList();
+    // Restaurer le brouillon s'il existe et que ce n'est pas un nouveau dossier frais
+    var restored = restoreBilanDraft();
+    if (restored) {
+      toast('info', '📝 Brouillon restauré — vos données sont là');
+    }
+    // Activer l'auto-save
+    setupBilanDraftAutosave();
+  }
   if(name==='tests') renderTestsForm();
   if(name==='form-editor'){ renderSectionsEditor('bilan'); switchEditor('bilan', document.querySelector('#pg-form-editor .chip')); renderSuitesEditor(); }
 }
@@ -2625,7 +2703,12 @@ function saveClient(){
   const idx=ST.clients.findIndex(c=>c.id===client.id);
   if(idx>=0)ST.clients[idx]=client;else ST.clients.unshift(client);
   localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
-  saveToSupabase(client);toast('ok','✅ '+client.prenom+' '+client.nom+' sauvegardé');
+  saveToSupabase(client);
+  // Sync vers App Finances dès la sauvegarde (prospect créé)
+  syncClientToFinances(client);
+  // Effacer le brouillon car client sauvegardé
+  clearBilanDraft();
+  toast('ok','✅ '+client.prenom+' '+client.nom+' sauvegardé');
 }
 
 function renderClients(){
@@ -3221,6 +3304,39 @@ function skipPQ() {
 }
 
 function newClient(){
+  // Vérifier si un brouillon existe
+  var s = localStorage.getItem('ba_bilan_draft');
+  if (s) {
+    try {
+      var draft = JSON.parse(s);
+      var age = Date.now() - (draft.__ts || 0);
+      var hasPn = draft['b-pn'] && draft['b-pn'].trim();
+      if (hasPn && age < 86400000) {
+        var nom = (draft['b-pn'] || '') + (draft['b-nn'] ? ' ' + draft['b-nn'] : '');
+        showDialog({
+          title: '📝 Brouillon en cours',
+          body_html: '<p style="font-size:14px;color:var(--tx2);line-height:1.6;padding:4px 0">Un bilan est en cours pour <strong>' + nom.trim() + '</strong>.<br>Que souhaitez-vous faire ?</p>',
+          confirmLabel: '✚ Nouveau dossier',
+          cancelLabel: '↩ Reprendre le brouillon'
+        }).then(function(r) {
+          if (!r.confirmed) {
+            // Reprendre → aller sur bilan (la restauration se fait dans showPg bilan)
+            showPg('bilan');
+            return;
+          }
+          clearBilanDraft();
+          _doNewClient();
+          showPg('pq');
+        });
+        return;
+      }
+    } catch(e) {}
+  }
+  _doNewClient();
+  showPg('pq');
+}
+
+function _doNewClient(){
   ST.clientId=null;ST.pqSummary=null;ST.bilanSummary=null;ST.finalReport=null;
   document.getElementById('pq-result').style.display='none';
   document.getElementById('pq-cta').style.display='none';
@@ -3230,6 +3346,7 @@ function newClient(){
   document.getElementById('rpt-content').style.display='none';
   document.getElementById('rpt-actions').style.display='none';
   renderBilanForm();renderTestsForm();
+  clearBilanDraft();
   toast('info','✚ Nouveau dossier');
 }
 
@@ -3388,6 +3505,220 @@ function deletePhaseNew(key,idx){
 function openMore(){ toggleMore(); }
 
 // ═══════════════════════════════════════════════════
+// SYNC → APP FINANCES (offres)
+// Synchronise création / modification / suppression
+// depuis BE ACTIV BILAN CRM vers la table be_activ_offres
+// (partagée avec BE ACTIV BUSINESS)
+// ═══════════════════════════════════════════════════
+async function syncOffreToFinances(action, offre) {
+  var url = ST.sbUrl || SUPABASE_URL;
+  var srKey = ST.srKey || '';
+  if (!url || !srKey) return;
+
+  try {
+    if (action === 'delete') {
+      await fetch(url + '/rest/v1/be_activ_offres?id=eq.' + encodeURIComponent(offre.id), {
+        method: 'DELETE',
+        headers: { 'apikey': srKey, 'Authorization': 'Bearer ' + srKey }
+      });
+    } else {
+      var payload = {
+        id: offre.id,
+        name: offre.name,
+        price: offre.price || 0,
+        dur_val: offre.durVal || 1,
+        dur_unit: offre.durUnit || 'mois',
+        paiement: offre.paiement || 1,
+        parcours: offre.parcours || false,
+        ala_carte: offre.alaCarte || false,
+        is_abonnement: offre.isAbonnement || false,
+        test: offre.test || 'none',
+        updated_at: new Date().toISOString()
+      };
+      await fetch(url + '/rest/v1/be_activ_offres', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': srKey,
+          'Authorization': 'Bearer ' + srKey,
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify(payload)
+      });
+    }
+  } catch(e) {
+    console.warn('Sync offre Finances:', e);
+  }
+}
+
+// Sync initiale : pousse toutes les offres locales vers be_activ_offres
+async function syncAllOffresToFinances() {
+  var offres = loadOffres();
+  var done = 0;
+  for (var i = 0; i < offres.length; i++) {
+    await syncOffreToFinances('upsert', offres[i]);
+    done++;
+  }
+  if (done > 0) toast('ok', '🔗 ' + done + ' offres synchronisées → App Finances');
+}
+
+// Sync initiale : pousse tous les clients closés vers prospects
+async function syncAllClientsToFinances() {
+  var clients = ST.clients.filter(function(c){ return c.statut === 'Closé'; });
+  var done = 0;
+  for (var i = 0; i < clients.length; i++) {
+    await syncClientToFinances(clients[i]);
+    done++;
+  }
+  toast('ok', '🔗 ' + done + ' clients synchronisés → App Finances');
+}
+
+// ═══════════════════════════════════════════════════
+// BROUILLON BILAN — auto-save & restore
+// ═══════════════════════════════════════════════════
+var _bilanDraftTimer = null;
+
+function saveBilanDraft() {
+  // Collecte tous les champs visibles du formulaire bilan
+  var draft = {};
+  // Champs texte / number / date / select / textarea
+  document.querySelectorAll('#bilan-form-container input:not([type=radio]):not([type=checkbox]), #bilan-form-container select, #bilan-form-container textarea').forEach(function(el) {
+    if (el.id) draft[el.id] = el.value;
+  });
+  // Radios
+  document.querySelectorAll('#bilan-form-container input[type=radio]:checked').forEach(function(el) {
+    draft['__radio__' + el.name] = el.value;
+  });
+  // Checkboxes (offres + autres)
+  document.querySelectorAll('#bilan-form-container input[type=checkbox]:checked, #bilan-offres-list input[type=checkbox]:checked').forEach(function(el) {
+    var key = '__chk__' + (el.name || el.value);
+    draft[key] = true;
+  });
+  // Pré-qualif textarea
+  var pqRaw = document.getElementById('pq-raw');
+  if (pqRaw && pqRaw.value) draft['__pq_raw'] = pqRaw.value;
+  // Client ID en cours
+  if (ST.clientId) draft['__clientId'] = ST.clientId;
+  draft['__ts'] = Date.now();
+  localStorage.setItem('ba_bilan_draft', JSON.stringify(draft));
+}
+
+function restoreBilanDraft() {
+  var s = localStorage.getItem('ba_bilan_draft');
+  if (!s) return false;
+  var draft;
+  try { draft = JSON.parse(s); } catch(e) { return false; }
+  // Ne restaurer que si le brouillon a moins de 24h et qu'il y a un prénom ou nom
+  var age = Date.now() - (draft.__ts || 0);
+  if (age > 86400000) { localStorage.removeItem('ba_bilan_draft'); return false; }
+  // Vérifier qu'il y a du contenu
+  var hasPn = draft['b-pn'] && draft['b-pn'].trim();
+  var hasPqRaw = draft['__pq_raw'] && draft['__pq_raw'].trim();
+  if (!hasPn && !hasPqRaw) return false;
+
+  // Restaurer champs texte / number / date / select / textarea
+  Object.keys(draft).forEach(function(k) {
+    if (k.startsWith('__')) return;
+    var el = document.getElementById(k);
+    if (el) el.value = draft[k];
+  });
+  // Radios
+  Object.keys(draft).forEach(function(k) {
+    if (!k.startsWith('__radio__')) return;
+    var name = k.replace('__radio__', '');
+    var val = draft[k];
+    var inp = document.querySelector('input[type=radio][name="' + name + '"][value="' + val + '"]');
+    if (inp) inp.checked = true;
+  });
+  // Checkboxes
+  Object.keys(draft).forEach(function(k) {
+    if (!k.startsWith('__chk__')) return;
+    var val = k.replace('__chk__', '');
+    var inp = document.querySelector('#bilan-form-container input[type=checkbox][value="' + val + '"], #bilan-offres-list input[type=checkbox][value="' + val + '"]');
+    if (inp) inp.checked = true;
+  });
+  // Pré-qualif
+  if (draft['__pq_raw']) {
+    var pqEl = document.getElementById('pq-raw');
+    if (pqEl) pqEl.value = draft['__pq_raw'];
+  }
+  // Client ID
+  if (draft['__clientId']) ST.clientId = draft['__clientId'];
+  return true;
+}
+
+function clearBilanDraft() {
+  localStorage.removeItem('ba_bilan_draft');
+}
+
+function setupBilanDraftAutosave() {
+  // Debounced auto-save sur tous changements dans le formulaire bilan
+  var container = document.getElementById('bilan-form-container');
+  if (!container) return;
+  ['input','change'].forEach(function(evt) {
+    container.addEventListener(evt, function() {
+      clearTimeout(_bilanDraftTimer);
+      _bilanDraftTimer = setTimeout(saveBilanDraft, 800);
+    }, true);
+  });
+  // Aussi sur la pré-qualif
+  var pqRaw = document.getElementById('pq-raw');
+  if (pqRaw) {
+    pqRaw.addEventListener('input', function() {
+      clearTimeout(_bilanDraftTimer);
+      _bilanDraftTimer = setTimeout(saveBilanDraft, 800);
+    });
+  }
+}
+
+// Sauvegarde forcée avant toute navigation ou fermeture
+window.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'hidden') saveBilanDraft();
+});
+window.addEventListener('beforeunload', function() {
+  saveBilanDraft();
+});
+
+
+// ═══════════════════════════════════════════════════
+// PULL OFFRES ← APP FINANCES (be_activ_offres)
+// Importe les offres depuis la table partagée Supabase
+// ═══════════════════════════════════════════════════
+async function pullOffresFromFinances() {
+  var url = ST.sbUrl || SUPABASE_URL;
+  var key = ST.sbKey || SUPABASE_ANON;
+  if (!url || !key) { toast('err', '⚠️ Configurez Supabase dans Config'); return; }
+  try {
+    var res = await fetch(url + '/rest/v1/be_activ_offres?order=name.asc', {
+      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+    });
+    if (!res.ok) { toast('err', '⚠️ Erreur chargement offres Finances (' + res.status + ')'); return; }
+    var rows = await res.json();
+    if (!rows || rows.length === 0) { toast('info', 'ℹ️ Aucune offre trouvée dans Finances — créez-en depuis BE ACTIV BUSINESS'); return; }
+    var offres = rows.map(function(r) {
+      return {
+        id: r.id,
+        name: r.name || 'Offre',
+        price: r.price || 0,
+        durVal: r.dur_val || 1,
+        durUnit: r.dur_unit || 'mois',
+        paiement: r.paiement || 1,
+        parcours: r.parcours || false,
+        alaCarte: r.ala_carte || false,
+        isAbonnement: r.is_abonnement || false,
+        test: r.test || 'none'
+      };
+    });
+    saveOffres(offres);
+    renderOffresPage();
+    renderBilanOffresList();
+    toast('ok', '✅ ' + offres.length + ' offre(s) importée(s) depuis BE ACTIV BUSINESS');
+  } catch(e) {
+    toast('err', '❌ Erreur : ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════
 // TOGGLE PHASE (coche/décoche une étape du parcours)
 // ═══════════════════════════════════════════════════
 function togglePhase(clientId, globalIdx) {
@@ -3417,32 +3748,33 @@ var FINANCES_USER_ID = 'ec07a77a-5378-416c-b971-91b65e594eb6';
 
 async function syncClientToFinances(c) {
   var url = ST.sbUrl || SUPABASE_URL;
-  // Service Role Key bypass le RLS → obligatoire pour écrire dans une table d'une autre app
-  // Si pas de srKey configurée → abandon silencieux
   var srKey = ST.srKey || '';
   if (!url || !srKey || FINANCES_USER_ID === 'VOTRE_USER_ID') {
     if (!srKey) console.warn('Sync Finances: Service Role Key non configurée (Config → Clé Service Role)');
     return;
   }
 
-  // Construire le nom complet
   var fullName = ((c.prenom || '') + ' ' + (c.nom || '')).trim();
   if (!fullName) return;
 
-  // Trouver le nom de l'offre
+  // Trouver le nom de l'offre (prend toutes les offres souscrites)
   var offreName = '';
+  var offresArray = [];
   if (c.offres) {
     offreName = c.offres;
+    offresArray = c.offres.split(',').map(function(x){ return x.trim(); }).filter(Boolean);
   } else if (c.phaseRuns && c.phaseRuns[0] && c.phaseRuns[0].offreId) {
     var allOffres = loadOffres();
     var o = allOffres.find(function(x){ return x.id === c.phaseRuns[0].offreId; });
-    if (o) offreName = o.name;
+    if (o) { offreName = o.name; offresArray = [o.name]; }
   }
 
-  // Pour les clients Pro : structureName comme nom
-  if (c.isPro) {
-    fullName = c.structureName || fullName;
-  }
+  if (c.isPro) fullName = c.structureName || fullName;
+
+  // Déterminer closing/statut selon statut BILAN CRM
+  var isClosed = (c.statut === 'Closé');
+  var closingVal = isClosed ? 'OUI' : 'NON';
+  var statutVal = isClosed ? 'CLIENT' : 'PROSPECT';
 
   var payload = {
     id: 'beactiv_' + c.id,
@@ -3450,30 +3782,35 @@ async function syncClientToFinances(c) {
     name: fullName,
     contact: c.tel || '',
     age: c.age ? parseInt(c.age) : null,
-    objectif: c.isPro ? (c.proType || '') : (c.objectif || ''),
+    objectif: c.isPro ? (c.proType || '') : (c.objectif || c.bilan_summary && c.bilan_summary.objectif || ''),
     offre: offreName || '-',
+    offres_souscrites: offresArray.join(', '),
     prix_reel: c.montant ? parseFloat(c.montant) : 0,
-    closing: 'OUI',
-    statut: 'CLIENT',
-    sex: c.sex || 'F',
+    closing: closingVal,
+    statut: statutVal,
+    sex: c.sex || (c.bilan_summary && c.bilan_summary.sex) || 'F',
     source: c.source || '',
     notes: c.notes || '',
     date: c.date || '',
     type: c.rdvType || '',
     presence: c.rdvStatut || '',
-    bilan_validated: false
+    bilan_validated: !!(c.final_report),
+    score_global: c.score_global || null,
+    profil_code: c.profil_code || '',
+    updated_at: new Date().toISOString()
+  };
+
+  var headers = {
+    'Content-Type': 'application/json',
+    'apikey': srKey,
+    'Authorization': 'Bearer ' + srKey,
+    'Prefer': 'resolution=merge-duplicates'
   };
 
   try {
+    // 1. Sync dans prospects
     var res = await fetch(url + '/rest/v1/prospects', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': srKey,
-        'Authorization': 'Bearer ' + srKey,   // Service Role bypass RLS
-        'Prefer': 'resolution=merge-duplicates'
-      },
-      body: JSON.stringify(payload)
+      method: 'POST', headers: headers, body: JSON.stringify(payload)
     });
     if (res.ok) {
       toast('ok', '🔗 Synchronisé → App Finances');
@@ -3481,6 +3818,33 @@ async function syncClientToFinances(c) {
       var err = await res.text();
       console.warn('Sync Finances échouée:', res.status, err);
       toast('info', '⚠️ Sync Finances échouée — vérifie la Service Role Key');
+      return;
+    }
+
+    // 2. Sync dans activites (si client closé = création d'activité coaching)
+    if (isClosed) {
+      var actPayload = {
+        id: 'beactiv_act_' + c.id,
+        user_id: FINANCES_USER_ID,
+        client_id: 'beactiv_' + c.id,
+        client_name: fullName,
+        type: 'Coaching',
+        offre: offreName || '-',
+        montant: c.montant ? parseFloat(c.montant) : 0,
+        date: c.date || new Date().toISOString().split('T')[0],
+        statut: 'Actif',
+        notes: c.notes || '',
+        source: 'BILAN CRM',
+        updated_at: new Date().toISOString()
+      };
+      // Tentative silencieuse — la table activites peut ne pas exister
+      try {
+        await fetch(url + '/rest/v1/activites', {
+          method: 'POST', headers: headers, body: JSON.stringify(actPayload)
+        });
+      } catch(e2) {
+        console.warn('Sync activites (ignoré):', e2);
+      }
     }
   } catch(e) {
     console.warn('Sync Finances erreur:', e);
