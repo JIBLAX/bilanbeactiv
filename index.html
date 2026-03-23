@@ -772,6 +772,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="highlight">Collez ici le contenu brut reçu par le prospect via votre formulaire Tally pré-bilan.</div>
     <div class="f"><label>Réponses Tally</label><textarea id="pq-raw" rows="10" placeholder="Collez ici les réponses complètes du prospect…"></textarea></div>
     <button class="btn btn-bx btn-w" id="btn-pq" onclick="analyzePQ()">✨ Analyser le profil</button>
+    <button class="btn btn-dk btn-w" style="margin-top:8px" onclick="skipPQ()">⏭ Passer directement au Bilan</button>
   </div>
   <div id="pq-result" style="display:none"></div>
   <div id="pq-cta" style="display:none;margin-bottom:8px">
@@ -1028,6 +1029,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="f" style="margin-bottom:12px"><label>Clé API Anthropic</label><input type="password" id="cfg-key" placeholder="sk-ant-..."></div>
     <div class="f" style="margin-bottom:12px"><label>URL Supabase</label><input type="text" id="cfg-surl"></div>
     <div class="f" style="margin-bottom:12px"><label>Clé Anon Supabase</label><input type="password" id="cfg-skey"></div>
+    <div class="f" style="margin-bottom:12px"><label>Service Role Key <span style="font-size:10px;color:var(--tx3);font-weight:400">(sync → App Finances)</span></label><input type="password" id="cfg-srole" placeholder="eyJ… — Dashboard Supabase → Settings → API"></div>
     <p class="note">La clé Anthropic reste dans votre navigateur uniquement.</p>
     <div class="brow" style="margin-top:16px">
       <button class="btn btn-dk" onclick="closeModal('cfg')">Annuler</button>
@@ -1497,7 +1499,7 @@ const SUPABASE_URL = 'https://weecciwwbqsvmnaiahpw.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlZWNjaXd3YnFzdm1uYWlhaHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMzE1MzYsImV4cCI6MjA4ODcwNzUzNn0.JXHuptJiF4UJgby_yYMUYZ9BAHg9NczJy9_x1OuaOG0';
 
 const ST = {
-  apiKey:'', sbUrl:SUPABASE_URL, sbKey:SUPABASE_ANON,
+  apiKey:'', sbUrl:SUPABASE_URL, sbKey:SUPABASE_ANON, srKey:'',
   clientId:null, pqSummary:null, bilanSummary:null, finalReport:null,
   clients:[], rdvs:[], statsYear:null,
   filterStatut:'all', filterProfil:'all'
@@ -1991,15 +1993,16 @@ window.onload = function() {
 // ═══════════════════════════════════════════════════
 function loadConfig() {
   const s=localStorage.getItem('ba_cfg_v8');
-  if(s) {const cfg=JSON.parse(s); if(cfg.apiKey) ST.apiKey=cfg.apiKey; if(cfg.sbUrl) ST.sbUrl=cfg.sbUrl; if(cfg.sbKey) ST.sbKey=cfg.sbKey;}
+  if(s) {const cfg=JSON.parse(s); if(cfg.apiKey) ST.apiKey=cfg.apiKey; if(cfg.sbUrl) ST.sbUrl=cfg.sbUrl; if(cfg.sbKey) ST.sbKey=cfg.sbKey; if(cfg.srKey) ST.srKey=cfg.srKey;}
   document.getElementById('cfg-key').value=ST.apiKey||'';
   document.getElementById('cfg-surl').value=ST.sbUrl||SUPABASE_URL;
   document.getElementById('cfg-skey').value=ST.sbKey||SUPABASE_ANON;
+  if(document.getElementById('cfg-srole')) document.getElementById('cfg-srole').value=ST.srKey||'';
   document.getElementById('cfg-banner').style.display=ST.apiKey?'none':'flex';
 }
 function saveConfig() {
-  ST.apiKey=gv('cfg-key'); ST.sbUrl=gv('cfg-surl').replace(/\/$/,''); ST.sbKey=gv('cfg-skey');
-  localStorage.setItem('ba_cfg_v8',JSON.stringify({apiKey:ST.apiKey,sbUrl:ST.sbUrl,sbKey:ST.sbKey}));
+  ST.apiKey=gv('cfg-key'); ST.sbUrl=gv('cfg-surl').replace(/\/$/,''); ST.sbKey=gv('cfg-skey'); ST.srKey=gv('cfg-srole');
+  localStorage.setItem('ba_cfg_v8',JSON.stringify({apiKey:ST.apiKey,sbUrl:ST.sbUrl,sbKey:ST.sbKey,srKey:ST.srKey}));
   closeModal('cfg');
   document.getElementById('cfg-banner').style.display=ST.apiKey?'none':'flex';
   loadFromSupabase(); toast('ok','✅ Configuration enregistrée');
@@ -2459,6 +2462,8 @@ function saveProClient() {
   });
   document.querySelectorAll('input[name="pro-source"]').forEach(function(el){el.checked=false;});
 
+  // Sync vers App Finances (structure Pro)
+  syncClientToFinances(client);
   toast('ok', '✅ ' + nom + ' ajouté comme client Pro');
   showPg('clients');
   renderClients();
@@ -2528,6 +2533,7 @@ function renderProClientModal(id, c, container) {
   // Modifier
   var editBtn = document.createElement('button');
   editBtn.className = 'btn btn-dk btn-w btn-sm';
+  editBtn.style.marginBottom = '7px';
   editBtn.textContent = '✏️ Modifier la fiche Pro';
   editBtn.onclick = function(){
     closeModal('client');
@@ -2535,6 +2541,14 @@ function renderProClientModal(id, c, container) {
     showPg('pro');
   };
   container.appendChild(editBtn);
+
+  // Supprimer
+  var delBtn = document.createElement('button');
+  delBtn.className = 'btn btn-R btn-w btn-sm';
+  delBtn.textContent = '🗑 Supprimer ce dossier';
+  delBtn.dataset.cid = id;
+  delBtn.onclick = function(){ deleteClient(this.dataset.cid); };
+  container.appendChild(delBtn);
 }
 
 function prefillProForm(c) {
@@ -3195,6 +3209,17 @@ function switchEditor(tab, chip) {
   if(tab==='suites') renderSuitesEditor();
 }
 
+function skipPQ() {
+  // Marque la pré-qualif comme passée sans analyse IA
+  ST.pqSummary = null;
+  document.getElementById('s1').classList.remove('act');
+  document.getElementById('s1').classList.add('done');
+  document.getElementById('b-s1').classList.remove('act');
+  document.getElementById('b-s1').classList.add('done');
+  showPg('bilan');
+  toast('info', '⏭ Pré-qualif ignorée — accès direct au Bilan');
+}
+
 function newClient(){
   ST.clientId=null;ST.pqSummary=null;ST.bilanSummary=null;ST.finalReport=null;
   document.getElementById('pq-result').style.display='none';
@@ -3392,31 +3417,40 @@ var FINANCES_USER_ID = 'ec07a77a-5378-416c-b971-91b65e594eb6';
 
 async function syncClientToFinances(c) {
   var url = ST.sbUrl || SUPABASE_URL;
-  var key = ST.sbKey || SUPABASE_ANON;
-  if (!url || !key || FINANCES_USER_ID === 'VOTRE_USER_ID') return;
+  // Service Role Key bypass le RLS → obligatoire pour écrire dans une table d'une autre app
+  // Si pas de srKey configurée → abandon silencieux
+  var srKey = ST.srKey || '';
+  if (!url || !srKey || FINANCES_USER_ID === 'VOTRE_USER_ID') {
+    if (!srKey) console.warn('Sync Finances: Service Role Key non configurée (Config → Clé Service Role)');
+    return;
+  }
 
   // Construire le nom complet
   var fullName = ((c.prenom || '') + ' ' + (c.nom || '')).trim();
   if (!fullName) return;
 
-  // Trouver le nom de l'offre depuis l'offreId du Run 1
+  // Trouver le nom de l'offre
   var offreName = '';
   if (c.offres) {
     offreName = c.offres;
   } else if (c.phaseRuns && c.phaseRuns[0] && c.phaseRuns[0].offreId) {
-    var offres = loadOffres();
-    var o = offres.find(function(x){ return x.id === c.phaseRuns[0].offreId; });
+    var allOffres = loadOffres();
+    var o = allOffres.find(function(x){ return x.id === c.phaseRuns[0].offreId; });
     if (o) offreName = o.name;
   }
 
-  // Payload minimal vers la table prospects de l'app Finances
+  // Pour les clients Pro : structureName comme nom
+  if (c.isPro) {
+    fullName = c.structureName || fullName;
+  }
+
   var payload = {
-    id: 'beactiv_' + c.id,          // préfixe pour éviter les conflits d'ID
+    id: 'beactiv_' + c.id,
     user_id: FINANCES_USER_ID,
     name: fullName,
     contact: c.tel || '',
     age: c.age ? parseInt(c.age) : null,
-    objectif: c.objectif || '',
+    objectif: c.isPro ? (c.proType || '') : (c.objectif || ''),
     offre: offreName || '-',
     prix_reel: c.montant ? parseFloat(c.montant) : 0,
     closing: 'OUI',
@@ -3435,17 +3469,18 @@ async function syncClientToFinances(c) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': key,
-        'Authorization': 'Bearer ' + key,
-        'Prefer': 'resolution=merge-duplicates'  // upsert : pas de doublon si déjà existant
+        'apikey': srKey,
+        'Authorization': 'Bearer ' + srKey,   // Service Role bypass RLS
+        'Prefer': 'resolution=merge-duplicates'
       },
       body: JSON.stringify(payload)
     });
     if (res.ok) {
-      toast('ok', '🔗 Client synchronisé → App Finances');
+      toast('ok', '🔗 Synchronisé → App Finances');
     } else {
       var err = await res.text();
-      console.warn('Sync Finances échouée:', err);
+      console.warn('Sync Finances échouée:', res.status, err);
+      toast('info', '⚠️ Sync Finances échouée — vérifie la Service Role Key');
     }
   } catch(e) {
     console.warn('Sync Finances erreur:', e);
