@@ -758,7 +758,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <span style="font-size:18px;flex-shrink:0">🔗</span>
     <div>
       <div style="font-weight:700;margin-bottom:3px">Synchronisation avec BE ACTIV BUSINESS</div>
-      <div style="color:var(--tx2);font-size:12px;line-height:1.5">Les offres sont synchronisées vers l'app Finances. Toute modification ici est répercutée automatiquement. Pour une gestion centralisée, créez et gérez vos offres depuis <strong>BE ACTIV BUSINESS</strong>.</div>
+      <div style="background:var(--B-l);border:1.5px solid rgba(26,110,219,.15);border-radius:var(--r2);padding:10px 13px;font-size:12px;color:var(--tx2);line-height:1.5">📋 <strong>Lecture seule</strong> — Les offres sont créées et gérées depuis <strong>BE ACTIV BUSINESS</strong>. Synchronisez pour importer les dernières offres.</div>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="btn btn-B btn-sm" onclick="syncAllOffresToFinances()" style="font-size:12px;padding:6px 12px">📤 Pousser toutes les offres → Finances</button>
         <button class="btn btn-dk btn-sm" onclick="pullOffresFromFinances()" style="font-size:12px;padding:6px 12px">📥 Importer les offres ← Finances</button>
@@ -1037,25 +1037,36 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <div class="mbg" id="m-cfg">
   <div class="mdl">
     <div class="mdl-t">⚙️ Configuration <button class="mdl-x" onclick="closeModal('cfg')">✕</button></div>
-    <div class="f" style="margin-bottom:12px"><label>Clé API Anthropic</label><input type="password" id="cfg-key" placeholder="sk-ant-..."></div>
-    <div class="f" style="margin-bottom:12px"><label>URL Supabase</label><input type="text" id="cfg-surl"></div>
-    <div class="f" style="margin-bottom:12px"><label>Clé Anon Supabase</label><input type="password" id="cfg-skey"></div>
-    <div class="f" style="margin-bottom:12px"><label>Service Role Key <span style="font-size:10px;color:var(--tx3);font-weight:400">(sync → App Finances)</span></label><input type="password" id="cfg-srole" placeholder="eyJ… — Dashboard Supabase → Settings → API"></div>
-    <div style="background:rgba(139,21,32,.05);border:1.5px solid var(--rim);border-radius:9px;padding:12px 14px;margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:var(--bx);text-transform:uppercase;letter-spacing:.8px;margin-bottom:9px">🔗 Synchronisation initiale</div>
+
+    <div style="font-size:10px;font-weight:700;color:var(--bx);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">📋 BILAN CRM — Supabase propre</div>
+    <div class="f" style="margin-bottom:8px"><label>Clé API Anthropic</label><input type="password" id="cfg-key" placeholder="sk-ant-..."></div>
+    <div class="f" style="margin-bottom:8px"><label>URL Supabase BILAN CRM</label><input type="text" id="cfg-surl" placeholder="https://xxx.supabase.co"></div>
+    <div class="f" style="margin-bottom:8px"><label>Clé Anon BILAN CRM</label><input type="password" id="cfg-skey" placeholder="eyJ…"></div>
+    <div class="f" style="margin-bottom:14px"><label>Service Role Key BILAN CRM</label><input type="password" id="cfg-srole" placeholder="eyJ… — pour écrire be_activ_clients"></div>
+
+    <div style="font-size:10px;font-weight:700;color:var(--B);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🏢 BE ACTIV BUSINESS — Supabase externe</div>
+    <div class="f" style="margin-bottom:8px"><label>URL Supabase BUSINESS</label><input type="text" id="cfg-biz-url" placeholder="https://kyffsvromutbdjylfdyf.supabase.co"></div>
+    <div class="f" style="margin-bottom:8px">
+      <label>Service Role Key BUSINESS <span style="font-size:9px;color:var(--tx3);font-weight:400">(Dashboard Business → Settings → API)</span></label>
+      <input type="password" id="cfg-biz-srkey" placeholder="eyJ… — obligatoire pour sync bidirectionnelle">
+    </div>
+
+    <div style="background:rgba(26,110,219,.05);border:1.5px solid rgba(26,110,219,.15);border-radius:9px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--B);text-transform:uppercase;letter-spacing:.8px;margin-bottom:9px">🔗 Synchronisation</div>
       <div style="display:flex;flex-direction:column;gap:7px">
-        <button class="btn btn-dk btn-sm btn-w" onclick="syncAllClientsToFinances();closeModal('cfg')" style="text-align:left;justify-content:flex-start;font-size:12px">
-          📤 Pousser tous les clients → App Finances
+        <button class="btn btn-B btn-sm btn-w" onclick="pullOffresFromFinances()" style="text-align:left;justify-content:flex-start;font-size:12px">
+          📥 Importer offres ← BE ACTIV BUSINESS
         </button>
-        <button class="btn btn-dk btn-sm btn-w" onclick="syncAllOffresToFinances();closeModal('cfg')" style="text-align:left;justify-content:flex-start;font-size:12px">
-          📤 Pousser toutes les offres → App Finances
+        <button class="btn btn-bx btn-sm btn-w" onclick="syncAllClientsToFinances()" style="text-align:left;justify-content:flex-start;font-size:12px">
+          📤 Pousser TOUS les clients → BE ACTIV BUSINESS
         </button>
-        <button class="btn btn-dk btn-sm btn-w" onclick="pullOffresFromFinances();closeModal('cfg')" style="text-align:left;justify-content:flex-start;font-size:12px">
-          📥 Importer les offres ← App Finances
+        <button class="btn btn-dk btn-sm btn-w" onclick="pullClientsFromFinances()" style="text-align:left;justify-content:flex-start;font-size:12px">
+          📥 Importer prospects ← BE ACTIV BUSINESS
         </button>
       </div>
     </div>
-    <p class="note">La clé Anthropic reste dans votre navigateur uniquement.</p>
+
+    <p class="note">Les clés restent dans votre navigateur uniquement.</p>
     <div class="brow" style="margin-top:16px">
       <button class="btn btn-dk" onclick="closeModal('cfg')">Annuler</button>
       <button class="btn btn-bx" onclick="saveConfig()">Enregistrer</button>
@@ -1109,20 +1120,11 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
 <!-- MODAL APERÇU FORMULAIRE -->
 <div class="mbg" id="m-preview">
-  <div class="mdl" style="max-height:90vh;border-radius:var(--r)">
-    <div class="mdl-t" id="preview-title">Aperçu <button class="mdl-x" onclick="closeModal('preview')">✕</button></div>
-    <div id="preview-body" style="max-height:70vh;overflow-y:auto;padding-right:4px"></div>
-    <div style="margin-top:14px">
-      <button class="btn btn-dk btn-w btn-sm" onclick="closeModal('preview')">Fermer</button>
-    </div>
+  <div class="mdl">
+    <div class="mdl-t" id="preview-title">Aperçu <button class="mdl-x" onclick="closeModal('preview')">&#x2715;</button></div>
+    <div id="preview-body" style="max-height:70vh;overflow-y:auto"></div>
   </div>
 </div>
-
-
-<!-- MODAL APERÇU -->
-
-
-<div id="toast"></div>
 
 <script>
 function deleteOffre(id) {
@@ -1542,11 +1544,29 @@ if (sessionStorage.getItem('ba_pin')==='1') {
 // ═══════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════
-const SUPABASE_URL = 'https://weecciwwbqsvmnaiahpw.supabase.co';
+// ═══════════════════════════════════════════════════
+// SUPABASE CONFIG
+// ─ BILAN CRM (propre base) : clients/bilan
+// ─ BE ACTIV BUSINESS (base externe) : offres + prospects
+// ═══════════════════════════════════════════════════
+
+// — BILAN CRM (votre propre Supabase)
+const SUPABASE_URL  = 'https://weecciwwbqsvmnaiahpw.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlZWNjaXd3YnFzdm1uYWlhaHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMzE1MzYsImV4cCI6MjA4ODcwNzUzNn0.JXHuptJiF4UJgby_yYMUYZ9BAHg9NczJy9_x1OuaOG0';
 
+// — BE ACTIV BUSINESS (Supabase externe partagé)
+// Configuré dans Config → onglet Sync
+const BIZ_URL_DEFAULT  = 'https://kyffsvromutbdjylfdyf.supabase.co';
+const BIZ_ANON_DEFAULT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5ZmZzdnJvbXV0YmRqeWxmZHlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MDUwMjEsImV4cCI6MjA4OTQ4MTAyMX0.n25Y_SPl7zzSGGdcBDEaBr-QwaoVne6e4F3BXjPue_w';
+
 const ST = {
-  apiKey:'', sbUrl:SUPABASE_URL, sbKey:SUPABASE_ANON, srKey:'',
+  apiKey:'',
+  // BILAN CRM (be_activ_clients)
+  sbUrl: SUPABASE_URL, sbKey: SUPABASE_ANON,
+  srKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlZWNjaXd3YnFzdm1uYWlhaHB3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzEzMTUzNiwiZXhwIjoyMDg4NzA3NTM2fQ.a1YwFPZpGkCGI9-vBbfp9ehynIl7ZVMB9s2rUw_xVmA',
+  // BE ACTIV BUSINESS (offres + prospects) — service_role obligatoire pour bypass RLS
+  bizUrl: BIZ_URL_DEFAULT,
+  bizSrKey: '',   // ← À renseigner dans Config : Service Role Key de BE ACTIV BUSINESS
   clientId:null, pqSummary:null, bilanSummary:null, finalReport:null,
   clients:[], rdvs:[], statsYear:null,
   filterStatut:'all', filterProfil:'all'
@@ -2038,8 +2058,8 @@ window.onload = function() {
   // Activer auto-save brouillon bilan dès le chargement
   setupBilanDraftAutosave();
   loadFromSupabase();
-  // Tenter de charger les offres depuis App Finances si configuré
-  if (ST.sbUrl && ST.sbKey) {
+  // Charger les offres depuis BE ACTIV BUSINESS au démarrage si configuré
+  if (ST.bizUrl) {
     pullOffresFromFinances().catch(function(){});
   }
 };
@@ -2049,19 +2069,38 @@ window.onload = function() {
 // ═══════════════════════════════════════════════════
 function loadConfig() {
   const s=localStorage.getItem('ba_cfg_v8');
-  if(s) {const cfg=JSON.parse(s); if(cfg.apiKey) ST.apiKey=cfg.apiKey; if(cfg.sbUrl) ST.sbUrl=cfg.sbUrl; if(cfg.sbKey) ST.sbKey=cfg.sbKey; if(cfg.srKey) ST.srKey=cfg.srKey;}
-  document.getElementById('cfg-key').value=ST.apiKey||'';
-  document.getElementById('cfg-surl').value=ST.sbUrl||SUPABASE_URL;
-  document.getElementById('cfg-skey').value=ST.sbKey||SUPABASE_ANON;
-  if(document.getElementById('cfg-srole')) document.getElementById('cfg-srole').value=ST.srKey||'';
-  document.getElementById('cfg-banner').style.display=ST.apiKey?'none':'flex';
+  if(s) {
+    const cfg=JSON.parse(s);
+    if(cfg.apiKey)   ST.apiKey   = cfg.apiKey;
+    if(cfg.sbUrl)    ST.sbUrl    = cfg.sbUrl;
+    if(cfg.sbKey)    ST.sbKey    = cfg.sbKey;
+    if(cfg.srKey)    ST.srKey    = cfg.srKey;
+    if(cfg.bizUrl)   ST.bizUrl   = cfg.bizUrl;
+    if(cfg.bizSrKey) ST.bizSrKey = cfg.bizSrKey;
+  }
+  document.getElementById('cfg-key').value  = ST.apiKey || '';
+  document.getElementById('cfg-surl').value = ST.sbUrl  || SUPABASE_URL;
+  document.getElementById('cfg-skey').value = ST.sbKey  || SUPABASE_ANON;
+  if(document.getElementById('cfg-srole'))     document.getElementById('cfg-srole').value     = ST.srKey    || '';
+  if(document.getElementById('cfg-biz-url'))   document.getElementById('cfg-biz-url').value   = ST.bizUrl   || BIZ_URL_DEFAULT;
+  if(document.getElementById('cfg-biz-srkey')) document.getElementById('cfg-biz-srkey').value = ST.bizSrKey || '';
+  document.getElementById('cfg-banner').style.display = ST.apiKey ? 'none' : 'flex';
 }
 function saveConfig() {
-  ST.apiKey=gv('cfg-key'); ST.sbUrl=gv('cfg-surl').replace(/\/$/,''); ST.sbKey=gv('cfg-skey'); ST.srKey=gv('cfg-srole');
-  localStorage.setItem('ba_cfg_v8',JSON.stringify({apiKey:ST.apiKey,sbUrl:ST.sbUrl,sbKey:ST.sbKey,srKey:ST.srKey}));
+  ST.apiKey   = gv('cfg-key');
+  ST.sbUrl    = gv('cfg-surl').replace(/\/$/,'');
+  ST.sbKey    = gv('cfg-skey');
+  ST.srKey    = gv('cfg-srole');
+  ST.bizUrl   = (gv('cfg-biz-url')    || BIZ_URL_DEFAULT).replace(/\/$/,'');
+  ST.bizSrKey =  gv('cfg-biz-srkey') || '';
+  localStorage.setItem('ba_cfg_v8', JSON.stringify({
+    apiKey: ST.apiKey, sbUrl: ST.sbUrl, sbKey: ST.sbKey, srKey: ST.srKey,
+    bizUrl: ST.bizUrl, bizSrKey: ST.bizSrKey
+  }));
   closeModal('cfg');
-  document.getElementById('cfg-banner').style.display=ST.apiKey?'none':'flex';
-  loadFromSupabase(); toast('ok','✅ Configuration enregistrée');
+  document.getElementById('cfg-banner').style.display = ST.apiKey ? 'none' : 'flex';
+  loadFromSupabase();
+  toast('ok','✅ Configuration enregistrée');
 }
 
 // ═══════════════════════════════════════════════════
@@ -3505,72 +3544,37 @@ function deletePhaseNew(key,idx){
 function openMore(){ toggleMore(); }
 
 // ═══════════════════════════════════════════════════
-// SYNC → APP FINANCES (offres)
-// Synchronise création / modification / suppression
-// depuis BE ACTIV BILAN CRM vers la table be_activ_offres
-// (partagée avec BE ACTIV BUSINESS)
+// ARCHITECTURE SYNC
+// ─ BILAN CRM  → source de vérité : be_activ_clients
+// ─ BUSINESS   → source de vérité : offres + prospects
+// ─ Les offres sont READ-ONLY dans BILAN CRM (viennent de Business)
+// ─ Les clients/prospects sont poussés de BILAN CRM → Business
 // ═══════════════════════════════════════════════════
-async function syncOffreToFinances(action, offre) {
-  var url = ST.sbUrl || SUPABASE_URL;
-  var srKey = ST.srKey || '';
-  if (!url || !srKey) return;
 
-  try {
-    if (action === 'delete') {
-      await fetch(url + '/rest/v1/be_activ_offres?id=eq.' + encodeURIComponent(offre.id), {
-        method: 'DELETE',
-        headers: { 'apikey': srKey, 'Authorization': 'Bearer ' + srKey }
-      });
-    } else {
-      var payload = {
-        id: offre.id,
-        name: offre.name,
-        price: offre.price || 0,
-        dur_val: offre.durVal || 1,
-        dur_unit: offre.durUnit || 'mois',
-        paiement: offre.paiement || 1,
-        parcours: offre.parcours || false,
-        ala_carte: offre.alaCarte || false,
-        is_abonnement: offre.isAbonnement || false,
-        test: offre.test || 'none',
-        updated_at: new Date().toISOString()
-      };
-      await fetch(url + '/rest/v1/be_activ_offres', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': srKey,
-          'Authorization': 'Bearer ' + srKey,
-          'Prefer': 'resolution=merge-duplicates'
-        },
-        body: JSON.stringify(payload)
-      });
-    }
-  } catch(e) {
-    console.warn('Sync offre Finances:', e);
-  }
+// BILAN CRM ne crée/modifie PAS les offres dans Business.
+// Les offres sont créées dans Business et lues ici.
+function syncOffreToFinances(action, offre) {
+  // No-op : BILAN CRM ne modifie pas la table offres de Business
+  // Les offres se gèrent exclusivement depuis BE ACTIV BUSINESS
+  return Promise.resolve();
 }
 
-// Sync initiale : pousse toutes les offres locales vers be_activ_offres
+// Pull offres : appelé au démarrage et depuis Config
+// → remplace les offres locales par celles de Business
 async function syncAllOffresToFinances() {
-  var offres = loadOffres();
-  var done = 0;
-  for (var i = 0; i < offres.length; i++) {
-    await syncOffreToFinances('upsert', offres[i]);
-    done++;
-  }
-  if (done > 0) toast('ok', '🔗 ' + done + ' offres synchronisées → App Finances');
+  await pullOffresFromFinances();
 }
 
-// Sync initiale : pousse tous les clients closés vers prospects
+// Pousse TOUS les clients (closés et non closés) → prospects de Business
 async function syncAllClientsToFinances() {
-  var clients = ST.clients.filter(function(c){ return c.statut === 'Closé'; });
+  var clients = ST.clients || [];
+  if (!clients.length) { toast('info', 'Aucun client à synchroniser'); return; }
   var done = 0;
   for (var i = 0; i < clients.length; i++) {
     await syncClientToFinances(clients[i]);
     done++;
   }
-  toast('ok', '🔗 ' + done + ' clients synchronisés → App Finances');
+  toast('ok', '🔗 ' + done + ' clients poussés → BE ACTIV BUSINESS');
 }
 
 // ═══════════════════════════════════════════════════
@@ -3681,40 +3685,66 @@ window.addEventListener('beforeunload', function() {
 
 
 // ═══════════════════════════════════════════════════
-// PULL OFFRES ← APP FINANCES (be_activ_offres)
+// PULL OFFRES ← BE ACTIV BUSINESS (table: offres)
 // Importe les offres depuis la table partagée Supabase
 // ═══════════════════════════════════════════════════
 async function pullOffresFromFinances() {
-  var url = ST.sbUrl || SUPABASE_URL;
-  var key = ST.sbKey || SUPABASE_ANON;
-  if (!url || !key) { toast('err', '⚠️ Configurez Supabase dans Config'); return; }
+  // Lit la table 'offres' du Supabase de BE ACTIV BUSINESS
+  // Nécessite : ST.bizUrl (URL Business) + ST.bizSrKey (service_role Business)
+  var url    = ST.bizUrl    || BIZ_URL_DEFAULT;
+  var srKey  = ST.bizSrKey  || '';
+  var anon   = BIZ_ANON_DEFAULT;
+  // Service Role Key obligatoire pour bypasser le RLS user_id de Business
+  var useKey = srKey || anon;
+  if (!url) { toast('err', '⚠️ URL BE ACTIV BUSINESS manquante (Config)'); return; }
+  if (!srKey) {
+    console.warn('pullOffresFromFinances: bizSrKey non configurée, tentative avec anon key (peut échouer si RLS actif)');
+  }
   try {
-    var res = await fetch(url + '/rest/v1/be_activ_offres?order=name.asc', {
-      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+    var res = await fetch(url + '/rest/v1/offres?select=id,name,price,active,is_ala_carte,duration,max_installments,theme&order=name.asc', {
+      headers: { 'apikey': useKey, 'Authorization': 'Bearer ' + useKey }
     });
-    if (!res.ok) { toast('err', '⚠️ Erreur chargement offres Finances (' + res.status + ')'); return; }
+    if (!res.ok) {
+      var errText = await res.text();
+      console.error('pullOffresFromFinances error:', res.status, errText);
+      if (res.status === 401 || res.status === 403) {
+        toast('err', '🔑 Accès refusé — renseigne la Service Role Key de BUSINESS dans Config');
+      } else {
+        toast('err', '⚠️ Erreur lecture offres Business (' + res.status + ')');
+      }
+      return;
+    }
     var rows = await res.json();
-    if (!rows || rows.length === 0) { toast('info', 'ℹ️ Aucune offre trouvée dans Finances — créez-en depuis BE ACTIV BUSINESS'); return; }
-    var offres = rows.map(function(r) {
+    if (!rows || rows.length === 0) {
+      toast('info', 'ℹ️ Aucune offre active dans BE ACTIV BUSINESS');
+      return;
+    }
+    // Mapper les champs Business → BILAN CRM
+    var offres = rows.filter(function(r){ return r.active !== false; }).map(function(r) {
+      var dur = r.duration || {};
       return {
-        id: r.id,
-        name: r.name || 'Offre',
-        price: r.price || 0,
-        durVal: r.dur_val || 1,
-        durUnit: r.dur_unit || 'mois',
-        paiement: r.paiement || 1,
-        parcours: r.parcours || false,
-        alaCarte: r.ala_carte || false,
-        isAbonnement: r.is_abonnement || false,
-        test: r.test || 'none'
+        id:          r.id,
+        name:        r.name || 'Offre',
+        price:       Number(r.price) || 0,
+        durVal:      dur.value || 1,
+        durUnit:     dur.unit  || 'mois',
+        paiement:    r.max_installments || 1,
+        parcours:    !r.is_ala_carte,
+        alaCarte:    r.is_ala_carte  || false,
+        isAbonnement:false,
+        test:        'none',
+        theme:       r.theme || 'PROGRAMMES',
+        readOnly:    true   // offres Business → non modifiable dans BILAN CRM
       };
     });
     saveOffres(offres);
+    localStorage.setItem('ba_offres_from_business', '1');
     renderOffresPage();
     renderBilanOffresList();
-    toast('ok', '✅ ' + offres.length + ' offre(s) importée(s) depuis BE ACTIV BUSINESS');
+    toast('ok', '✅ ' + offres.length + ' offre(s) chargée(s) depuis BE ACTIV BUSINESS');
   } catch(e) {
-    toast('err', '❌ Erreur : ' + e.message);
+    toast('err', '❌ Erreur sync offres : ' + e.message);
+    console.error(e);
   }
 }
 
@@ -3744,110 +3774,87 @@ function togglePhase(clientId, globalIdx) {
 // ═══════════════════════════════════════════════════
 // ⚠️ Remplace VOTRE_USER_ID par ton UUID Supabase
 // (Dashboard Supabase → Authentication → Users)
+// FINANCES_USER_ID = UUID du compte authentifié dans BE ACTIV BUSINESS
+// Dashboard Business → Authentication → Users → copier l'UUID du compte
 var FINANCES_USER_ID = 'ec07a77a-5378-416c-b971-91b65e594eb6';
 
 async function syncClientToFinances(c) {
-  var url = ST.sbUrl || SUPABASE_URL;
-  var srKey = ST.srKey || '';
-  if (!url || !srKey || FINANCES_USER_ID === 'VOTRE_USER_ID') {
-    if (!srKey) console.warn('Sync Finances: Service Role Key non configurée (Config → Clé Service Role)');
+  // Cible : Supabase de BE ACTIV BUSINESS
+  var bizUrl   = ST.bizUrl   || BIZ_URL_DEFAULT;
+  var bizSrKey = ST.bizSrKey || '';
+
+  if (!bizSrKey) {
+    console.warn('syncClientToFinances: bizSrKey (Service Role Key Business) non configurée → Config');
     return;
   }
 
   var fullName = ((c.prenom || '') + ' ' + (c.nom || '')).trim();
+  if (c.isPro) fullName = c.structureName || fullName;
   if (!fullName) return;
 
-  // Trouver le nom de l'offre (prend toutes les offres souscrites)
+  // Résoudre le nom de l'offre
   var offreName = '';
-  var offresArray = [];
   if (c.offres) {
-    offreName = c.offres;
-    offresArray = c.offres.split(',').map(function(x){ return x.trim(); }).filter(Boolean);
+    offreName = c.offres.split(',')[0].trim();
   } else if (c.phaseRuns && c.phaseRuns[0] && c.phaseRuns[0].offreId) {
     var allOffres = loadOffres();
     var o = allOffres.find(function(x){ return x.id === c.phaseRuns[0].offreId; });
-    if (o) { offreName = o.name; offresArray = [o.name]; }
+    if (o) offreName = o.name;
   }
 
-  if (c.isPro) fullName = c.structureName || fullName;
+  var isClosed   = (c.statut === 'Closé');
+  // Mapper statut BILAN CRM → statuts attendus par Business
+  var statutBiz  = isClosed ? 'CLOSE' : (c.statut === 'À relancer' ? 'CONTACT' : c.statut === 'Refusé' ? 'REFUS' : 'RDV');
+  var closingBiz = isClosed ? 'OUI' : 'NON';
 
-  // Déterminer closing/statut selon statut BILAN CRM
-  var isClosed = (c.statut === 'Closé');
-  var closingVal = isClosed ? 'OUI' : 'NON';
-  var statutVal = isClosed ? 'CLIENT' : 'PROSPECT';
-
+  // Payload mappé sur les colonnes réelles de la table prospects de Business
   var payload = {
-    id: 'beactiv_' + c.id,
-    user_id: FINANCES_USER_ID,
-    name: fullName,
-    contact: c.tel || '',
-    age: c.age ? parseInt(c.age) : null,
-    objectif: c.isPro ? (c.proType || '') : (c.objectif || c.bilan_summary && c.bilan_summary.objectif || ''),
-    offre: offreName || '-',
-    offres_souscrites: offresArray.join(', '),
-    prix_reel: c.montant ? parseFloat(c.montant) : 0,
-    closing: closingVal,
-    statut: statutVal,
-    sex: c.sex || (c.bilan_summary && c.bilan_summary.sex) || 'F',
-    source: c.source || '',
-    notes: c.notes || '',
-    date: c.date || '',
-    type: c.rdvType || '',
-    presence: c.rdvStatut || '',
+    id:              'bcrm_' + c.id,   // préfixe pour éviter collision avec IDs Business natifs
+    user_id:         FINANCES_USER_ID, // UUID du compte Business — obligatoire (NOT NULL)
+    sex:             c.sex || (c.bilan_summary && c.bilan_summary.sex) || 'F',
+    name:            fullName,
+    contact:         c.tel || c.email || '',
+    source:          c.source || '',
+    statut:          statutBiz,
+    date:            c.date || '',
+    type:            c.rdvType || '',
+    presence:        c.rdvStatut || '',
+    heure:           '',
+    objectif:        c.isPro ? (c.proType || '') : (c.objectif || ''),
+    objection:       (c.objections && c.objections.length) ? c.objections[0] : '',
+    closing:         closingBiz,
+    offre:           offreName || '-',
+    notes:           c.notes || '',
+    profile:         c.profil_code || '',
+    prix_reel:       c.montant ? parseFloat(c.montant) : 0,
+    note_bilan:      (c.final_report && c.final_report.scoreGlobal) || 0,
+    note_profil:     0,
     bilan_validated: !!(c.final_report),
-    score_global: c.score_global || null,
-    profil_code: c.profil_code || '',
-    updated_at: new Date().toISOString()
+    age:             c.age ? parseInt(c.age) : null,
+    sap_enabled:     false,
+    updated_at:      new Date().toISOString()
   };
 
   var headers = {
     'Content-Type': 'application/json',
-    'apikey': srKey,
-    'Authorization': 'Bearer ' + srKey,
-    'Prefer': 'resolution=merge-duplicates'
+    'apikey':        bizSrKey,
+    'Authorization': 'Bearer ' + bizSrKey,
+    'Prefer':        'resolution=merge-duplicates'
   };
 
   try {
-    // 1. Sync dans prospects
-    var res = await fetch(url + '/rest/v1/prospects', {
+    var res = await fetch(bizUrl + '/rest/v1/prospects', {
       method: 'POST', headers: headers, body: JSON.stringify(payload)
     });
-    if (res.ok) {
-      toast('ok', '🔗 Synchronisé → App Finances');
-    } else {
-      var err = await res.text();
-      console.warn('Sync Finances échouée:', res.status, err);
-      toast('info', '⚠️ Sync Finances échouée — vérifie la Service Role Key');
-      return;
-    }
-
-    // 2. Sync dans activites (si client closé = création d'activité coaching)
-    if (isClosed) {
-      var actPayload = {
-        id: 'beactiv_act_' + c.id,
-        user_id: FINANCES_USER_ID,
-        client_id: 'beactiv_' + c.id,
-        client_name: fullName,
-        type: 'Coaching',
-        offre: offreName || '-',
-        montant: c.montant ? parseFloat(c.montant) : 0,
-        date: c.date || new Date().toISOString().split('T')[0],
-        statut: 'Actif',
-        notes: c.notes || '',
-        source: 'BILAN CRM',
-        updated_at: new Date().toISOString()
-      };
-      // Tentative silencieuse — la table activites peut ne pas exister
-      try {
-        await fetch(url + '/rest/v1/activites', {
-          method: 'POST', headers: headers, body: JSON.stringify(actPayload)
-        });
-      } catch(e2) {
-        console.warn('Sync activites (ignoré):', e2);
+    if (!res.ok) {
+      var errTxt = await res.text();
+      console.warn('syncClientToFinances failed:', res.status, errTxt);
+      if (res.status === 401 || res.status === 403) {
+        toast('info', '🔑 Sync échouée — vérifie la Service Role Key Business dans Config');
       }
     }
   } catch(e) {
-    console.warn('Sync Finances erreur:', e);
+    console.warn('syncClientToFinances error:', e);
   }
 }
 
@@ -3909,6 +3916,103 @@ function activateCycle2(clientId, mode, opts) {
   saveToSupabase(c);
   renderClientModal(clientId);
   toast('ok', '🚀 Nouveau cycle démarré !');
+}
+
+
+// ═══════════════════════════════════════════════════════
+// SYNC CLIENTS → BE ACTIV BUSINESS (table prospects)
+// ═══════════════════════════════════════════════════════
+async function syncClientsToFinances() {
+  // Alias de syncAllClientsToFinances — pousse tous les clients vers Business
+  await syncAllClientsToFinances();
+}
+
+function mapStatutToBusiness(statut) {
+  var map = {
+    'Closé': 'CLOSE',
+    'Non closé': 'RDV',
+    'À relancer': 'CONTACT',
+    'Refusé': 'REFUS'
+  };
+  return map[statut] || 'CONTACT';
+}
+
+async function pullClientsFromFinances() {
+  // Lit les prospects depuis le Supabase de BE ACTIV BUSINESS
+  // Importe uniquement ceux absents de BILAN CRM (pas d'écrasement)
+  var bizUrl   = ST.bizUrl   || BIZ_URL_DEFAULT;
+  var bizSrKey = ST.bizSrKey || '';
+  if (!bizSrKey) { toast('err', '⚠️ Service Role Key Business requise (Config)'); return; }
+  try {
+    var res = await fetch(bizUrl + '/rest/v1/prospects?order=updated_at.desc&limit=500', {
+      headers: { 'apikey': bizSrKey, 'Authorization': 'Bearer ' + bizSrKey }
+    });
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        toast('err', '🔑 Accès refusé — vérifie la Service Role Key Business');
+      } else {
+        toast('err', '⚠️ Erreur lecture prospects Business (' + res.status + ')');
+      }
+      return;
+    }
+    var rows = await res.json();
+    var added = 0;
+    rows.forEach(function(r) {
+      // Ignorer les entrées créées par BILAN CRM lui-même (préfixe bcrm_)
+      if (r.id && r.id.startsWith('bcrm_')) return;
+      var exists = ST.clients.find(function(c){ return c.id === r.id || c.id === 'bcrm_' + r.id; });
+      if (!exists) {
+        var nameParts = (r.name || '').split(' ');
+        ST.clients.unshift({
+          id:          r.id,
+          prenom:      nameParts[0] || r.name || '',
+          nom:         nameParts.slice(1).join(' ') || '',
+          sex:         r.sex || 'F',
+          tel:         r.contact || '',
+          source:      r.source || '',
+          rdvType:     r.type || '',
+          rdvStatut:   r.presence || '',
+          date:        r.date || '',
+          objectif:    r.objectif || '',
+          objections:  r.objection ? [r.objection] : [],
+          offres:      r.offre !== '-' ? (r.offre || '') : '',
+          montant:     r.prix_reel || null,
+          statut:      mapStatutFromBusiness(r.statut, r.closing),
+          notes:       r.notes || '',
+          profil_code: r.profile || '',
+          age:         r.age || '',
+          phaseRuns:   [],
+          phases:      [],
+          cycle:       1,
+          updated_at:  r.updated_at || new Date().toISOString()
+        });
+        added++;
+      }
+    });
+    if (added > 0) {
+      localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+      renderClients();
+      updateKPIs();
+      toast('ok', '✅ ' + added + ' client(s) importé(s) depuis BE ACTIV BUSINESS');
+    } else {
+      toast('info', 'ℹ️ Tous les prospects Business sont déjà présents');
+    }
+  } catch(e) {
+    toast('err', '❌ Erreur : ' + e.message);
+    console.error(e);
+  }
+}
+
+function mapStatutFromBusiness(statut, closing) {
+  if (closing === 'OUI') return 'Closé';
+  var map = {
+    'CLOSE': 'Closé',
+    'CLIENT': 'Closé',
+    'RDV': 'Non closé',
+    'CONTACT': 'À relancer',
+    'REFUS': 'Refusé'
+  };
+  return map[statut] || 'Non closé';
 }
 
 </script>
