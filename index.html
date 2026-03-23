@@ -979,12 +979,12 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
   <div class="card">
     <div class="sh no-mt">📡 Source</div>
-    <div class="chk-item"><input type="radio" name="pro-source" value="Fitness Park"><div class="radio-box"></div><span class="chk-lbl">Fitness Park</span></div>
-    <div class="chk-item"><input type="radio" name="pro-source" value="Réseau pro"><div class="radio-box"></div><span class="chk-lbl">Réseau professionnel</span></div>
-    <div class="chk-item"><input type="radio" name="pro-source" value="Bouche à Oreille"><div class="radio-box"></div><span class="chk-lbl">Bouche à Oreille</span></div>
-    <div class="chk-item"><input type="radio" name="pro-source" value="Instagram"><div class="radio-box"></div><span class="chk-lbl">Instagram / Réseaux sociaux</span></div>
-    <div class="chk-item"><input type="radio" name="pro-source" value="Partenariat"><div class="radio-box"></div><span class="chk-lbl">Partenariat</span></div>
-    <div class="chk-item"><input type="radio" name="pro-source" value="Autre"><div class="radio-box"></div><span class="chk-lbl">Autre</span></div>
+    <label class="chk-item" style="cursor:pointer"><input type="radio" name="pro-source" value="Fitness Park"><div class="radio-box"></div><span class="chk-lbl">Fitness Park</span></label>
+    <label class="chk-item" style="cursor:pointer"><input type="radio" name="pro-source" value="Réseau pro"><div class="radio-box"></div><span class="chk-lbl">Réseau professionnel</span></label>
+    <label class="chk-item" style="cursor:pointer"><input type="radio" name="pro-source" value="Bouche à Oreille"><div class="radio-box"></div><span class="chk-lbl">Bouche à Oreille</span></label>
+    <label class="chk-item" style="cursor:pointer"><input type="radio" name="pro-source" value="Instagram"><div class="radio-box"></div><span class="chk-lbl">Instagram / Réseaux sociaux</span></label>
+    <label class="chk-item" style="cursor:pointer"><input type="radio" name="pro-source" value="Partenariat"><div class="radio-box"></div><span class="chk-lbl">Partenariat</span></label>
+    <label class="chk-item" style="cursor:pointer"><input type="radio" name="pro-source" value="Autre"><div class="radio-box"></div><span class="chk-lbl">Autre</span></label>
   </div>
 
   <div class="brow" style="margin-bottom:20px">
@@ -2438,6 +2438,12 @@ function saveProClient() {
     phases: [],
     updated_at: new Date().toISOString()
   };
+
+  // Reload clients from localStorage to avoid stale state
+  try {
+    var stored = localStorage.getItem('ba_clients_v8');
+    if (stored) ST.clients = JSON.parse(stored);
+  } catch(e) {}
 
   var idx = ST.clients.findIndex(function(c){ return c.id === client.id; });
   if (idx >= 0) ST.clients[idx] = client; else ST.clients.unshift(client);
