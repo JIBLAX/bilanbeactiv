@@ -1649,7 +1649,7 @@ function finalizeClosing(clientId) {
 }
 
 function getModeOffreLabel(mode) {
-  var labels = {action:'Action',transformation:'Transformation',cours_collectifs:'Cours Collectifs'};
+  var labels = {action:'Action',transformation:'Transformation',collectif:'Collectif'};
   return labels[mode] || mode || '—';
 }
 
@@ -2011,10 +2011,10 @@ const OFFRES_DEFAULT = [
   {id:'o6', name:'JM PASS COACHING+',     price:240, durVal:3, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action'},
   {id:'o9', name:'COACHING À LA CARTE',   price:65,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'action'},
   // ── COURS COLLECTIFS ──
-  {id:'o7', name:'CARDIO MOUV PASS 4',    price:45,  durVal:4, durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'cours_collectifs'},
-  {id:'o8', name:'CARDIO MOUV PACK 10',   price:130, durVal:10,durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'cours_collectifs'},
-  {id:'o10',name:'CARDIO MOUV ONE SHOT',  price:15,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'cours_collectifs'},
-  {id:'o11',name:'ACTIV TRAINING',        price:10,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'cours_collectifs'}
+  {id:'o7', name:'CARDIO MOUV PASS 4',    price:45,  durVal:4, durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'collectif'},
+  {id:'o8', name:'CARDIO MOUV PACK 10',   price:130, durVal:10,durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'collectif'},
+  {id:'o10',name:'CARDIO MOUV ONE SHOT',  price:15,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'collectif'},
+  {id:'o11',name:'ACTIV TRAINING',        price:10,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'collectif'}
 ];
 function loadOffres() {
   try { const s=localStorage.getItem('ba_offres_v8'); if(s) return JSON.parse(s); } catch(e){}
@@ -2290,7 +2290,7 @@ function renderOffresPage() {
     var tags = '';
     if (o.modeOffre === 'action')          tags += '<span class="pill pill-Y" style="font-size:9px">⚡ Action</span> ';
     else if (o.modeOffre === 'transformation') tags += '<span class="pill pill-V" style="font-size:9px">🔄 Transformation</span> ';
-    else if (o.modeOffre === 'cours_collectifs') tags += '<span class="pill pill-B" style="font-size:9px">🎵 Cours Collectifs</span> ';
+    else if (o.modeOffre === 'collectif') tags += '<span class="pill pill-B" style="font-size:9px">🔥 Collectif</span> ';
     if (o.parcours && !o.alaCarte) tags += '<span class="pill pill-G" style="font-size:9px">Parcours</span> ';
     if (o.alaCarte) tags += '<span class="pill" style="font-size:9px;background:var(--bg3);color:var(--tx3)">À la carte</span> ';
     if (o.isAbonnement) tags += '<span class="pill pill-B" style="font-size:9px">Abonnement</span> ';
@@ -2313,9 +2313,9 @@ function renderOffresPage() {
       '<div class="occ-edit" id="oedit_'+o.id+'" style="display:none;padding-top:12px;border-top:1px solid var(--rim3);margin-top:12px">' +
         '<div class="f"><label>🏷️ Mode BE ACTIV</label><select id="oe_mode_'+o.id+'" onchange="saveOffreModeField(\''+o.id+'\',this.value)">' +
           '<option value="">— Choisir le mode —</option>' +
-          '<option value="action"'+(o.modeOffre==='action'?' selected':'')+'>⚡ Action (JM Pass, Coaching à la carte…)</option>' +
-          '<option value="transformation"'+(o.modeOffre==='transformation'?' selected':'')+'>🔄 Transformation (ACTIV Program, ACTIV RESET…)</option>' +
-          '<option value="cours_collectifs"'+(o.modeOffre==='cours_collectifs'?' selected':'')+'>🎵 Cours Collectifs (Cardio Mouv, Activ Training…)</option>' +
+          '<option value="action"'+(o.modeOffre==='action'?' selected':'')+'>⚡ ACTION</option>' +
+          '<option value="transformation"'+(o.modeOffre==='transformation'?' selected':'')+'>🔄 TRANSFORMATION</option>' +
+          '<option value="collectif"'+(o.modeOffre==='collectif'?' selected':'')+'>🔥 COLLECTIF</option>' +
         '</select></div>' +
         '<button class="btn btn-bx btn-sm" onclick="toggleOffreEdit(\''+o.id+'\')" style="margin-top:10px;width:100%">✓ Fermer</button>' +
       '</div>';
@@ -3653,8 +3653,8 @@ var MODE_STAGE_DEFS = {
       {id:'done',lbl:'ACTIV RESET VALIDÉE ✅',isFinal:true}
     ]}
   ],
-  cours_collectifs: [
-    {id:'demarrage', lbl:'DÉMARRAGE', ico:'🎵', steps:[
+  collectif: [
+    {id:'demarrage', lbl:'DÉMARRAGE', ico:'🔥', steps:[
       {id:'premiere_seance',lbl:'1ère séance'},
       {id:'done',lbl:'Terminée ✅',isFinal:true}
     ]}
@@ -3848,7 +3848,7 @@ function renderModeStages(clientId, c, container) {
       endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'Relancer l\'étape', function(){ relancerEtapeAction(clientId); }));
       endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre',   function(){ openNewOffreForClient(clientId); }));
 
-    } else if (mode === 'cours_collectifs') {
+    } else if (mode === 'collectif') {
       endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">🏁 Parcours terminé !</div>';
       endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
 
