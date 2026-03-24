@@ -2048,6 +2048,13 @@ window.onload = function() {
   }
   const lc=localStorage.getItem('ba_clients_v8');
   if(lc) try{ST.clients=JSON.parse(lc);}catch(e){}
+
+  // Migration statuts legacy
+  var _statMap={'Clos':'Closé','CLOS':'Closé','CLOSÉ':'Closé','CLOSE':'Closé','Non clos':'Non closé','relancer':'À relancer','Refus':'Refusé','REFUS':'Refusé'};
+  var _migrated=0;
+  ST.clients.forEach(function(c){if(_statMap[c.statut]){c.statut=_statMap[c.statut];_migrated++;}});
+  if(_migrated>0){localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));console.log('Migration: '+_migrated+' statuts corrigés');}
+
   const lr=localStorage.getItem('ba_rdvs_v8');
   if(lr) try{ST.rdvs=JSON.parse(lr);}catch(e){}
   ST.statsYear=new Date().getFullYear();
@@ -3568,7 +3575,7 @@ async function syncAllOffresToFinances() {
 
 // Pousse TOUS les clients (closés et non closés) → prospects de Business
 async function syncAllClientsToFinances() {
-  var clients = (ST.clients || []).filter(function(c) { return c.statut === 'Clos'; });
+  var clients = (ST.clients || []).filter(function(c) { return c.statut && c.statut.toLowerCase().replace('é','e').includes('clos'); });
   if (!clients.length) { toast('info', 'Aucun client à synchroniser'); return; }
   var done = 0;
   for (var i = 0; i < clients.length; i++) {
@@ -3777,7 +3784,7 @@ function togglePhase(clientId, globalIdx) {
 // (Dashboard Supabase → Authentication → Users)
 // FINANCES_USER_ID = UUID du compte authentifié dans BE ACTIV BUSINESS
 // Dashboard Business → Authentication → Users → copier l'UUID du compte
-var FINANCES_USER_ID = 'bbd9c4cb-f6cd-41ff-8693-919ba239647d';
+var FINANCES_USER_ID = 'f7dc5ec6-ac35-4179-b3a9-68d9c4edf888';
 
 async function syncClientToFinances(c) {
   // Cible : Supabase de BE ACTIV BUSINESS
