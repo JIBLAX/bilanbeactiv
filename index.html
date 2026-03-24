@@ -462,6 +462,26 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .mdl-x:hover{background:var(--R-l);color:var(--R)}
 
 /* ═══════════════════════════════════════════════════
+   WRAPPED
+═══════════════════════════════════════════════════ */
+.wr-hero{text-align:center;margin-bottom:28px;padding-top:8px}
+.wr-year{font-size:13px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.wr-title{font-size:28px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:4px}
+.wr-sub{font-size:13px;color:rgba(255,255,255,.55)}
+.wr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.wr-kpi{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:16px 14px;text-align:center}
+.wr-kpi-v{font-size:26px;font-weight:900;color:#fff;line-height:1;margin-bottom:4px}
+.wr-kpi-l{font-size:11px;color:rgba(255,255,255,.55);font-weight:600;text-transform:uppercase;letter-spacing:.8px}
+.wr-section{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:16px;margin-bottom:12px}
+.wr-section-title{font-size:11px;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.wr-bar-item{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.wr-bar-lbl{font-size:12px;color:rgba(255,255,255,.75);min-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wr-bar-track{flex:1;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.wr-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.wr-bar-val{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);min-width:24px;text-align:right}
+.wr-badge{display:inline-block;padding:5px 14px;border-radius:50px;font-size:12px;font-weight:700;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)}
+
+/* ═══════════════════════════════════════════════════
    TOAST
 ═══════════════════════════════════════════════════ */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:#fff;backdrop-filter:blur(20px);border:1.5px solid var(--rim3);border-radius:50px;padding:10px 20px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px;z-index:9000;transition:all .26s cubic-bezier(.34,1.56,.64,1);opacity:0;pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.12);color:var(--tx)}
@@ -749,10 +769,13 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div class="stat-hero">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px">
       <div class="stat-sub">Taux de closing</div>
-      <div class="year-nav">
-        <button class="year-btn" onclick="changeYear(-1)">‹</button>
-        <span class="year-lbl" id="stats-year"></span>
-        <button class="year-btn" onclick="changeYear(1)">›</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-dk btn-sm" onclick="openWrapped()" style="font-size:11px;padding:5px 10px">🎁 Wrapped</button>
+        <div class="year-nav">
+          <button class="year-btn" onclick="changeYear(-1)">‹</button>
+          <span class="year-lbl" id="stats-year"></span>
+          <button class="year-btn" onclick="changeYear(1)">›</button>
+        </div>
       </div>
     </div>
     <div class="stat-main" id="stat-closing-pct">—</div>
@@ -768,7 +791,9 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div class="sh sh-Y">💼 Offres vendues</div><div class="card" id="stats-offres"></div>
   <div class="sh" style="color:var(--bx)">📡 Sources</div><div class="card" id="stats-sources"></div>
   <div class="sh sh-G">🎯 Objectifs</div><div class="card" id="stats-objectifs"></div>
-  <div class="sh sh-V">👤 H / F</div><div class="card" id="stats-sexes"></div>
+  <div class="sh sh-V">👤 Sexe</div><div class="card" id="stats-sexes"></div>
+  <div class="sh" style="color:var(--B)">📍 Villes</div><div class="card" id="stats-villes"></div>
+  <div class="sh" style="color:var(--G)">🎂 Tranches d'âge</div><div class="card" id="stats-ages"></div>
   <div class="sh" style="color:var(--R)">⚠️ Objections</div><div class="card" id="stats-objections-detail"></div>
   <div class="sh sh-m">📅 Historique mensuel</div>
   <div class="card">
@@ -788,6 +813,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div class="srch">
     <input class="srch-i" type="search" placeholder="🔍  Rechercher…" id="srch-i" oninput="renderClients()">
     <button class="btn btn-bx btn-sm" onclick="showPg('prospect')" title="Ajouter un prospect">＋</button>
+    <button class="btn btn-dk btn-sm" onclick="showPg('pro')" title="Nouvelle structure pro" style="padding:0 10px">🏢</button>
   </div>
   <div class="chips" id="chips-statut">
     <div class="chip on" data-v="all">Tous</div>
@@ -803,20 +829,9 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <div class="pg" id="pg-offres">
   <div class="page-title" style="justify-content:space-between">
     <span>💼 Catalogue des Offres</span>
-    <button onclick="addOffre()" title="Ajouter une offre" style="width:36px;height:36px;border-radius:10px;background:var(--bx);color:#fff;border:none;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(139,21,32,.25);flex-shrink:0;transition:background .15s" class="btn-add-offre">＋</button>
+    <button class="btn btn-dk btn-sm" onclick="pullOffresFromFinances()" style="font-size:12px;padding:7px 12px">📥 Importer ← BE ACTIV BUSINESS</button>
   </div>
-  <div style="background:rgba(26,110,219,.07);border:1.5px solid rgba(26,110,219,.2);border-radius:10px;padding:13px 16px;margin-bottom:14px;font-size:13px;color:var(--B);display:flex;align-items:flex-start;gap:10px">
-    <span style="font-size:18px;flex-shrink:0">🔗</span>
-    <div>
-      <div style="font-weight:700;margin-bottom:3px">Synchronisation avec BE ACTIV BUSINESS</div>
-      <div style="background:var(--B-l);border:1.5px solid rgba(26,110,219,.15);border-radius:var(--r2);padding:10px 13px;font-size:12px;color:var(--tx2);line-height:1.5">📋 <strong>Lecture seule</strong> — Les offres sont créées et gérées depuis <strong>BE ACTIV BUSINESS</strong>. Synchronisez pour importer les dernières offres.</div>
-      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn btn-B btn-sm" onclick="syncAllOffresToFinances()" style="font-size:12px;padding:6px 12px">📤 Pousser toutes les offres → Finances</button>
-        <button class="btn btn-dk btn-sm" onclick="pullOffresFromFinances()" style="font-size:12px;padding:6px 12px">📥 Importer les offres ← Finances</button>
-      </div>
-    </div>
-  </div>
-  <p style="font-size:13px;color:var(--tx3);margin-bottom:16px">Modifiez nom, durée, prix et modalités de paiement. Les offres sont connectées au bilan et aux statistiques.</p>
+  <p style="font-size:13px;color:var(--tx3);margin-bottom:16px">Les offres sont créées et gérées dans <strong>BE ACTIV BUSINESS</strong>. Seul le <strong>Mode</strong> est modifiable ici.</p>
   <div id="offres-list"></div>
 </div>
 
@@ -1052,7 +1067,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
 <!-- ══════ PAGE NOUVEAU PRO / STRUCTURE ══════ -->
 <div class="pg" id="pg-pro">
-  <div class="page-title">🏢 Nouveau client Pro / Structure</div>
+  <div class="page-title">🏢 Nouvelle Structure / Pro</div>
   <div class="card">
     <div class="sh no-mt">🏢 Identification</div>
     <div class="f"><label>Nom de la structure / entreprise</label><input id="pro-nom" type="text" placeholder="Le Labow, Association X…"></div>
@@ -1116,12 +1131,29 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
 
   <div class="brow" style="margin-bottom:20px">
-    <button class="btn btn-dk" onclick="showPg('home')">← Annuler</button>
-    <button class="btn btn-bx" onclick="saveProClient()">💾 Créer le dossier Pro</button>
+    <button class="btn btn-dk" onclick="showPg('clients')">← Contacts</button>
+    <button class="btn btn-bx" onclick="saveProClient()">💾 Créer la fiche Structure</button>
   </div>
 </div>
 
     </div><!-- /scroller -->
+
+<!-- ══════ MODAL WRAPPED ══════ -->
+<div id="mdl-wrapped" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.65);overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:16px 0 40px">
+    <div id="wrapped-card" style="width:100%;max-width:400px;background:linear-gradient(160deg,#1a0a0c 0%,#3d0f18 40%,#1a0a0c 100%);border-radius:20px;overflow:hidden;position:relative;box-shadow:0 8px 40px rgba(0,0,0,.5)">
+      <!-- Close -->
+      <button onclick="closeWrapped()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,.15);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;z-index:10">✕</button>
+      <!-- Content rendered by JS -->
+      <div id="wrapped-content" style="padding:32px 24px 24px"></div>
+      <!-- Export buttons -->
+      <div style="padding:0 24px 24px;display:flex;gap:10px">
+        <button class="btn btn-sm" onclick="exportWrappedPDF()" style="flex:1;background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3);font-size:13px;padding:10px">📄 Exporter PDF</button>
+        <button class="btn btn-sm" onclick="exportWrappedPNG()" style="flex:1;background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3);font-size:13px;padding:10px">🖼 Exporter PNG</button>
+      </div>
+    </div>
+  </div>
+</div>
 
     <!-- MOBILE BOTTOM NAV -->
     <div id="nav-mobile">
@@ -1140,8 +1172,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
         
         
         
-        <button class="btn btn-dk btn-w btn-sm" onclick="closeMore();showPg('prospect')">➕ Ajouter Prospect</button>
-        <button class="btn btn-dk btn-w btn-sm" onclick="closeMore();showPg('pro')">🏢 Nouveau Pro</button>
         <button class="btn btn-dk btn-w btn-sm" onclick="closeMore();openModal('cfg')">⚙️ Configuration</button>
       </div>
       <button class="btn btn-bx btn-w btn-sm" onclick="closeMore()">Fermer</button>
@@ -1344,7 +1374,7 @@ function renderProspectModal(id, c, container) {
   var dateStr=c.date?new Date(c.date).toLocaleDateString('fr-FR'):'—';
   var infoRows = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">';
   if (c.ville) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Ville</div><div style="font-weight:600">'+c.ville+'</div></div>';
-  if (c.age)   infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Âge</div><div style="font-weight:600">'+c.age+' ans</div></div>';
+  if (c.age)   infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Âge</div><div style="font-weight:600">'+c.age+' ans'+(c.sex?' · '+(c.sex==='F'?'♀':'♂'):'')+'</div></div>';
   if (c.tel)   infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Téléphone</div><div style="font-weight:600">'+c.tel+'</div></div>';
   if (c.email) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+c.email+'</div></div>';
   if (c.rdvType || c.date) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">RDV Bilan</div><div style="font-weight:600">'+dateStr+(c.rdvType?' · '+c.rdvType:'')+'</div></div>';
@@ -1370,15 +1400,29 @@ function renderProspectModal(id, c, container) {
   // ── 3 BOUTONS D'ACTION
   var actionsDiv = document.createElement('div'); actionsDiv.style.cssText='display:flex;flex-direction:column;gap:8px;margin-top:4px';
 
-  // Bouton RDV Bilan (ou "Nouvelle offre" si bilan déjà fait)
-  var bilanBtn = document.createElement('button');
-  bilanBtn.className = 'btn btn-bx btn-w';
-  bilanBtn.innerHTML = (c.bilan_summary || c.pq_summary) ? '📝 RDV Bilan' : '📅 RDV Bilan';
-  bilanBtn.onclick = (function(cid){ return function(){
-    closeModal('client');
-    startBilanForProspect(cid);
-  }; })(id);
-  actionsDiv.appendChild(bilanBtn);
+  if (c.isPro) {
+    // Structure Pro → bouton "Démarrer Signature" (pas de bilan)
+    if (!isClosingEnCours) {
+      var sigProBtn = document.createElement('button');
+      sigProBtn.className = 'btn btn-bx btn-w';
+      sigProBtn.innerHTML = '✍️ Démarrer Signature';
+      sigProBtn.onclick = (function(cid){ return function(){
+        var cl = ST.clients.find(function(x){ return x.id == cid; });
+        if (cl) { cl.statut = 'Closing en cours'; cl.updated_at = new Date().toISOString(); localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); saveToSupabase(cl); renderClients(); closeModal('client'); setTimeout(function(){ openClient(cid); },300); }
+      }; })(id);
+      actionsDiv.appendChild(sigProBtn);
+    }
+  } else {
+    // Bouton RDV Bilan
+    var bilanBtn = document.createElement('button');
+    bilanBtn.className = 'btn btn-bx btn-w';
+    bilanBtn.innerHTML = (c.bilan_summary || c.pq_summary) ? '📝 RDV Bilan' : '📅 RDV Bilan';
+    bilanBtn.onclick = (function(cid){ return function(){
+      closeModal('client');
+      startBilanForProspect(cid);
+    }; })(id);
+    actionsDiv.appendChild(bilanBtn);
+  }
 
   var editBtn=document.createElement('button'); editBtn.className='btn btn-dk btn-w';
   editBtn.innerHTML='✏️ Modifier les infos'; editBtn.dataset.cid=id;
@@ -2268,28 +2312,7 @@ function renderOffresPage() {
         '</div>' +
       '</div>' +
       '<div class="occ-edit" id="oedit_'+o.id+'" style="display:none;padding-top:12px;border-top:1px solid var(--rim3);margin-top:12px">' +
-        '<div class="g2" style="gap:8px">' +
-          '<div class="f"><label>Nom</label><input type="text" id="oe_name_'+o.id+'" value="'+o.name.replace(/"/g,'&quot;')+'" onchange="saveOffreField(\''+o.id+'\',\'name\',this.value)"></div>' +
-          '<div class="f"><label>Prix (€)</label><input type="number" id="oe_price_'+o.id+'" value="'+o.price+'" onchange="saveOffreField(\''+o.id+'\',\'price\',this.value)"></div>' +
-        '</div>' +
-        '<div class="g3" style="gap:8px">' +
-          '<div class="f"><label>Durée</label><input type="number" id="oe_durVal_'+o.id+'" value="'+o.durVal+'" onchange="saveOffreField(\''+o.id+'\',\'durVal\',this.value)"></div>' +
-          '<div class="f"><label>Unité</label><select id="oe_durUnit_'+o.id+'" onchange="saveOffreField(\''+o.id+'\',\'durUnit\',this.value)">' +
-            ['séance','séances','jours','semaines','mois'].map(function(u){return '<option'+(o.durUnit===u?' selected':'')+'>'+u+'</option>';}).join('') +
-          '</select></div>' +
-          '<div class="f"><label>Paiement</label><div style="display:flex;align-items:center;gap:5px"><input type="number" id="oe_paiement_'+o.id+'" value="'+(o.paiement||1)+'" min="1" max="12" onchange="saveOffreField(\''+o.id+'\',\'paiement\',this.value)" style="width:60px"><span style="font-size:12px;color:var(--tx3)">fois</span></div></div>' +
-        '</div>' +
-        '<div class="g2" style="gap:8px;margin-top:4px">' +
-          '<div class="f"><label>Test associé</label><select id="oe_test_'+o.id+'" onchange="saveOffreField(\''+o.id+'\',\'test\',this.value)">' +
-            ['none|Aucun test','90|Test 90°','360|Test 360°'].map(function(opt){var p=opt.split('|');return '<option value="'+p[0]+'"'+(o.test===p[0]?' selected':'')+'>'+p[1]+'</option>';}).join('') +
-          '</select></div>' +
-          '<div class="f"><label>Type</label><select id="oe_type_'+o.id+'" onchange="saveOffreTypeField(\''+o.id+'\',this.value)">' +
-            '<option value="parcours"'+(o.parcours&&!o.alaCarte?' selected':'')+'>Parcours continu</option>' +
-            '<option value="alacarte"'+(o.alaCarte?' selected':'')+'>À la carte</option>' +
-            '<option value="abonnement"'+(o.isAbonnement?' selected':'')+'>Abonnement mensuel</option>' +
-          '</select></div>' +
-        '</div>' +
-        '<div class="f" style="margin-top:4px"><label>🏷️ Mode BE ACTIV</label><select id="oe_mode_'+o.id+'" onchange="saveOffreModeField(\''+o.id+'\',this.value)">' +
+        '<div class="f"><label>🏷️ Mode BE ACTIV</label><select id="oe_mode_'+o.id+'" onchange="saveOffreModeField(\''+o.id+'\',this.value)">' +
           '<option value="">— Choisir le mode —</option>' +
           '<option value="action"'+(o.modeOffre==='action'?' selected':'')+'>⚡ Action (JM Pass, Coaching à la carte…)</option>' +
           '<option value="transformation"'+(o.modeOffre==='transformation'?' selected':'')+'>🔄 Transformation (ACTIV Program, ACTIV RESET…)</option>' +
@@ -2628,8 +2651,13 @@ function renderStats() {
   barEl('stats-sources',srcs,'var(--bx)');
   const objs={};yc.forEach(c=>{if(c.objectif)objs[c.objectif]=(objs[c.objectif]||0)+1;});
   barEl('stats-objectifs',objs,'var(--G)');
-  const sexes={};yc.forEach(c=>{if(c.sex){const k=c.sex==='F'?'Femmes':'Hommes';sexes[k]=(sexes[k]||0)+1;}});
+  const sexes={};yc.forEach(c=>{if(c.sex){const k=c.sex==='F'?'♀ Femmes':'♂ Hommes';sexes[k]=(sexes[k]||0)+1;}});
   barEl('stats-sexes',sexes,'var(--V)');
+  const villes={};yc.forEach(c=>{if(c.ville)villes[c.ville]=(villes[c.ville]||0)+1;});
+  barEl('stats-villes',villes,'var(--B)');
+  const ages={'18-24':0,'25-34':0,'35-44':0,'45-54':0,'55+':0};
+  yc.forEach(c=>{const a=parseInt(c.age);if(!a)return;if(a<25)ages['18-24']++;else if(a<35)ages['25-34']++;else if(a<45)ages['35-44']++;else if(a<55)ages['45-54']++;else ages['55+']++;});
+  barEl('stats-ages',ages,'var(--G)');
   const objMap={};yc.forEach(c=>{(c.objections||[]).forEach(o=>{if(o)objMap[o]=(objMap[o]||0)+1;});});
   barEl('stats-objections-detail',objMap,'var(--R)');
   const monthly={};
@@ -2651,6 +2679,141 @@ function renderStats() {
     }).join('')||'<div class="note" style="padding:10px 0">Aucune donnée pour '+year+'</div>';
   }
 }
+// ═══════════════════════════════════════════════════
+// WRAPPED ANNUEL
+// ═══════════════════════════════════════════════════
+function openWrapped() {
+  var year = ST.statsYear || new Date().getFullYear();
+  var yc = ST.clients.filter(function(c){ return getYear(c.date) === year; });
+  var closings = yc.filter(function(c){ return c.statut === 'Closé'; });
+  var total = yc.length;
+  var taux = total > 0 ? Math.round(closings.length / total * 100) : 0;
+  var ca = closings.reduce(function(s,c){ return s + (parseFloat(c.montant)||0); }, 0);
+
+  // Top source
+  var srcs = {}; yc.forEach(function(c){ if(c.source) srcs[c.source]=(srcs[c.source]||0)+1; });
+  var topSrc = Object.entries(srcs).sort(function(a,b){return b[1]-a[1];})[0];
+
+  // Top offre
+  var offs = {}; closings.forEach(function(c){
+    var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
+    var n = o ? o.name : (c.offres||'').split(',')[0].trim();
+    if(n) offs[n]=(offs[n]||0)+1;
+  });
+  var topOff = Object.entries(offs).sort(function(a,b){return b[1]-a[1];})[0];
+
+  // Top ville
+  var villes = {}; yc.forEach(function(c){ if(c.ville) villes[c.ville]=(villes[c.ville]||0)+1; });
+  var topVille = Object.entries(villes).sort(function(a,b){return b[1]-a[1];})[0];
+
+  // Best month
+  var monthly = {}; yc.forEach(function(c){
+    if(!c.date) return;
+    var m; try{ var p=c.date.split('/'); m=p.length===3?'20'+p[2]+'-'+p[1].padStart(2,'0'):c.date.slice(0,7); }catch(e){return;}
+    if(!monthly[m]) monthly[m]=0; monthly[m]++;
+  });
+  var bestMonth = Object.entries(monthly).sort(function(a,b){return b[1]-a[1];})[0];
+  var mLabels=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  var bestMonthLbl = bestMonth ? mLabels[parseInt(bestMonth[0].split('-')[1])-1]+' '+bestMonth[0].slice(2,4) : '—';
+
+  // Sex split
+  var nF = yc.filter(function(c){return c.sex==='F';}).length;
+  var nH = yc.filter(function(c){return c.sex==='H'||c.sex==='Homme';}).length;
+
+  // Sources bar (top 4)
+  var srcSorted = Object.entries(srcs).sort(function(a,b){return b[1]-a[1];}).slice(0,4);
+  var srcMax = srcSorted[0] ? srcSorted[0][1] : 1;
+
+  function wrBar(items, max, color) {
+    return items.map(function(e){
+      return '<div class="wr-bar-item"><div class="wr-bar-lbl">'+e[0].slice(0,16)+'</div><div class="wr-bar-track"><div class="wr-bar-fill" style="width:'+(e[1]/max*100)+'%;background:'+color+'"></div></div><div class="wr-bar-val">'+e[1]+'</div></div>';
+    }).join('');
+  }
+
+  var content = document.getElementById('wrapped-content');
+  if (!content) return;
+
+  content.innerHTML =
+    '<div class="wr-hero">' +
+      '<div class="wr-year">BE ACTIV CRM · ' + year + '</div>' +
+      '<div class="wr-title">Votre<br>Année 🎯</div>' +
+      '<div class="wr-sub">Coach JM · Récap complet</div>' +
+    '</div>' +
+
+    '<div class="wr-grid">' +
+      '<div class="wr-kpi"><div class="wr-kpi-v">'+total+'</div><div class="wr-kpi-l">Prospects</div></div>' +
+      '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#4cd964">'+closings.length+'</div><div class="wr-kpi-l">Clients closés</div></div>' +
+      '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#ff9f0a">'+taux+'%</div><div class="wr-kpi-l">Taux closing</div></div>' +
+      '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#ffd60a">'+(ca>0?ca+'€':'—')+'</div><div class="wr-kpi-l">CA total</div></div>' +
+    '</div>' +
+
+    '<div class="wr-section">' +
+      '<div class="wr-section-title">🏆 Top moments</div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">📅 Meilleur mois</span><span class="wr-badge">'+bestMonthLbl+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">📡 Source #1</span><span class="wr-badge">'+(topSrc?topSrc[0]:'—')+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">💼 Offre #1</span><span class="wr-badge" style="font-size:10px">'+(topOff?topOff[0].slice(0,22):'—')+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">📍 Ville #1</span><span class="wr-badge">'+(topVille?topVille[0]:'—')+'</span></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="wr-section">' +
+      '<div class="wr-section-title">📡 Sources</div>' +
+      wrBar(srcSorted, srcMax, '#ff6b6b') +
+    '</div>' +
+
+    '<div class="wr-section">' +
+      '<div class="wr-section-title">👥 Profil clientèle</div>' +
+      '<div style="display:flex;gap:16px;justify-content:center;padding:6px 0">' +
+        '<div style="text-align:center"><div style="font-size:28px;font-weight:900;color:#ff6b9d">'+nF+'</div><div style="font-size:11px;color:rgba(255,255,255,.5)">♀ Femmes</div></div>' +
+        '<div style="width:1px;background:rgba(255,255,255,.1)"></div>' +
+        '<div style="text-align:center"><div style="font-size:28px;font-weight:900;color:#4ecdc4">'+nH+'</div><div style="font-size:11px;color:rgba(255,255,255,.5)">♂ Hommes</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="text-align:center;margin-top:12px;font-size:11px;color:rgba(255,255,255,.3)">BE ACTIV BILAN CRM · Coach JM</div>';
+
+  document.getElementById('mdl-wrapped').style.display = 'block';
+}
+
+function closeWrapped() {
+  document.getElementById('mdl-wrapped').style.display = 'none';
+}
+
+function exportWrappedPDF() {
+  var year = ST.statsYear || new Date().getFullYear();
+  if (!window.jspdf) { toast('err','jsPDF non disponible'); return; }
+  var doc = new window.jspdf.jsPDF({ orientation:'portrait', unit:'mm', format:[100,180] });
+  var card = document.getElementById('wrapped-content');
+  if (!card) return;
+  // Simple text-based PDF
+  doc.setFillColor(26,10,12);
+  doc.rect(0,0,100,180,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(10); doc.setFont('helvetica','bold');
+  doc.text('BE ACTIV CRM · '+year, 50, 14, {align:'center'});
+  doc.setFontSize(18); doc.text('VOTRE ANNÉE 🎯', 50, 24, {align:'center'});
+  // Extract KPIs from DOM
+  var kpis = card.querySelectorAll('.wr-kpi');
+  var y = 40;
+  kpis.forEach(function(k){
+    var v = k.querySelector('.wr-kpi-v'); var l = k.querySelector('.wr-kpi-l');
+    if(v && l){ doc.setFontSize(14); doc.text((v.textContent||''), 30, y, {align:'center'}); doc.setFontSize(8); doc.text((l.textContent||''), 30, y+6, {align:'center'}); y += 2; }
+  });
+  // Badges
+  var badges = card.querySelectorAll('.wr-badge');
+  y = 40;
+  badges.forEach(function(b){
+    doc.setFontSize(8); doc.text((b.textContent||'').slice(0,22), 75, y, {align:'center'}); y += 14;
+  });
+  doc.save('beactiv-wrapped-'+year+'.pdf');
+  toast('ok','📄 PDF exporté !');
+}
+
+function exportWrappedPNG() {
+  toast('info','📸 Capture… utilisez la fonction screenshot de votre téléphone pour sauvegarder cette vue');
+}
+
 function renderGraph() {
   const el=document.getElementById('graph-container');if(!el)return;
   const year=ST.statsYear||new Date().getFullYear();
@@ -3064,7 +3227,7 @@ function saveProClient() {
     montant: gv('pro-montant') ? parseFloat(gv('pro-montant')) : null,
     proFreq: gv('pro-freq'),
     notes: gv('pro-notes'),
-    statut: 'Closé',
+    statut: 'Non closé',
     profil_code: 'PRO',
     profil_label: 'Structure / Entreprise',
     score_global: null,
@@ -3096,10 +3259,9 @@ function saveProClient() {
   });
   document.querySelectorAll('input[name="pro-source"]').forEach(function(el){el.checked=false;});
 
-  // Sync vers App Finances uniquement si statut Closé
-  if (client.statut === 'Closé') syncClientToFinances(client);
-  toast('ok', '✅ ' + nom + ' ajouté comme client Pro');
+  toast('ok', '🏢 ' + nom + ' ajouté — démarrez la Signature dans Contacts');
   showPg('clients');
+  switchClientTab('prospects');
   renderClients();
 }
 
@@ -3797,8 +3959,8 @@ function renderClientModal(id) {
   if (!container) return;
   container.innerHTML = '';
 
-  // PRO
-  if (c.isPro) { renderProClientModal(id, c, container); openModal('client'); return; }
+  // PRO closé → modal client standard (avec parcours Action)
+  // PRO non closé → tombe dans renderProspectModal ci-dessous
 
   // PROSPECT (y compris "Closing en cours")
   if (c.statut !== 'Closé') { renderProspectModal(id, c, container); openModal('client'); return; }
@@ -3819,9 +3981,11 @@ function renderClientModal(id) {
   var isNew = isNewClient(c);
   var offreMode = null;
   if (c.sig_offre_id) { var _o=loadOffres().find(function(x){return x.id===c.sig_offre_id;}); if(_o) offreMode=_o.modeOffre; }
+  var offreName = null;
+  if (c.sig_offre_id) { var _oo=loadOffres().find(function(x){return x.id===c.sig_offre_id;}); if(_oo) offreName=_oo.name; }
   pills.innerHTML = '<span class="pill pill-G">'+(isNew?'🆕 ':'')+'Closé'+(isNew?' · New':'')+'</span>'
     + (offreMode ? '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(offreMode)+'</span>' : '')
-    + (c.offres ? '<span class="pill pill-Y" style="font-size:10px">'+c.offres.split(',')[0].trim()+'</span>' : '')
+    + (offreName ? '<span class="pill pill-Y" style="font-size:10px">'+offreName+'</span>' : '')
     + (c.profil_code && c.profil_code!=='PRO' ? '<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.profil_code+'</span>' : '');
   container.appendChild(pills);
 
