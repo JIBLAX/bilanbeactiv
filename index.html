@@ -4689,17 +4689,8 @@ function togglePhase(clientId, globalIdx) {
 var FINANCES_USER_ID = 'f7dc5ec6-ac35-4179-b3a9-68d9c4edf888';
 
 async function syncClientToFinances(c) {
-  // Cible : table prospects du Supabase BE ACTIV BUSINESS
-  // closing="OUI" + statut="CLIENT" → apparaît dans Clients > Actifs
-  // closing="OUI" + statut="ARCHIVÉ" → apparaît dans Clients > Inactifs
-  var bizUrl   = ST.bizUrl   || BIZ_URL_DEFAULT;
-  var bizSrKey = ST.bizSrKey || '';
-
-  if (!bizSrKey) {
-    console.warn('syncClientToFinances: bizSrKey non configurée → Config');
-    return;
-  }
-
+  // Pousse via /api/push-client (serveur) → credentials jamais exposés côté browser
+  // Ne pousse que les champs identité + origine — Business gère prix_reel, sap_enabled, etc.
   var fullName = ((c.prenom || '') + ' ' + (c.nom || '')).trim();
   if (c.isPro) fullName = c.structureName || fullName;
   if (!fullName) return;
@@ -4712,12 +4703,12 @@ async function syncClientToFinances(c) {
   }
   if (offreName === '-' && c.offres) offreName = c.offres.split(',')[0].trim() || '-';
 
-  // Normaliser le sexe → "F" ou "H" (format attendu par Business)
+  // Normaliser le sexe → "F" ou "H"
   var sexBiz = 'F';
   var rawSex = c.sexe || c.sex || '';
   if (rawSex === 'Homme' || rawSex === 'H' || rawSex === 'M') sexBiz = 'H';
 
-  // Statut Business : CLIENT (actif) ou ARCHIVÉ (inactif si programme terminé)
+  // Statut Business : CLIENT (actif) ou ARCHIVÉ (programme terminé)
   var allStagesDone = false;
   if (c.mode_stages && c.mode_stages.length > 0) {
     allStagesDone = c.mode_stages.every(function(s) {
@@ -4726,53 +4717,34 @@ async function syncClientToFinances(c) {
   }
   var statutBiz = allStagesDone ? 'ARCHIVÉ' : 'CLIENT';
 
-  // Payload mappé sur les colonnes réelles de la table prospects de BE ACTIV BUSINESS
-  var payload = {
-    id:               'bcrm_' + c.id,
-    user_id:          FINANCES_USER_ID,
-    sex:              sexBiz,
-    name:             fullName,
-    contact:          c.tel || '',
-    source:           c.source || '',
-    statut:           statutBiz,
-    date:             (c.closedAt ? c.closedAt.split('T')[0] : '') || c.date || '',
-    type:             c.rdvType || '',
-    presence:         '',
-    heure:            '',
-    objectif:         c.objectif || '',
-    objection:        (c.objections && c.objections[0]) || '',
-    closing:          'OUI',
-    offre:            offreName,
-    notes:            c.notes || '',
-    profile:          c.profil_code || '',
-    prix_reel:        parseFloat(c.montant) || 0,
-    note_bilan:       c.score_global || 0,
-    note_profil:      0,
-    bilan_validated:  !!(c.bilan_summary),
-    age:              parseInt(c.age) || null,
-    sap_enabled:      false,
-    updated_at:       new Date().toISOString()
-  };
-
-  var headers = {
-    'Content-Type': 'application/json',
-    'apikey':        bizSrKey,
-    'Authorization': 'Bearer ' + bizSrKey,
-    'Prefer':        'resolution=merge-duplicates'
+  var prospect = {
+    id:       'bcrm_' + c.id,
+    user_id:  FINANCES_USER_ID,
+    sex:      sexBiz,
+    name:     fullName,
+    contact:  c.tel || '',
+    source:   c.source || '',
+    statut:   statutBiz,
+    date:     (c.closedAt ? c.closedAt.split('T')[0] : '') || c.date || '',
+    objectif: c.objectif || '',
+    closing:  'OUI',
+    offre:    offreName,
+    notes:    c.notes || '',
+    profile:  c.profil_code || '',
+    age:      parseInt(c.age) || null,
   };
 
   try {
-    var res = await fetch(bizUrl + '/rest/v1/prospects', {
-      method: 'POST', headers: headers, body: JSON.stringify(payload)
+    var res = await fetch('/api/push-client', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prospect: prospect })
     });
     if (!res.ok) {
       var errTxt = await res.text();
       console.warn('syncClientToFinances failed:', res.status, errTxt);
-      if (res.status === 401 || res.status === 403) {
-        toast('info', '🔑 Sync échouée — vérifie la Service Role Key Business dans Config');
-      }
     } else {
-      console.log('syncClientToFinances: ' + fullName + ' → prospects [' + statutBiz + '] OK');
+      console.log('syncClientToFinances: ' + fullName + ' → Business [' + statutBiz + '] OK');
     }
   } catch(e) {
     console.warn('syncClientToFinances error:', e);
