@@ -4689,7 +4689,7 @@ function togglePhase(clientId, globalIdx) {
 var FINANCES_USER_ID = 'f7dc5ec6-ac35-4179-b3a9-68d9c4edf888';
 
 async function syncClientToFinances(c) {
-  // Cible : Supabase de BE ACTIV BUSINESS
+  // Cible : table activ_reset_clients du Supabase BE ACTIV BUSINESS
   var bizUrl   = ST.bizUrl   || BIZ_URL_DEFAULT;
   var bizSrKey = ST.bizSrKey || '';
 
@@ -4702,34 +4702,34 @@ async function syncClientToFinances(c) {
   if (c.isPro) fullName = c.structureName || fullName;
   if (!fullName) return;
 
-  // Résoudre le nom de l'offre
+  // Résoudre le nom de l'offre depuis sig_offre_id (nouveau système) ou c.offres (legacy)
   var offreName = '';
-  if (c.offres) {
-    offreName = c.offres.split(',')[0].trim();
-  } else if (c.phaseRuns && c.phaseRuns[0] && c.phaseRuns[0].offreId) {
-    var allOffres = loadOffres();
-    var o = allOffres.find(function(x){ return x.id === c.phaseRuns[0].offreId; });
-    if (o) offreName = o.name;
+  if (c.sig_offre_id) {
+    var _sigO = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
+    if (_sigO) offreName = _sigO.name;
   }
+  if (!offreName && c.offres) offreName = c.offres.split(',')[0].trim();
 
-  var isClosed   = (c.statut === 'Closé');
-  // Mapper statut BILAN CRM → statuts attendus par Business
-  var statutBiz  = isClosed ? 'CLOSE' : (c.statut === 'À relancer' ? 'CONTACT' : c.statut === 'Refusé' ? 'REFUS' : 'RDV');
-  var closingBiz = isClosed ? 'OUI' : 'NON';
+  // Date de démarrage = date de closing ou date du bilan
+  var startDate = (c.closedAt ? c.closedAt.split('T')[0] : '') || c.date || '';
 
-  // Payload mappé sur les colonnes réelles de la table be_activ_clients de Business
+  // Sérialiser les étapes du parcours pour le champ phases
+  var phasesJson = JSON.stringify(c.mode_stages || []);
+
+  // Payload mappé sur la table activ_reset_clients de BE ACTIV BUSINESS
   var payload = {
-    id:            'bcrm_' + c.id,
-    user_id:       FINANCES_USER_ID,
-    name:          fullName,
-    phone:         c.tel || c.email || '',
-    offre:         offreName || '',
-    start_date:    c.date || '',
-    current_phase: 0,
-    phases:        '[]',
-    cycle:         c.cycle || 1,
-    notes:         c.notes || '',
-    updated_at:    new Date().toISOString()
+    id:               'bcrm_' + c.id,
+    user_id:          FINANCES_USER_ID,
+    name:             fullName,
+    phone:            c.tel || '',
+    offre:            offreName || '',
+    start_date:       startDate,
+    current_phase:    0,
+    phases:           phasesJson,
+    objectif_atteint: null,
+    cycle:            c.cycle || 1,
+    notes:            c.notes || '',
+    updated_at:       new Date().toISOString()
   };
 
   var headers = {
@@ -4740,7 +4740,7 @@ async function syncClientToFinances(c) {
   };
 
   try {
-    var res = await fetch(bizUrl + '/rest/v1/be_activ_clients', {
+    var res = await fetch(bizUrl + '/rest/v1/activ_reset_clients', {
       method: 'POST', headers: headers, body: JSON.stringify(payload)
     });
     if (!res.ok) {
@@ -4749,6 +4749,8 @@ async function syncClientToFinances(c) {
       if (res.status === 401 || res.status === 403) {
         toast('info', '🔑 Sync échouée — vérifie la Service Role Key Business dans Config');
       }
+    } else {
+      console.log('syncClientToFinances: ' + fullName + ' → activ_reset_clients OK');
     }
   } catch(e) {
     console.warn('syncClientToFinances error:', e);
