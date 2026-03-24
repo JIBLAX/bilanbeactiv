@@ -429,6 +429,20 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .ldwrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;gap:16px;text-align:center}
 .ldring{width:46px;height:46px;border-radius:50%;border:3px solid var(--rim3);border-top-color:var(--bx);border-right-color:var(--bx3);animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse-y{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(200,130,10,.3)}50%{opacity:.85;box-shadow:0 0 0 5px rgba(200,130,10,0)}}
+@keyframes slide-in-new{from{background:rgba(0,163,98,.15)}to{background:transparent}}
+.badge-new{display:inline-flex;align-items:center;padding:2px 8px;border-radius:50px;font-size:10px;font-weight:700;background:var(--G-l);color:var(--G);border:1px solid rgba(0,163,98,.3);text-transform:uppercase;letter-spacing:.5px}
+.badge-closing{display:inline-flex;align-items:center;padding:2px 8px;border-radius:50px;font-size:10px;font-weight:700;background:rgba(200,130,10,.12);color:var(--Y);border:1px solid rgba(200,130,10,.35);text-transform:uppercase;letter-spacing:.5px;animation:pulse-y 2s ease-in-out infinite}
+/* Étapes SIGNATURE séquentielles */
+.sig-step{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--rim3)}
+.sig-step:last-child{border:none;padding-bottom:0}
+.sig-check{width:22px;height:22px;border-radius:5px;border:2px solid var(--rim2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;background:#fff;cursor:pointer}
+.sig-check.done{background:var(--G);border-color:var(--G);color:#fff}
+.sig-check.done::after{content:'✓';font-size:11px;font-weight:800}
+.sig-check.locked{background:var(--bg3);border-color:var(--rim3);cursor:not-allowed;opacity:.5}
+.sig-lbl{font-size:13.5px;font-weight:600;color:var(--tx);flex:1}
+.sig-lbl.done{text-decoration:line-through;color:var(--tx3)}
+.sig-lbl.locked{color:var(--tx4)}
 .ldmsg{font-size:14px;color:var(--tx3)}
 .ldmsg strong{display:block;color:var(--bx);font-size:15px;margin-bottom:3px}
 .empty{text-align:center;padding:44px 20px;color:var(--tx3)}
@@ -591,6 +605,45 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 @media(min-width:769px) and (max-width:1199px){
   .pg{padding:20px 24px;max-width:100%;}
 }
+
+/* ═══════════════════════════════════════════════════
+   LANDSCAPE MODE — Smartphone & Tablette
+═══════════════════════════════════════════════════ */
+@media (orientation:landscape) and (max-height:520px) {
+  /* Réduire le topbar mobile */
+  #topbar-mobile{padding-top:max(6px,env(safe-area-inset-top,6px));padding-bottom:6px;}
+  /* Nav bottom compacte */
+  #nav-mobile{padding-top:2px;padding-bottom:max(2px,env(safe-area-inset-bottom,2px));}
+  .nm-lbl{font-size:8px;letter-spacing:.2px}
+  .nm-ico{font-size:17px}
+  /* Pages moins de padding vertical */
+  .pg{padding-top:10px;padding-bottom:max(58px,calc(44px + env(safe-area-inset-bottom,0px)))}
+  /* Hero home réduit */
+  .home-hero{padding:14px 16px}
+  /* KPI grid 4 colonnes même sur petits écrans */
+  .kpi-grid{grid-template-columns:repeat(4,1fr)!important}
+  /* Toasts plus hauts */
+  #toast{bottom:60px}
+  /* Modals plus basses */
+  .mbg{align-items:center}
+  .mdl{border-radius:var(--r);max-height:85vh}
+  /* Parcours thermomètre horizontal = ok déjà */
+  /* Sections de formulaire */
+  .card{padding:12px}
+  .page-title{font-size:18px;margin-bottom:12px}
+}
+/* Landscape tablette (769px-1100px) en orientation landscape */
+@media (orientation:landscape) and (min-height:521px) and (max-width:1100px) {
+  #sidebar{width:60px}
+  .sb-brand-name,.sb-brand-sub,.sb-kpi,.sb-ni-lbl,.sb-footer{display:none}
+  .sb-ni{justify-content:center;padding:12px}
+  .sb-ni-ico{width:auto}
+}
+/* Landscape smartphone : layout 2 colonnes pour les formulaires */
+@media (orientation:landscape) and (max-height:520px) and (min-width:480px) {
+  .pg-bilan .card,.pg-tests .card,.pg-pq .card{margin-bottom:10px}
+  .g2{grid-template-columns:1fr 1fr}
+}
 </style>
 </head>
 <body>
@@ -641,13 +694,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <nav class="sb-nav">
       <div class="sb-ni on" data-pg="home" onclick="showPg('home')"><div class="sb-ni-ico">🏠</div><div class="sb-ni-lbl">Accueil</div></div>
       <div class="sb-ni" data-pg="stats" onclick="showPg('stats')"><div class="sb-ni-ico">📊</div><div class="sb-ni-lbl">Statistiques</div></div>
-      <div class="sb-ni" data-pg="clients" onclick="showPg('clients')"><div class="sb-ni-ico">👥</div><div class="sb-ni-lbl">Clients</div></div>
+      <div class="sb-ni" data-pg="clients" onclick="showPg('clients')"><div class="sb-ni-ico">👥</div><div class="sb-ni-lbl">Contacts</div></div>
       <div class="sb-ni" data-pg="offres" onclick="showPg('offres')"><div class="sb-ni-ico">💼</div><div class="sb-ni-lbl">Offres</div></div>
-      <div class="sb-ni" data-pg="pq" onclick="showPg('pq')"><div class="sb-ni-ico">➕</div><div class="sb-ni-lbl">Nouveau Bilan</div></div>
+      <div class="sb-ni" data-pg="prospect" onclick="showPg('prospect')"><div class="sb-ni-ico">➕</div><div class="sb-ni-lbl">Ajouter Prospect</div></div>
       <div class="sb-ni" data-pg="pro" onclick="showPg('pro')"><div class="sb-ni-ico">🏢</div><div class="sb-ni-lbl">Nouveau Pro</div></div>
-
-
-
       <div class="sb-ni" data-pg="io" onclick="showPg('io')"><div class="sb-ni-ico">⬆️</div><div class="sb-ni-lbl">Import / Export</div></div>
       <div class="sb-ni" data-pg="form-editor" onclick="showPg('form-editor')"><div class="sb-ni-ico">✏️</div><div class="sb-ni-lbl">Éditeurs</div></div>
     </nav>
@@ -680,7 +730,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
       <div class="lbl">Coach JM · BE ACTIV</div>
       <div class="title">BE <b>ACTIV</b> | <b>BILAN CRM</b></div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:8px"><button class="hero-cta" onclick="newClient();showPg('pq')">＋ Nouveau Bilan</button></div>
+    <div style="display:flex;flex-direction:column;gap:8px"><button class="hero-cta" onclick="showPg('prospect')">＋ Ajouter Prospect</button></div>
   </div>
   <div class="sh no-mt">📊 Activité <span id="home-year" style="font-size:10px;color:var(--tx3);font-weight:400;margin-left:3px"></span></div>
   <div class="kpi-grid">
@@ -729,7 +779,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
 </div>
 
-<!-- ══════ PAGE CLIENTS ══════ -->
+<!-- ══════ PAGE CONTACTS ══════ -->
 <div class="pg" id="pg-clients">
   <div style="display:flex;gap:0;margin-bottom:16px;background:var(--bg3);border-radius:10px;padding:3px">
     <button id="tab-prospects" onclick="switchClientTab('prospects')" style="flex:1;padding:9px 12px;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:var(--bx);color:#fff;transition:all .2s">👤 Prospects</button>
@@ -737,11 +787,12 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
   <div class="srch">
     <input class="srch-i" type="search" placeholder="🔍  Rechercher…" id="srch-i" oninput="renderClients()">
-    <button class="btn btn-bx btn-sm" onclick="newClient();showPg('pq')">＋</button>
+    <button class="btn btn-bx btn-sm" onclick="showPg('prospect')" title="Ajouter un prospect">＋</button>
   </div>
   <div class="chips" id="chips-statut">
     <div class="chip on" data-v="all">Tous</div>
     <div class="chip" data-v="Non closé">Non closé</div>
+    <div class="chip" data-v="Closing en cours">Closing en cours</div>
     <div class="chip" data-v="À relancer">À relancer</div>
     <div class="chip" data-v="Refusé">Refusé</div>
   </div>
@@ -808,6 +859,15 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div id="bilan-result" style="display:none"></div>
   <div id="bilan-cta" style="display:none;margin:10px 0 18px">
     <button class="btn btn-bx btn-w" onclick="showPg('tests')">Passer aux Tests →</button>
+    <!-- Décision bilan : si prospect avec ST.clientId défini -->
+    <div id="bilan-decision-wrap" style="display:none;margin-top:12px;background:var(--bg2);border:1.5px solid var(--rim);border-radius:var(--r2);padding:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📋 Décision suite au Bilan</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="btn btn-R" onclick="setBilanDecision('refus')">❌ REFUS — Stop</button>
+        <button class="btn btn-G" onclick="setBilanDecision('ok')">✅ OK → Closing</button>
+      </div>
+      <p class="note" style="margin-top:8px">Si OK : le prospect passera en "Closing en cours" dans vos Contacts.</p>
+    </div>
   </div>
 </div>
 
@@ -934,6 +994,62 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
 </div>
 
+<!-- ══════ PAGE AJOUTER PROSPECT ══════ -->
+<div class="pg" id="pg-prospect">
+  <div class="page-title">➕ Ajouter un Prospect</div>
+
+  <!-- Option 1 : Pré-qualif Tally (optionnel) -->
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <span style="font-size:20px">📋</span>
+      <div>
+        <div style="font-weight:700;font-size:14px;color:var(--tx)">FORMULAIRE PRÉ-QUALIF (optionnel)</div>
+        <div style="font-size:12px;color:var(--tx3);margin-top:2px">Collez les réponses Tally pour une analyse IA du profil</div>
+      </div>
+    </div>
+    <div class="f"><label>Réponses formulaire Tally</label>
+      <textarea id="pq-new-raw" rows="5" placeholder="Collez ici les réponses du formulaire pré-bilan Tally…&#10;Ou laissez vide pour créer la fiche manuellement."></textarea>
+    </div>
+    <button class="btn btn-bx btn-w btn-sm" id="btn-pq-new" onclick="analyzePQForNewProspect()">✨ Analyser & remplir le profil</button>
+    <div id="pq-new-loading" style="display:none" class="ldwrap" style="padding:16px"><div class="ldring"></div><div class="ldmsg"><strong>Analyse IA…</strong></div></div>
+    <div id="pq-new-result" style="display:none;margin-top:10px"></div>
+  </div>
+
+  <!-- Option 2 : Fiche manuelle -->
+  <div class="card">
+    <div class="sh no-mt">👤 Identification</div>
+    <div class="g2">
+      <div class="f"><label>Prénom *</label><input id="np-prenom" type="text" placeholder="Prénom"></div>
+      <div class="f"><label>Nom *</label><input id="np-nom" type="text" placeholder="Nom"></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>Âge</label><input id="np-age" type="number" placeholder="30" min="10" max="99"></div>
+      <div class="f"><label>Sexe</label>
+        <select id="np-sexe">
+          <option value="">— Choisir —</option>
+          <option value="Homme">Homme</option>
+          <option value="Femme">Femme</option>
+          <option value="Autre">Autre</option>
+        </select>
+      </div>
+    </div>
+    <div class="f"><label>Téléphone</label><input id="np-tel" type="tel" placeholder="06 xx xx xx xx"></div>
+    <div class="f"><label>Email</label><input id="np-email" type="email" placeholder="email@exemple.fr"></div>
+    <div class="f"><label>Adresse</label><input id="np-adresse" type="text" placeholder="123 rue de la Paix"></div>
+    <div class="f"><label>Ville</label><input id="np-ville" type="text" placeholder="Grenoble"></div>
+  </div>
+
+  <div id="pq-new-summary-card" style="display:none" class="ai-card">
+    <div class="ai-title">✨ Analyse Pré-qualif IA</div>
+    <div id="pq-new-summary-body"></div>
+  </div>
+
+  <div class="brow" style="margin-bottom:20px">
+    <button class="btn btn-dk" onclick="showPg('clients')">← Annuler</button>
+    <button class="btn btn-bx" onclick="saveNewProspect()">💾 Créer la fiche Prospect</button>
+  </div>
+</div>
+
 <!-- ══════ PAGE NOUVEAU PRO / STRUCTURE ══════ -->
 <div class="pg" id="pg-pro">
   <div class="page-title">🏢 Nouveau client Pro / Structure</div>
@@ -1011,8 +1127,8 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div id="nav-mobile">
       <div class="nm-ni on" data-pg="home" onclick="showPg('home')"><div class="nm-ico">🏠</div><div class="nm-lbl">Accueil</div></div>
       <div class="nm-ni" data-pg="stats" onclick="showPg('stats')"><div class="nm-ico">📊</div><div class="nm-lbl">Stats</div></div>
-      <div class="nm-ni" data-pg="clients" onclick="showPg('clients')"><div class="nm-ico">👥</div><div class="nm-lbl">Clients</div></div>
-      <div class="nm-ni" data-pg="pq" onclick="showPg('pq')"><div class="nm-ico">➕</div><div class="nm-lbl">Bilan</div></div>
+      <div class="nm-ni" data-pg="clients" onclick="showPg('clients')"><div class="nm-ico">👥</div><div class="nm-lbl">Contacts</div></div>
+      <div class="nm-ni" data-pg="prospect" onclick="showPg('prospect')"><div class="nm-ico">➕</div><div class="nm-lbl">Prospect</div></div>
       <div class="nm-ni" data-pg="offres" onclick="showPg('offres')"><div class="nm-ico">💼</div><div class="nm-lbl">Offres</div></div>
       <div class="nm-ni" data-pg="more" onclick="toggleMore()"><div class="nm-ico">•••</div><div class="nm-lbl">Plus</div></div>
     </div>
@@ -1024,6 +1140,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
         
         
         
+        <button class="btn btn-dk btn-w btn-sm" onclick="closeMore();showPg('prospect')">➕ Ajouter Prospect</button>
         <button class="btn btn-dk btn-w btn-sm" onclick="closeMore();showPg('pro')">🏢 Nouveau Pro</button>
         <button class="btn btn-dk btn-w btn-sm" onclick="closeMore();openModal('cfg')">⚙️ Configuration</button>
       </div>
@@ -1202,61 +1319,320 @@ function deleteClient(clientId) {
 }
 
 function renderProspectModal(id, c, container) {
-  var sp={'Closé':'pill-G','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R'};
+  var sp={'Closé':'pill-G','Non closé':'pill-B','Closing en cours':'pill-Y','À relancer':'pill-Y','Refusé':'pill-R'};
   var titleEl=document.createElement('div'); titleEl.className='mdl-t';
   titleEl.innerHTML=(c.prenom||'')+' '+(c.nom||'');
   var closeBtn=document.createElement('button'); closeBtn.className='mdl-x'; closeBtn.textContent='✕';
   closeBtn.onclick=function(){closeModal('client');}; titleEl.appendChild(closeBtn);
   container.appendChild(titleEl);
 
+  // Pills statut + source
   var pills=document.createElement('div'); pills.style.cssText='display:flex;gap:5px;flex-wrap:wrap;margin-bottom:13px';
-  pills.innerHTML='<span class="pill '+(sp[c.statut]||'pill-B')+'">'+(c.statut||'Prospect')+'</span>'
+  var statutLabel = c.statut||'Prospect';
+  var isClosingEnCours = (c.statut === 'Closing en cours');
+  pills.innerHTML='<span class="pill '+(sp[c.statut]||'pill-B')+'">'+statutLabel+'</span>'
     +(c.source?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.source+'</span>':'')
-    +(c.objectif?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.objectif+'</span>':'');
+    +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'');
+  // Badge "Closing en cours" animé
+  if (isClosingEnCours) {
+    pills.innerHTML += '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(200,130,10,.12);color:var(--Y);border:1.5px solid rgba(200,130,10,.35);animation:pulse-y 1.5s ease-in-out infinite">🔶 Closing en cours</span>';
+  }
   container.appendChild(pills);
 
+  // Fiche infos
   var infoCard=document.createElement('div'); infoCard.className='card'; infoCard.style.marginBottom='12px';
   var dateStr=c.date?new Date(c.date).toLocaleDateString('fr-FR'):'—';
-  infoCard.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">'
-    +'<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">RDV</div><div style="font-weight:600">'+dateStr+(c.rdvType?' · '+c.rdvType:'')+'</div></div>'
-    +'<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Présence</div><div style="font-weight:600">'+(c.rdvStatut||'—')+'</div></div>'
-    +(c.ville?'<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Ville</div><div style="font-weight:600">'+c.ville+'</div></div>':'')
-    +'</div>';
-  if(c.notes) infoCard.innerHTML+='<div style="font-size:12px;color:var(--tx3);margin-top:8px;font-style:italic;border-top:1px solid var(--rim3);padding-top:8px">'+c.notes+'</div>';
+  var infoRows = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">';
+  if (c.ville) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Ville</div><div style="font-weight:600">'+c.ville+'</div></div>';
+  if (c.age)   infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Âge</div><div style="font-weight:600">'+c.age+' ans</div></div>';
+  if (c.tel)   infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Téléphone</div><div style="font-weight:600">'+c.tel+'</div></div>';
+  if (c.email) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+c.email+'</div></div>';
+  if (c.rdvType || c.date) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">RDV Bilan</div><div style="font-weight:600">'+dateStr+(c.rdvType?' · '+c.rdvType:'')+'</div></div>';
+  if (c.profession) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Profession</div><div style="font-weight:600">'+c.profession+'</div></div>';
+  infoRows += '</div>';
+  if(c.notes) infoRows+='<div style="font-size:12px;color:var(--tx3);margin-top:8px;font-style:italic;border-top:1px solid var(--rim3);padding-top:8px">'+c.notes+'</div>';
+  infoCard.innerHTML = infoRows;
   container.appendChild(infoCard);
 
-  if(c.objections&&c.objections.filter(Boolean).length>0){
-    var objDiv=document.createElement('div'); objDiv.className='card'; objDiv.style.cssText='margin-bottom:12px;background:var(--R-l);border-color:rgba(214,48,49,.2)';
-    objDiv.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--R);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">⚠️ Objection</div><div style="font-size:13px;color:var(--tx2)">'+c.objections.filter(Boolean).join(', ')+'</div>';
-    container.appendChild(objDiv);
+  // Résumé pré-qualif si disponible
+  if (c.pq_summary && c.pq_summary.resumeProfil) {
+    var pqCard = document.createElement('div'); pqCard.className='ai-card'; pqCard.style.marginBottom='12px';
+    pqCard.innerHTML = '<div class="ai-title">📋 Analyse Pré-qualif</div>'
+      + '<div class="ai-blk"><div class="ai-blk-c">'+c.pq_summary.resumeProfil+'</div></div>';
+    container.appendChild(pqCard);
   }
 
-  var sLabel=document.createElement('div'); sLabel.style.cssText='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px';
-  sLabel.textContent='Statut'; container.appendChild(sLabel);
-  var sWrap=document.createElement('div'); sWrap.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:13px';
-  var colors={'Non closé':'var(--B)','Closé':'var(--G)','À relancer':'var(--Y)','Refusé':'var(--R)'};
-  ['Non closé','Closé','À relancer','Refusé'].forEach(function(s){
-    var btn=document.createElement('button'); var isA=c.statut===s;
-    btn.style.cssText='border:1.5px solid '+(isA?colors[s]:'var(--rim3)')+';background:'+(isA?colors[s]+'1a':'var(--bg3)')+';color:'+(isA?colors[s]:'var(--tx3)')+';font-weight:'+(isA?'700':'400')+';border-radius:50px;padding:8px 10px;font-family:Outfit,sans-serif;font-size:12px;cursor:pointer';
-    btn.textContent=s; btn.dataset.statut=s; btn.dataset.cid=id;
-    btn.onclick=function(){
-      updateStatutParcours(this.dataset.cid,this.dataset.statut);
-      if(this.dataset.statut==='Closé'){closeModal('client');setTimeout(function(){switchClientTab('clients');},300);}
-      else{var cc=ST.clients.find(function(x){return x.id==id;});if(cc)renderProspectModal(id,cc,container);}
-    };
-    sWrap.appendChild(btn);
-  });
-  container.appendChild(sWrap);
+  // Si "Closing en cours" → afficher l'accordéon SIGNATURE
+  if (isClosingEnCours) {
+    renderSignatureAccordion(id, c, container);
+  }
 
-  var delBtn=document.createElement('button'); delBtn.className='btn btn-R btn-w btn-sm'; delBtn.style.marginBottom='8px';
-  delBtn.textContent='🗑 Supprimer ce dossier'; delBtn.dataset.cid=id;
-  delBtn.onclick=function(){deleteClient(this.dataset.cid);};
-  container.appendChild(delBtn);
+  // ── 3 BOUTONS D'ACTION
+  var actionsDiv = document.createElement('div'); actionsDiv.style.cssText='display:flex;flex-direction:column;gap:8px;margin-top:4px';
 
-  var editBtn=document.createElement('button'); editBtn.className='btn btn-dk btn-w btn-sm';
-  editBtn.textContent='✏️ Modifier'; editBtn.dataset.cid=id;
+  // Bouton RDV Bilan (ou "Nouvelle offre" si bilan déjà fait)
+  var bilanBtn = document.createElement('button');
+  bilanBtn.className = 'btn btn-bx btn-w';
+  bilanBtn.innerHTML = (c.bilan_summary || c.pq_summary) ? '📝 RDV Bilan' : '📅 RDV Bilan';
+  bilanBtn.onclick = (function(cid){ return function(){
+    closeModal('client');
+    startBilanForProspect(cid);
+  }; })(id);
+  actionsDiv.appendChild(bilanBtn);
+
+  var editBtn=document.createElement('button'); editBtn.className='btn btn-dk btn-w';
+  editBtn.innerHTML='✏️ Modifier les infos'; editBtn.dataset.cid=id;
   editBtn.onclick=function(){openEditClientModal(this.dataset.cid);};
-  container.appendChild(editBtn);
+  actionsDiv.appendChild(editBtn);
+
+  var delBtn=document.createElement('button'); delBtn.className='btn btn-R btn-w btn-sm';
+  delBtn.innerHTML='🗑 Supprimer ce dossier'; delBtn.dataset.cid=id;
+  delBtn.onclick=function(){deleteClient(this.dataset.cid);};
+  actionsDiv.appendChild(delBtn);
+
+  container.appendChild(actionsDiv);
+}
+
+// ═══════════════════════════════════════════════════
+// FLUX BILAN POUR PROSPECT
+// ═══════════════════════════════════════════════════
+function startBilanForProspect(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  ST.clientId = clientId;
+  ST.pqSummary = c.pq_summary || null;
+  ST.bilanSummary = c.bilan_summary || null;
+  ST.finalReport = c.final_report || null;
+  // Pré-remplir les champs du bilan avec les infos déjà connues
+  setTimeout(function(){
+    if (document.getElementById('b-pn')) document.getElementById('b-pn').value = c.prenom || '';
+    if (document.getElementById('b-nn')) document.getElementById('b-nn').value = c.nom || '';
+    if (document.getElementById('b-age')) document.getElementById('b-age').value = c.age || '';
+    if (document.getElementById('b-ville')) document.getElementById('b-ville').value = c.ville || '';
+    if (document.getElementById('b-prof')) document.getElementById('b-prof').value = c.profession || '';
+  }, 80);
+  // Marquer pré-qualif comme faite si pq_summary existe
+  if (ST.pqSummary) {
+    document.getElementById('s1') && document.getElementById('s1').classList.replace('act','done');
+    document.getElementById('b-s1') && document.getElementById('b-s1').classList.replace('act','done');
+  }
+  showPg('bilan');
+  toast('info', '📋 Bilan pour ' + (c.prenom||'') + ' ' + (c.nom||''));
+}
+
+// ═══════════════════════════════════════════════════
+// SIGNATURE ACCORDION — étapes séquentielles
+// ═══════════════════════════════════════════════════
+
+// Structure sig_steps dans client : [{id, done, doneAt}]
+var SIG_STEPS = [
+  {id:'offre_choisie',  lbl:'Offre choisie',     ico:'💼'},
+  {id:'contrat_signe',  lbl:'Contrat signé',      ico:'📄'},
+  {id:'paiement_valide',lbl:'Paiement validé',    ico:'💳'},
+  {id:'termine',        lbl:'Terminée ✅',        ico:'🏆'}
+];
+
+function initSigSteps(c) {
+  if (!c.sig_steps || c.sig_steps.length !== SIG_STEPS.length) {
+    c.sig_steps = SIG_STEPS.map(function(s){ return {id:s.id, done:false, doneAt:null}; });
+  }
+}
+
+function renderSignatureAccordion(clientId, c, container) {
+  initSigSteps(c);
+  var allDone = c.sig_steps.every(function(s){ return s.done; });
+  var doneCnt = c.sig_steps.filter(function(s){ return s.done; }).length;
+
+  var acc = document.createElement('div');
+  acc.style.cssText = 'background:var(--bg2);border:1.5px solid rgba(200,130,10,.35);border-radius:var(--r2);margin-bottom:12px;overflow:hidden';
+
+  var hd = document.createElement('div');
+  hd.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(200,130,10,.05);cursor:pointer';
+  hd.innerHTML = '<span style="font-size:18px">✍️</span>'
+    + '<div style="flex:1"><div style="font-weight:700;font-size:13.5px;color:var(--Y)">ÉTAPE SIGNATURE'+(allDone?' <span style="font-size:9px;background:var(--G);color:#fff;padding:2px 6px;border-radius:50px">✓ VALIDÉE</span>':'')+'</div>'
+    + '<div style="font-size:11px;color:var(--tx3);margin-top:1px">'+doneCnt+'/'+SIG_STEPS.length+' étapes</div>'
+    + '<div style="height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:4px"><div style="height:100%;width:'+Math.round(doneCnt/SIG_STEPS.length*100)+'%;background:var(--Y);border-radius:2px;transition:width .3s"></div></div></div>'
+    + '<span style="color:var(--tx4);font-size:11px">▼</span>';
+  hd.onclick = function(){
+    var b = acc.querySelector('.sig-body');
+    b.style.display = b.style.display === 'none' ? 'block' : 'none';
+  };
+  acc.appendChild(hd);
+
+  var body = document.createElement('div');
+  body.className = 'sig-body';
+  body.style.cssText = 'padding:12px 14px;border-top:1px solid rgba(200,130,10,.2)';
+
+  // Sélecteur d'offre pour l'étape "Offre choisie"
+  if (!c.sig_steps[0].done) {
+    var ofLbl = document.createElement('div');
+    ofLbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px';
+    ofLbl.textContent = 'Sélectionner l\'offre';
+    body.appendChild(ofLbl);
+    var ofSel = document.createElement('select');
+    ofSel.style.marginBottom = '12px';
+    ofSel.innerHTML = '<option value="">— Choisir une offre —</option>';
+    loadOffres().forEach(function(o){
+      var opt = document.createElement('option');
+      opt.value = o.id; opt.textContent = o.name + ' — ' + o.price + '€';
+      if (c.sig_offre_id === o.id) opt.selected = true;
+      ofSel.appendChild(opt);
+    });
+    ofSel.onchange = (function(cid){ return function(){
+      var cl = ST.clients.find(function(x){return x.id==cid;});
+      if(cl){ cl.sig_offre_id = this.value; localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); }
+    }; })(clientId);
+    body.appendChild(ofSel);
+    // Afficher le mode de l'offre choisie
+    if (c.sig_offre_id) {
+      var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
+      if (o && o.modeOffre) {
+        var modeBadge = document.createElement('div');
+        modeBadge.style.cssText = 'margin-bottom:10px';
+        modeBadge.innerHTML = '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(o.modeOffre)+'</span>';
+        body.appendChild(modeBadge);
+      }
+    }
+  } else if (c.sig_offre_id) {
+    var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
+    if (o) {
+      var ofChosen = document.createElement('div');
+      ofChosen.style.cssText = 'font-size:12px;color:var(--tx3);margin-bottom:10px;padding:6px 10px;background:var(--bg3);border-radius:var(--r3)';
+      ofChosen.innerHTML = '💼 <strong>'+o.name+'</strong>'+(o.modeOffre?' · <span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(o.modeOffre)+'</span>':'');
+      body.appendChild(ofChosen);
+    }
+  }
+
+  SIG_STEPS.forEach(function(step, i){
+    var st = c.sig_steps[i];
+    var prevDone = i === 0 || c.sig_steps[i-1].done;
+    var isLocked = !prevDone && !st.done;
+    var row = document.createElement('div'); row.className = 'sig-step';
+    var chk = document.createElement('div');
+    chk.className = 'sig-check' + (st.done ? ' done' : isLocked ? ' locked' : '');
+    var lbl = document.createElement('div');
+    lbl.className = 'sig-lbl' + (st.done ? ' done' : isLocked ? ' locked' : '');
+    lbl.innerHTML = '<span style="margin-right:5px">'+step.ico+'</span>' + step.lbl;
+    if (!st.done && !isLocked) {
+      chk.style.cursor = 'pointer';
+      chk.title = 'Valider cette étape';
+      chk.onclick = (function(cid, idx){ return function(){
+        validateSigStep(cid, idx);
+      }; })(clientId, i);
+    }
+    row.appendChild(chk);
+    row.appendChild(lbl);
+    if (st.done && st.doneAt) {
+      var ts = document.createElement('div');
+      ts.style.cssText = 'font-size:10px;color:var(--tx4);white-space:nowrap';
+      ts.textContent = new Date(st.doneAt).toLocaleDateString('fr-FR');
+      row.appendChild(ts);
+    }
+    body.appendChild(row);
+  });
+
+  acc.appendChild(body);
+  container.appendChild(acc);
+
+  // Si toutes les étapes sont faites → proposer de finaliser le closing
+  if (allDone && c.sig_steps[SIG_STEPS.length-1].done && c.statut !== 'Closé') {
+    var closeBtn2 = document.createElement('button');
+    closeBtn2.className = 'btn btn-G btn-w';
+    closeBtn2.style.marginBottom = '12px';
+    closeBtn2.innerHTML = '🎉 Finaliser le Closing → Client ✅';
+    closeBtn2.onclick = (function(cid){ return function(){
+      finalizeClosing(cid);
+    }; })(clientId);
+    container.insertBefore(closeBtn2, container.lastChild);
+  }
+}
+
+function validateSigStep(clientId, stepIdx) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  initSigSteps(c);
+  // Vérifier que la précédente est validée
+  if (stepIdx > 0 && !c.sig_steps[stepIdx-1].done) {
+    toast('err', '⚠️ Validez l\'étape précédente d\'abord');
+    return;
+  }
+  // Vérifier qu'une offre est sélectionnée pour l'étape 0
+  if (stepIdx === 0 && !c.sig_offre_id) {
+    toast('err', '⚠️ Sélectionnez d\'abord une offre');
+    return;
+  }
+  c.sig_steps[stepIdx].done = true;
+  c.sig_steps[stepIdx].doneAt = new Date().toISOString();
+  // Copier l'offre dans le champ offres
+  if (stepIdx === 0 && c.sig_offre_id) {
+    var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
+    if (o) c.offres = o.name;
+  }
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  toast('ok', '✅ Étape validée : ' + SIG_STEPS[stepIdx].lbl);
+  renderClientModal(clientId);
+}
+
+function finalizeClosing(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  c.statut = 'Closé';
+  c.closedAt = new Date().toISOString();
+  // Init phaseRuns si vide
+  if (!c.phaseRuns || c.phaseRuns.length === 0) {
+    var o = c.sig_offre_id ? loadOffres().find(function(x){return x.id===c.sig_offre_id;}) : null;
+    var mode = o ? o.modeOffre : null;
+    var phaseKey = mode === 'transformation' ? 'reset' : mode === 'cours_collectifs' ? 'collectif' : 'action';
+    c.phaseRuns = [{ phaseKey: phaseKey, offreId: c.sig_offre_id||null, jaugeVal: 0, certified: false, startDate: new Date().toISOString().split('T')[0] }];
+    c.cycle = 1;
+    var allPh = getClientPhasesAll(c);
+    c.phases = allPh.map(function(p){ return {id:p.id, done:false, startDate:null}; });
+  }
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  syncClientToFinances(c);
+  closeModal('client');
+  renderClients();
+  toast('ok', '🎉 ' + (c.prenom||'') + ' est maintenant Client !');
+  setTimeout(function(){
+    switchClientTab('clients');
+    setTimeout(function(){ openClient(clientId); }, 300);
+  }, 500);
+}
+
+function getModeOffreLabel(mode) {
+  var labels = {action:'Action',transformation:'Transformation',cours_collectifs:'Cours Collectifs'};
+  return labels[mode] || mode || '—';
+}
+
+// ═══════════════════════════════════════════════════
+// DÉCISION BILAN : REFUS ou OK → Closing en cours
+// ═══════════════════════════════════════════════════
+function setBilanDecision(decision) {
+  var clientId = ST.clientId;
+  if (!clientId) return;
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  if (decision === 'ok') {
+    c.statut = 'Closing en cours';
+    toast('ok', '✅ Prospect passé en "Closing en cours"');
+    closeModal('client');
+    setTimeout(function(){
+      switchClientTab('prospects');
+      showPg('clients');
+      setTimeout(function(){ openClient(clientId); }, 300);
+    }, 400);
+  } else {
+    c.statut = 'Refusé';
+    toast('info', '❌ Prospect marqué comme refusé');
+  }
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  renderClients();
 }
 
 function startRun2(clientId) {
@@ -1579,18 +1955,21 @@ const PROFILS = {P1:'Je sais mais je n\'y arrive pas',P2:'Besoin d\'être guidé
 // OFFRES
 // ═══════════════════════════════════════════════════
 const OFFRES_DEFAULT = [
-  {id:'o1',name:'ACTIV RESET ONLINE',price:1350,durVal:12,durUnit:'semaines',paiement:3,test:'360',parcours:true,alaCarte:false},
-  {id:'o2',name:'ACTIV RESET HYBRIDE',price:525,durVal:12,durUnit:'semaines',paiement:2,test:'360',parcours:true,alaCarte:false},
-  {id:'o3',name:'ACTIV PROGRAM STANDARD',price:160,durVal:8,durUnit:'semaines',paiement:1,test:'90',parcours:true,alaCarte:false},
-  {id:'o_ac',name:'ACTIV CONTINUE',price:150,durVal:1,durUnit:'mois',paiement:1,test:'none',parcours:true,alaCarte:false,isAbonnement:true},
-  {id:'o4',name:'JM PASS',price:240,durVal:1,durUnit:'mois',paiement:1,test:'90',parcours:true,alaCarte:false},
-  {id:'o5',name:'JM PASS COACHING',price:250,durVal:1,durUnit:'mois',paiement:1,test:'90',parcours:true,alaCarte:false},
-  {id:'o6',name:'JM PASS COACHING+',price:240,durVal:3,durUnit:'mois',paiement:1,test:'90',parcours:true,alaCarte:false},
-  {id:'o7',name:'CARDIO MOUV PASS 4',price:45,durVal:4,durUnit:'séances',paiement:1,test:'none',parcours:true,alaCarte:false},
-  {id:'o8',name:'CARDIO MOUV PACK 10',price:130,durVal:10,durUnit:'séances',paiement:1,test:'none',parcours:true,alaCarte:false},
-  {id:'o9',name:'COACHING À LA CARTE',price:65,durVal:1,durUnit:'séance',paiement:1,test:'none',parcours:false,alaCarte:true},
-  {id:'o10',name:'CARDIO MOUV ONE SHOT',price:15,durVal:1,durUnit:'séance',paiement:1,test:'none',parcours:false,alaCarte:true},
-  {id:'o11',name:'ACTIV TRAINING',price:10,durVal:1,durUnit:'séance',paiement:1,test:'none',parcours:false,alaCarte:true}
+  // ── TRANSFORMATION ──
+  {id:'o1', name:'ACTIV RESET ONLINE',     price:1350,durVal:12,durUnit:'semaines',paiement:3,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation'},
+  {id:'o2', name:'ACTIV RESET HYBRIDE',    price:525, durVal:12,durUnit:'semaines',paiement:2,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation'},
+  {id:'o3', name:"ACTIV PROGRAM'",         price:160, durVal:8, durUnit:'semaines',paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'transformation'},
+  {id:'o_ac',name:'ACTIV CONTINUE',        price:150, durVal:1, durUnit:'mois',    paiement:1,test:'none',parcours:true,alaCarte:false,isAbonnement:true,modeOffre:'transformation'},
+  // ── ACTION ──
+  {id:'o4', name:'JM PASS',               price:240, durVal:1, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action'},
+  {id:'o5', name:'JM PASS COACHING',      price:250, durVal:1, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action'},
+  {id:'o6', name:'JM PASS COACHING+',     price:240, durVal:3, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action'},
+  {id:'o9', name:'COACHING À LA CARTE',   price:65,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'action'},
+  // ── COURS COLLECTIFS ──
+  {id:'o7', name:'CARDIO MOUV PASS 4',    price:45,  durVal:4, durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'cours_collectifs'},
+  {id:'o8', name:'CARDIO MOUV PACK 10',   price:130, durVal:10,durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'cours_collectifs'},
+  {id:'o10',name:'CARDIO MOUV ONE SHOT',  price:15,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'cours_collectifs'},
+  {id:'o11',name:'ACTIV TRAINING',        price:10,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'cours_collectifs'}
 ];
 function loadOffres() {
   try { const s=localStorage.getItem('ba_offres_v8'); if(s) return JSON.parse(s); } catch(e){}
@@ -1864,8 +2243,11 @@ function renderOffresPage() {
 
     // Badge tags
     var tags = '';
+    if (o.modeOffre === 'action')          tags += '<span class="pill pill-Y" style="font-size:9px">⚡ Action</span> ';
+    else if (o.modeOffre === 'transformation') tags += '<span class="pill pill-V" style="font-size:9px">🔄 Transformation</span> ';
+    else if (o.modeOffre === 'cours_collectifs') tags += '<span class="pill pill-B" style="font-size:9px">🎵 Cours Collectifs</span> ';
     if (o.parcours && !o.alaCarte) tags += '<span class="pill pill-G" style="font-size:9px">Parcours</span> ';
-    if (o.alaCarte) tags += '<span class="pill pill-Y" style="font-size:9px">À la carte</span> ';
+    if (o.alaCarte) tags += '<span class="pill" style="font-size:9px;background:var(--bg3);color:var(--tx3)">À la carte</span> ';
     if (o.isAbonnement) tags += '<span class="pill pill-B" style="font-size:9px">Abonnement</span> ';
     if (o.paiement > 1) tags += '<span class="pill pill-V" style="font-size:9px">'+o.paiement+'× paiement</span> ';
 
@@ -1905,6 +2287,12 @@ function renderOffresPage() {
             '<option value="abonnement"'+(o.isAbonnement?' selected':'')+'>Abonnement mensuel</option>' +
           '</select></div>' +
         '</div>' +
+        '<div class="f" style="margin-top:4px"><label>🏷️ Mode BE ACTIV</label><select id="oe_mode_'+o.id+'" onchange="saveOffreModeField(\''+o.id+'\',this.value)">' +
+          '<option value="">— Choisir le mode —</option>' +
+          '<option value="action"'+(o.modeOffre==='action'?' selected':'')+'>⚡ Action (JM Pass, Coaching à la carte…)</option>' +
+          '<option value="transformation"'+(o.modeOffre==='transformation'?' selected':'')+'>🔄 Transformation (ACTIV Program, ACTIV RESET…)</option>' +
+          '<option value="cours_collectifs"'+(o.modeOffre==='cours_collectifs'?' selected':'')+'>🎵 Cours Collectifs (Cardio Mouv, Activ Training…)</option>' +
+        '</select></div>' +
         '<button class="btn btn-bx btn-sm" onclick="toggleOffreEdit(\''+o.id+'\')" style="margin-top:10px;width:100%">✓ Fermer</button>' +
       '</div>';
 
@@ -1937,6 +2325,14 @@ function saveOffreField(id, field, val) {
     var nameEl = card.querySelector('.occ-view div div div:first-child');
     if (nameEl && field==='name') nameEl.textContent = val;
   }
+}
+
+function saveOffreModeField(id, modeVal) {
+  var offres = loadOffres();
+  var o = offres.find(function(x){return x.id===id;});
+  if (!o) return;
+  o.modeOffre = modeVal;
+  saveOffres(offres);
 }
 
 function saveOffreTypeField(id, typeVal) {
@@ -2149,6 +2545,12 @@ function showPg(name) {
   }
   if(name==='tests') renderTestsForm();
   if(name==='form-editor'){ renderSectionsEditor('bilan'); switchEditor('bilan', document.querySelector('#pg-form-editor .chip')); renderSuitesEditor(); }
+  if(name==='prospect') {
+    // Reset le formulaire prospect à chaque navigation
+    resetProspectForm();
+    // Masquer le banner décision bilan
+    var dw = document.getElementById('bilan-decision-wrap'); if(dw) dw.style.display='none';
+  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -2423,6 +2825,9 @@ async function analyzeBilan(){
     document.getElementById('bilan-result').innerHTML='<div class="ai-card" style="border-color:rgba(26,110,219,.2)"><div class="ai-title" style="color:var(--B)">🩺 Synthèse bilan coach</div>'+(r.profilTypeCodeUpdated?'<div class="pbadge" style="border-color:rgba(26,110,219,.25)"><span class="pcode" style="color:var(--B)">'+r.profilTypeCodeUpdated+'</span><span class="plabel">'+r.profilTypeLabelUpdated+'</span></div>':'')+'<div class="crow"><div><div class="cscore" style="color:var(--B)">'+r.closingPotentialUpdated+'%</div><div class="clbl">Closing actualisé</div></div><div style="margin-left:auto"><span class="pill '+rc+'">'+r.recommandationSuiteRDV+'</span></div></div><div class="ai-body" style="margin-bottom:11px">'+r.syntheseBilan+'</div>'+ab('💡 Hypothèse',r.hypotheseCoach,'B')+ab('🚀 Leviers',r.facteursLeviers,'G')+ab('⛔ Limitants',r.facteursLimitants,'R')+(r.incoherencesOuVigilances?ab('⚠️ Incohérences',r.incoherencesOuVigilances,'Y'):'')+ab('🎯 Priorités',r.prioritesCoaching,'V')+(r.offreRecommandee?'<div style="margin-top:9px;font-size:12px;color:var(--tx3)">💼 Offre recommandée : <strong style="color:var(--Y)">'+r.offreRecommandee+'</strong></div>':'')+'</div>';
     document.getElementById('bilan-result').style.display='block';
     document.getElementById('bilan-cta').style.display='block';
+    // Afficher la décision bilan si prospect connu
+    var decWrap = document.getElementById('bilan-decision-wrap');
+    if (decWrap) decWrap.style.display = ST.clientId ? 'block' : 'none';
     toast('ok','✨ Synthèse bilan générée !');
     document.getElementById('bilan-result').scrollIntoView({behavior:'smooth',block:'nearest'});
   }catch(e){toast('err','❌ '+e.message);}
@@ -2523,6 +2928,108 @@ function sendEmail(){
 // ═══════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════
+// AJOUTER PROSPECT — NOUVEAU FLUX
+// ═══════════════════════════════════════════════════
+
+var _pqNewSummary = null; // stocke le résultat IA de la pré-qualif pour le nouveau prospect
+
+function analyzePQForNewProspect() {
+  var raw = (document.getElementById('pq-new-raw').value || '').trim();
+  if (!raw) { toast('err', '⚠️ Collez les réponses Tally avant d\'analyser'); return; }
+  if (!ST.apiKey) { toast('err', '⚠️ Clé API Anthropic requise (Config)'); return; }
+  var btn = document.getElementById('btn-pq-new');
+  var ldg = document.getElementById('pq-new-loading');
+  var res = document.getElementById('pq-new-result');
+  var sumCard = document.getElementById('pq-new-summary-card');
+  if (btn) btn.disabled = true;
+  if (ldg) ldg.style.display = 'flex';
+  if (res) res.style.display = 'none';
+  fetch('/api/prequalif', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ raw: raw, apiKey: ST.apiKey })
+  }).then(function(r){ return r.json(); }).then(function(data) {
+    _pqNewSummary = data;
+    if (ldg) ldg.style.display = 'none';
+    if (btn) btn.disabled = false;
+    // Pré-remplir les champs si données extraites
+    if (data.prenom && !document.getElementById('np-prenom').value) document.getElementById('np-prenom').value = data.prenom;
+    if (data.nom && !document.getElementById('np-nom').value) document.getElementById('np-nom').value = data.nom;
+    if (data.age && !document.getElementById('np-age').value) document.getElementById('np-age').value = data.age;
+    if (data.ville && !document.getElementById('np-ville').value) document.getElementById('np-ville').value = data.ville;
+    if (data.email && !document.getElementById('np-email').value) document.getElementById('np-email').value = data.email;
+    if (data.tel && !document.getElementById('np-tel').value) document.getElementById('np-tel').value = data.tel;
+    // Afficher la synthèse IA
+    if (sumCard) {
+      sumCard.style.display = 'block';
+      var b = document.getElementById('pq-new-summary-body');
+      if (b) {
+        var profil = data.profilTypeCode ? '<div class="pbadge"><span class="pcode">'+data.profilTypeCode+'</span><span class="plabel">'+(data.profilTypeLabel||'')+'</span></div>' : '';
+        var resume = data.resumeProfil ? '<div class="ai-blk"><div class="ai-blk-t">Profil</div><div class="ai-blk-c">'+data.resumeProfil+'</div></div>' : '';
+        var potentiel = data.potentielClosing != null ? '<div class="ai-blk"><div class="ai-blk-t">Potentiel Closing</div><div class="ai-blk-c" style="font-weight:700;color:var(--G)">'+data.potentielClosing+'/10</div></div>' : '';
+        b.innerHTML = profil + resume + potentiel;
+      }
+    }
+    toast('ok', '✅ Profil analysé');
+  }).catch(function(e) {
+    if (ldg) ldg.style.display = 'none';
+    if (btn) btn.disabled = false;
+    toast('err', '❌ Erreur analyse : ' + e.message);
+  });
+}
+
+function saveNewProspect() {
+  var prenom = (document.getElementById('np-prenom').value || '').trim();
+  var nom = (document.getElementById('np-nom').value || '').trim();
+  if (!prenom) { toast('err', '⚠️ Prénom requis'); return; }
+  var prospect = {
+    id: Date.now().toString(),
+    prenom: prenom,
+    nom: nom,
+    age: document.getElementById('np-age').value || '',
+    sexe: document.getElementById('np-sexe').value || '',
+    tel: (document.getElementById('np-tel').value || '').trim(),
+    email: (document.getElementById('np-email').value || '').trim(),
+    adresse: (document.getElementById('np-adresse').value || '').trim(),
+    ville: (document.getElementById('np-ville').value || '').trim(),
+    statut: 'Non closé',
+    pq_summary: _pqNewSummary || null,
+    profil_code: _pqNewSummary ? (_pqNewSummary.profilTypeCode || '') : '',
+    profil_label: _pqNewSummary ? (_pqNewSummary.profilTypeLabel || '') : '',
+    score_global: _pqNewSummary ? (_pqNewSummary.potentielClosing || null) : null,
+    updated_at: new Date().toISOString(),
+    date: new Date().toISOString().split('T')[0]
+  };
+  ST.clients.unshift(prospect);
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(prospect);
+  // Reset form
+  ['np-prenom','np-nom','np-age','np-tel','np-email','np-adresse','np-ville'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('np-sexe').value = '';
+  document.getElementById('pq-new-raw').value = '';
+  document.getElementById('pq-new-summary-card').style.display = 'none';
+  _pqNewSummary = null;
+  renderClients();
+  toast('ok', '✅ ' + prenom + ' ' + nom + ' ajouté(e) comme prospect');
+  // Aller sur la fiche du prospect directement
+  switchClientTab('prospects');
+  showPg('clients');
+  setTimeout(function(){ openClient(prospect.id); }, 300);
+}
+
+function resetProspectForm() {
+  ['np-prenom','np-nom','np-age','np-tel','np-email','np-adresse','np-ville'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  var sel = document.getElementById('np-sexe'); if (sel) sel.value = '';
+  var ta = document.getElementById('pq-new-raw'); if (ta) ta.value = '';
+  var sc = document.getElementById('pq-new-summary-card'); if (sc) sc.style.display = 'none';
+  _pqNewSummary = null;
+}
+
+// ═══════════════════════════════════════════════════
 // CLIENT PRO / STRUCTURE
 // ═══════════════════════════════════════════════════
 function saveProClient() {
@@ -2587,8 +3094,8 @@ function saveProClient() {
   });
   document.querySelectorAll('input[name="pro-source"]').forEach(function(el){el.checked=false;});
 
-  // Sync vers App Finances (structure Pro)
-  syncClientToFinances(client);
+  // Sync vers App Finances uniquement si statut Closé
+  if (client.statut === 'Closé') syncClientToFinances(client);
   toast('ok', '✅ ' + nom + ' ajouté comme client Pro');
   showPg('clients');
   renderClients();
@@ -2735,47 +3242,79 @@ function openEditClientModal(clientId) {
 function saveClient(){
   const b=collectBilan(),r=ST.finalReport;
   if(!b.prenom&&!b.nom){toast('err','⚠️ Prénom/nom requis');return;}
-  const client={
+  // Récupérer le prospect existant pour préserver ses données (statut, sig_steps, mode_stages, etc.)
+  const existingClient = ST.clientId ? ST.clients.find(function(c){return c.id==ST.clientId;}) : null;
+  const client=Object.assign({}, existingClient||{}, {
     id:ST.clientId||Date.now().toString(),
-    prenom:b.prenom,nom:b.nom,age:b.age,ville:b.ville,profession:b.profession,
+    prenom:b.prenom||((existingClient||{}).prenom)||'',
+    nom:b.nom||((existingClient||{}).nom)||'',
+    age:b.age||((existingClient||{}).age)||'',
+    ville:b.ville||((existingClient||{}).ville)||'',
+    profession:b.profession,
     source:b.source,rdvType:b.rdvType,date:b.date,
-    profil_code:(r&&r.profilTypeCodeFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeCodeUpdated)||b.profilTypeCode||'',
+    profil_code:(r&&r.profilTypeCodeFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeCodeUpdated)||b.profilTypeCode||((existingClient||{}).profil_code)||'',
     profil_label:(r&&r.profilTypeLabelFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeLabelUpdated)||'',
-    offres:b.offres,pretPayer:b.pretPayer,montant:b.montant,objections:b.objections,
-    statut:'Non closé',score_global:r?r.scoreGlobal:null,
-    pq_summary:ST.pqSummary,bilan_summary:ST.bilanSummary,final_report:r,
+    offres:b.offres||((existingClient||{}).offres)||'',
+    pretPayer:b.pretPayer,montant:b.montant,objections:b.objections,
+    // Préserver le statut existant si le prospect est déjà en cours de closing
+    statut:((existingClient||{}).statut)||'Non closé',
+    score_global:r?r.scoreGlobal:((existingClient||{}).score_global)||null,
+    pq_summary:ST.pqSummary||((existingClient||{}).pq_summary)||null,
+    bilan_summary:ST.bilanSummary,
+    final_report:r,
     updated_at:new Date().toISOString()
-  };
+  });
   ST.clientId=client.id;
   const idx=ST.clients.findIndex(c=>c.id===client.id);
   if(idx>=0)ST.clients[idx]=client;else ST.clients.unshift(client);
   localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
   saveToSupabase(client);
-  // Sync vers App Finances dès la sauvegarde (prospect créé)
-  syncClientToFinances(client);
+  // Sync vers App Finances UNIQUEMENT si client closé (prospects restent dans BILAN CRM)
+  if (client.statut === 'Closé') syncClientToFinances(client);
   // Effacer le brouillon car client sauvegardé
   clearBilanDraft();
   toast('ok','✅ '+client.prenom+' '+client.nom+' sauvegardé');
+}
+
+function isNewClient(c) {
+  // Badge "New" pendant 72h après le closing
+  if (c.statut !== 'Closé' || !c.closedAt) return false;
+  return (Date.now() - new Date(c.closedAt).getTime()) < 72 * 60 * 60 * 1000;
 }
 
 function renderClients(){
   var srchEl=document.getElementById('srch-i');
   var srch=(srchEl?srchEl.value:'').toLowerCase();
   var isProspectTab=currentClientTab==='prospects';
-  var prospectStatuts=['Non closé','À relancer','Refusé',''];
+  // Prospects = tout sauf 'Closé'
+  var prospectStatuts=['Non closé','Closing en cours','À relancer','Refusé',''];
   var list=ST.clients.filter(function(c){
     var ms=!srch||((c.prenom||'')+' '+(c.nom||'')+' '+(c.ville||'')+' '+(c.structureName||'')).toLowerCase().includes(srch);
     var mv=ST.filterStatut==='all'||c.statut===ST.filterStatut;
     var tabMatch=isProspectTab?(!c.statut||prospectStatuts.includes(c.statut)):(c.statut==='Closé');
     return ms&&mv&&tabMatch;
   });
-  if(!list.length){document.getElementById('clients-list').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun client</div><div class="empty-s">Créez votre premier dossier.</div></div>';return;}
-  const sp={'Closé':'pill-G','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R'};
-  document.getElementById('clients-list').innerHTML=list.map(c=>{
+  if(!list.length){document.getElementById('clients-list').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun contact</div><div class="empty-s">'+(isProspectTab?'Ajoutez votre premier prospect.':'Aucun client closé.')+'</div></div>';return;}
+  const sp={'Closé':'pill-G','Non closé':'pill-B','Closing en cours':'pill-Y','À relancer':'pill-Y','Refusé':'pill-R'};
+  document.getElementById('clients-list').innerHTML=list.map(function(c){
     var init = c.isPro ? '🏢' : ((c.prenom||'?')[0]+(c.nom||'?')[0]).toUpperCase();
-    var displayName = c.isPro ? (c.structureName || c.prenom+' '+c.nom) : (c.prenom||'')+' '+(c.nom||'');
-    const dt=c.updated_at?new Date(c.updated_at).toLocaleDateString('fr-FR'):'';
-    return'<div class="ccrd" onclick="openClient(\''+c.id+'\')"><div class="cav">'+init+'</div><div class="cinfo"><div class="cname">'+c.prenom+' '+c.nom+'</div><div class="cmeta">'+(c.ville||'—')+' · '+((c.offres||'').split(',')[0].trim()||'—')+' · '+dt+'</div></div><div class="cbadges">'+(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')+(c.statut?'<span class="pill '+(sp[c.statut]||'')+'" style="font-size:10px">'+c.statut+'</span>':'')+(c.score_global!=null?'<span style="font-size:11px;color:var(--tx3)">★ '+c.score_global+'</span>':'')+'</div></div>';
+    var isClosing = c.statut === 'Closing en cours';
+    var isNew = isNewClient(c);
+    var dt=c.updated_at?new Date(c.updated_at).toLocaleDateString('fr-FR'):'';
+    var offreTxt = ((c.offres||'').split(',')[0].trim()||'—');
+    var statPill = c.statut ? '<span class="pill '+(sp[c.statut]||'')+'" style="font-size:10px'+(isClosing?';animation:pulse-y 2s ease-in-out infinite':'')+'">'+(isNew?'🆕 ':'')+c.statut+'</span>' : '';
+    var newBadge = isNew ? '<span class="badge-new">New</span>' : '';
+    var closingBadge = isClosing ? '<span class="badge-closing">Closing</span>' : '';
+    return '<div class="ccrd" onclick="openClient(\''+c.id+'\')" style="'+(isNew?'animation:slide-in-new 2s ease-out':isClosing?'border-color:rgba(200,130,10,.4)':'')+'">'
+      +'<div class="cav" style="'+(isClosing?'background:var(--Y)':isNew?'background:var(--G)':'')+'">'+init+'</div>'
+      +'<div class="cinfo"><div class="cname">'+(c.prenom||'')+' '+(c.nom||'')+'</div>'
+      +'<div class="cmeta">'+(c.ville||'—')+' · '+offreTxt+' · '+dt+'</div></div>'
+      +'<div class="cbadges">'
+        +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
+        + newBadge + closingBadge
+        + ((!isNew&&!isClosing)?(c.statut?statPill:''):'')
+        +(c.score_global!=null?'<span style="font-size:11px;color:var(--tx3)">★ '+c.score_global+'</span>':'')
+      +'</div></div>';
   }).join('');
 }
 
@@ -2788,6 +3327,7 @@ function openClient(id) {
   ST.finalReport = c.final_report;
   try {
     renderClientModal(id);
+    openModal('client');
   } catch(e) {
     toast('err', 'Erreur: ' + e.message);
     console.error('renderClientModal error:', e);
@@ -2907,6 +3447,271 @@ function getClientPhasesAll(c) {
 }
 
 
+// ═══════════════════════════════════════════════════
+// STAGES PAR MODE D'OFFRE — Accordéons séquentiels
+// ═══════════════════════════════════════════════════
+var MODE_STAGE_DEFS = {
+  action: [
+    {id:'rapport', lbl:'1er RAPPORT', ico:'📊', steps:[
+      {id:'tests',lbl:'Tests physiques'},
+      {id:'rapport_complet',lbl:'Rapport complet (Pré-qualif + Bilan + Tests)'},
+      {id:'done',lbl:'Terminée ✅',isFinal:true}
+    ]},
+    {id:'demarrage', lbl:'DÉMARRAGE', ico:'🚀', steps:[
+      {id:'premiere_seance',lbl:'1ère séance'},
+      {id:'done',lbl:'Terminée ✅',isFinal:true}
+    ]}
+  ],
+  transformation: [
+    {id:'rapport', lbl:'1er RAPPORT', ico:'📊', steps:[
+      {id:'tests',lbl:'Tests physiques'},
+      {id:'rapport_complet',lbl:'Rapport complet (Pré-qualif + Bilan + Tests)'},
+      {id:'done',lbl:'Terminée ✅',isFinal:true}
+    ]},
+    {id:'onboarding', lbl:'ONBOARDING', ico:'🚀', steps:[
+      {id:'acces_app',lbl:'Accès App Coaching'},
+      {id:'packaging',lbl:'Packaging Program délivré'},
+      {id:'seance_videos',lbl:'Séance & Vidéos explicatives'},
+      {id:'feu_vert',lbl:'Feu Vert'},
+      {id:'done',lbl:'Terminée ✅',isFinal:true}
+    ]},
+    {id:'activ_reset', lbl:'ACTIV RESET', ico:'🔴', steps:[
+      {id:'go',lbl:'GO !'},
+      {id:'fondations',lbl:'Fondations'},
+      {id:'optimisation',lbl:'Optimisation'},
+      {id:'maintien',lbl:'Maintien'},
+      {id:'liberte',lbl:'Liberté'},
+      {id:'test_maj',lbl:'Test MAJ'},
+      {id:'certification',lbl:'Certification'},
+      {id:'done',lbl:'ACTIV RESET VALIDÉE ✅',isFinal:true}
+    ]}
+  ],
+  cours_collectifs: [
+    {id:'demarrage', lbl:'DÉMARRAGE', ico:'🎵', steps:[
+      {id:'premiere_seance',lbl:'1ère séance'},
+      {id:'done',lbl:'Terminée ✅',isFinal:true}
+    ]}
+  ]
+};
+// ACTIV CONTINUE stages (ajoutées dynamiquement)
+var ACTIV_CONTINUE_STAGES = {
+  reset:  {id:'activ_continue_reset',  lbl:'ACTIV CONTINUE — RESET',  ico:'🔴♾️', steps:[{id:'go',lbl:'GO'},{id:'optimisation',lbl:'Optimisation'},{id:'maintien',lbl:'Maintien'},{id:'optimisation2',lbl:'Optimisation'},{id:'maintien2',lbl:'Maintien'},{id:'done',lbl:'VALIDÉE ✅',isFinal:true}]},
+  sculpt: {id:'activ_continue_sculpt', lbl:'ACTIV CONTINUE — SCULPT', ico:'🟡♾️', steps:[{id:'test_maj',lbl:'Test (MAJ)'},{id:'go',lbl:'GO'},{id:'optimisation',lbl:'Optimisation'},{id:'done',lbl:'VALIDÉE ✅',isFinal:true}]},
+  health: {id:'activ_continue_health', lbl:'ACTIV CONTINUE — HEALTH', ico:'🟢♾️', steps:[{id:'test_maj',lbl:'Test (MAJ)'},{id:'go',lbl:'GO'},{id:'optimisation',lbl:'Optimisation'},{id:'done',lbl:'VALIDÉE ✅',isFinal:true}]}
+};
+
+function initModeStages(c, stagesDef) {
+  if (!c.mode_stages) c.mode_stages = [];
+  stagesDef.forEach(function(stageDef, si){
+    if (!c.mode_stages[si]) {
+      c.mode_stages[si] = {id:stageDef.id, steps:stageDef.steps.map(function(s){return {id:s.id,done:false,doneAt:null};})};
+    }
+  });
+}
+
+function getActiveStageDefs(c) {
+  var mode = null;
+  if (c.sig_offre_id) {
+    var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
+    if (o) mode = o.modeOffre;
+  }
+  // Fallback sur le premier phaseRun si pas de sig_offre_id
+  if (!mode && c.phaseRuns && c.phaseRuns[0] && c.phaseRuns[0].offreId) {
+    var o2 = loadOffres().find(function(x){return x.id===c.phaseRuns[0].offreId;});
+    if (o2) mode = o2.modeOffre;
+  }
+  var baseDefs = MODE_STAGE_DEFS[mode] || MODE_STAGE_DEFS['action'];
+  // Ajouter les ACTIV CONTINUE si présents
+  var continueDefs = (c.activ_continue_stages || []).map(function(key){return ACTIV_CONTINUE_STAGES[key];}).filter(Boolean);
+  return baseDefs.concat(continueDefs);
+}
+
+function renderModeStages(clientId, c, container) {
+  var stagesDef = getActiveStageDefs(c);
+  initModeStages(c, stagesDef);
+  var lastDoneStage = -1;
+  stagesDef.forEach(function(sd, si){
+    var stageData = c.mode_stages[si] || {steps:[]};
+    var allDone = stageData.steps.every(function(s){return s.done;});
+    if (allDone) lastDoneStage = si;
+  });
+  var activeStageIdx = lastDoneStage + 1;
+  if (activeStageIdx >= stagesDef.length) activeStageIdx = stagesDef.length - 1;
+
+  stagesDef.forEach(function(stageDef, si){
+    var stageData = c.mode_stages[si] || {steps:[]};
+    var isActive = si === activeStageIdx;
+    var isPast = si < activeStageIdx;
+    var isFuture = si > activeStageIdx;
+    var allDone = stageData.steps.every(function(s){return s.done;}) && stageData.steps.length > 0;
+    var doneCnt = stageData.steps.filter(function(s){return s.done;}).length;
+
+    var acc = document.createElement('div');
+    acc.style.cssText = 'background:var(--bg2);border:1.5px solid '+(isActive?'var(--bx)':isPast?'rgba(0,163,98,.3)':'var(--rim3)')+';border-radius:var(--r2);margin-bottom:10px;overflow:hidden';
+
+    var hd = document.createElement('div');
+    hd.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;'+(isActive?'background:rgba(139,21,32,.04)':isPast?'background:rgba(0,163,98,.04)':'');
+    hd.onclick = (function(a){ return function(){
+      var b = a.querySelector('.stage-body');
+      if (b) b.style.display = b.style.display==='none'?'block':'none';
+    }; })(acc);
+
+    var statusBadge = isPast ? '<span style="font-size:9px;background:var(--G);color:#fff;padding:2px 6px;border-radius:50px;margin-left:6px">✓</span>'
+      : isActive ? '<span style="font-size:9px;background:var(--bx);color:#fff;padding:2px 6px;border-radius:50px;margin-left:6px">EN COURS</span>'
+      : '<span style="font-size:9px;background:var(--bg3);color:var(--tx4);padding:2px 6px;border-radius:50px;margin-left:6px">🔒</span>';
+
+    var pct = stageData.steps.length > 0 ? Math.round(doneCnt/stageData.steps.length*100) : 0;
+    var pbar = '<div style="height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:4px"><div style="height:100%;width:'+pct+'%;background:'+(isPast?'var(--G)':'var(--bx)')+';border-radius:2px;transition:width .3s"></div></div>';
+
+    hd.innerHTML = '<span style="font-size:20px">'+stageDef.ico+'</span>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-weight:700;font-size:13.5px;color:'+(isActive?'var(--bx)':isPast?'var(--G)':'var(--tx4)')+'">ÉTAPE : '+stageDef.lbl+statusBadge+'</div>'
+      + '<div style="font-size:11px;color:var(--tx3);margin-top:1px">'+doneCnt+'/'+stageData.steps.length+' étapes</div>'
+      + pbar + '</div>'
+      + '<span style="color:var(--tx4);font-size:11px">'+(isActive||isPast?'▼':'▶')+'</span>';
+    acc.appendChild(hd);
+
+    // Body (visible si actif ou passé; masqué si futur ou passé)
+    var body = document.createElement('div');
+    body.className = 'stage-body';
+    body.style.cssText = 'padding:12px 14px;border-top:1px solid var(--rim3);display:'+(isPast?'none':isActive?'block':'none');
+
+    if (isFuture) {
+      body.innerHTML = '<div style="font-size:13px;color:var(--tx4);text-align:center;padding:8px 0">🔒 Déverrouillez l\'étape précédente d\'abord</div>';
+    } else {
+      stageDef.steps.forEach(function(step, stepIdx){
+        var st = stageData.steps[stepIdx] || {done:false, doneAt:null};
+        var prevDone = stepIdx === 0 || (stageData.steps[stepIdx-1] && stageData.steps[stepIdx-1].done);
+        var isLocked = isFuture || (!prevDone && !st.done);
+        var row = document.createElement('div'); row.className = 'sig-step';
+        var chk = document.createElement('div');
+        chk.className = 'sig-check' + (st.done?' done':isLocked?' locked':'');
+        var lbl = document.createElement('div');
+        lbl.className = 'sig-lbl' + (st.done?' done':isLocked?' locked':'');
+        lbl.innerHTML = step.lbl + (step.isFinal ? '' : '');
+        if (!st.done && !isLocked && isActive) {
+          chk.style.cursor = 'pointer';
+          chk.onclick = (function(cid, sIdx, stIdx){ return function(){
+            validateModeStep(cid, sIdx, stIdx);
+          }; })(clientId, si, stepIdx);
+        }
+        row.appendChild(chk);
+        row.appendChild(lbl);
+        if (st.done && st.doneAt) {
+          var ts = document.createElement('div');
+          ts.style.cssText = 'font-size:10px;color:var(--tx4);white-space:nowrap';
+          ts.textContent = new Date(st.doneAt).toLocaleDateString('fr-FR');
+          row.appendChild(ts);
+        }
+        body.appendChild(row);
+      });
+    }
+    acc.appendChild(body);
+    container.appendChild(acc);
+  });
+
+  // Boutons de fin / continuation
+  var allStagesDone = stagesDef.every(function(sd, si){
+    return c.mode_stages[si] && c.mode_stages[si].steps.every(function(s){return s.done;});
+  });
+
+  if (allStagesDone) {
+    var mode = null;
+    if (c.sig_offre_id) { var oo=loadOffres().find(function(x){return x.id===c.sig_offre_id;}); if(oo) mode=oo.modeOffre; }
+    var endDiv = document.createElement('div');
+    endDiv.style.cssText = 'padding:14px;background:rgba(0,163,98,.06);border:1.5px solid rgba(0,163,98,.25);border-radius:var(--r2);margin-bottom:12px;text-align:center';
+    endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">🏁 Parcours terminé !</div>';
+    // Bouton Nouvelle offre
+    var newBtn = document.createElement('button');
+    newBtn.className = 'btn btn-bx btn-sm'; newBtn.style.margin = '4px';
+    newBtn.innerHTML = '💼 Nouvelle offre';
+    newBtn.onclick = (function(cid){ return function(){ openNewOffreForClient(cid); }; })(clientId);
+    endDiv.appendChild(newBtn);
+    // Pour Transformation : boutons ACTIV CONTINUE
+    if (mode === 'transformation') {
+      ['reset','sculpt','health'].forEach(function(key){
+        var contBtn = document.createElement('button');
+        contBtn.className = 'btn btn-dk btn-sm'; contBtn.style.margin = '4px';
+        contBtn.innerHTML = '⏺ ACTIV CONTINUE — '+key.toUpperCase();
+        contBtn.onclick = (function(cid, k){ return function(){ addActivContinue(cid, k); }; })(clientId, key);
+        endDiv.appendChild(contBtn);
+      });
+    }
+    // Bouton Relancer (Action)
+    if (mode === 'action') {
+      var relBtn = document.createElement('button');
+      relBtn.className = 'btn btn-dk btn-sm'; relBtn.style.margin = '4px';
+      relBtn.innerHTML = '⏺ Relancer l\'étape';
+      relBtn.onclick = (function(cid){ return function(){ relancerEtapeAction(cid); }; })(clientId);
+      endDiv.appendChild(relBtn);
+    }
+    container.appendChild(endDiv);
+  }
+}
+
+function validateModeStep(clientId, stageIdx, stepIdx) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  var stagesDef = getActiveStageDefs(c);
+  initModeStages(c, stagesDef);
+  if (stepIdx > 0 && !c.mode_stages[stageIdx].steps[stepIdx-1].done) {
+    toast('err', '⚠️ Validez l\'étape précédente d\'abord'); return;
+  }
+  c.mode_stages[stageIdx].steps[stepIdx].done = true;
+  c.mode_stages[stageIdx].steps[stepIdx].doneAt = new Date().toISOString();
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  toast('ok', '✅ ' + stagesDef[stageIdx].steps[stepIdx].lbl);
+  renderClientModal(clientId);
+}
+
+function addActivContinue(clientId, key) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  if (!c.activ_continue_stages) c.activ_continue_stages = [];
+  if (c.activ_continue_stages.indexOf(key) === -1) c.activ_continue_stages.push(key);
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  toast('ok', '⏺ ACTIV CONTINUE — ' + key.toUpperCase() + ' démarré');
+  renderClientModal(clientId);
+}
+
+function relancerEtapeAction(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  // Reset la dernière étape DÉMARRAGE
+  var stagesDef = getActiveStageDefs(c);
+  initModeStages(c, stagesDef);
+  var lastStageIdx = stagesDef.length - 1;
+  c.mode_stages[lastStageIdx].steps.forEach(function(s){ s.done = false; s.doneAt = null; });
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  toast('info', '⏺ Étape relancée');
+  renderClientModal(clientId);
+}
+
+function openNewOffreForClient(clientId) {
+  // Ouvre le modal SIGNATURE pour une nouvelle offre
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  // Reset sig_steps et mode_stages pour une nouvelle offre
+  c.sig_steps = null;
+  c.sig_offre_id = null;
+  c.mode_stages = null;
+  c.activ_continue_stages = [];
+  c.statut = 'Closing en cours';
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  renderClients();
+  closeModal('client');
+  setTimeout(function(){ switchClientTab('prospects'); showPg('clients'); setTimeout(function(){ openClient(clientId); }, 300); }, 400);
+  toast('info', '💼 Démarrez une nouvelle signature pour ' + (c.prenom||''));
+}
+
 function renderClientModal(id) {
   var c = ST.clients.find(function(x){ return x.id == id; });
   if (!c) return;
@@ -2918,7 +3723,7 @@ function renderClientModal(id) {
   // PRO
   if (c.isPro) { renderProClientModal(id, c, container); openModal('client'); return; }
 
-  // PROSPECT
+  // PROSPECT (y compris "Closing en cours")
   if (c.statut !== 'Closé') { renderProspectModal(id, c, container); openModal('client'); return; }
 
   // ── Titre
@@ -2934,13 +3739,31 @@ function renderClientModal(id) {
   // ── Pills
   var pills = document.createElement('div');
   pills.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px';
-  var certCount = (c.phaseRuns||[]).filter(function(r){ return r.certified; }).length;
-  pills.innerHTML = '<span class="pill pill-G">Closé</span>'
-    + (certCount>0 ? '<span class="pill pill-bx">'+certCount+' certif'+(certCount>1?'s':'')+'</span>' : '')
+  var isNew = isNewClient(c);
+  var offreMode = null;
+  if (c.sig_offre_id) { var _o=loadOffres().find(function(x){return x.id===c.sig_offre_id;}); if(_o) offreMode=_o.modeOffre; }
+  pills.innerHTML = '<span class="pill pill-G">'+(isNew?'🆕 ':'')+'Closé'+(isNew?' · New':'')+'</span>'
+    + (offreMode ? '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(offreMode)+'</span>' : '')
+    + (c.offres ? '<span class="pill pill-Y" style="font-size:10px">'+c.offres.split(',')[0].trim()+'</span>' : '')
     + (c.profil_code && c.profil_code!=='PRO' ? '<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.profil_code+'</span>' : '');
   container.appendChild(pills);
 
-  // ── Init phaseRuns
+  // ── Boutons d'action client
+  var clientActions = document.createElement('div');
+  clientActions.style.cssText = 'display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap';
+  clientActions.innerHTML = '<button class="btn btn-dk btn-sm" onclick="openEditClientModal(\''+id+'\')">✏️ Modifier</button>'
+    + '<button class="btn btn-dk btn-sm" onclick="openNewOffreForClient(\''+id+'\')">💼 Nouvelle offre</button>'
+    + '<button class="btn btn-R btn-sm" onclick="deleteClient(\''+id+'\')">🗑 Supprimer</button>';
+  container.appendChild(clientActions);
+
+  // ── Accordéons étapes par mode d'offre (nouveau système)
+  if (c.sig_offre_id || offreMode) {
+    renderModeStages(id, c, container);
+    openModal('client');
+    return; // Nouveau système uniquement
+  }
+
+  // ── Init phaseRuns (ancien système pour rétro-compatibilité)
   if (!c.phaseRuns || c.phaseRuns.length === 0) {
     c.phaseRuns = [{phaseKey:'run1', offreId:null, jaugeVal:0, certified:false}];
   }
