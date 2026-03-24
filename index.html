@@ -1410,14 +1410,26 @@ function startBilanForProspect(clientId) {
     if (document.getElementById('b-age')) document.getElementById('b-age').value = c.age || '';
     if (document.getElementById('b-ville')) document.getElementById('b-ville').value = c.ville || '';
     if (document.getElementById('b-prof')) document.getElementById('b-prof').value = c.profession || '';
-  }, 80);
+    // Masquer les champs déjà connus (nom, prénom, âge, ville) — les infos de base sont prises au prospect
+    ['b-pn','b-nn','b-age','b-ville'].forEach(function(fid){
+      var el = document.getElementById(fid);
+      if (el) { var row = el.closest('.f'); if (row) row.style.display = 'none'; }
+    });
+    // Afficher le titre de section identification masqué si tous champs masqués
+    // Scroller vers le champ Profession qui est le point de départ
+    var profEl = document.getElementById('b-prof');
+    if (profEl) {
+      var profRow = profEl.closest('.f');
+      if (profRow) setTimeout(function(){ profRow.scrollIntoView({behavior:'smooth',block:'start'}); }, 200);
+    }
+  }, 120);
   // Marquer pré-qualif comme faite si pq_summary existe
   if (ST.pqSummary) {
     document.getElementById('s1') && document.getElementById('s1').classList.replace('act','done');
     document.getElementById('b-s1') && document.getElementById('b-s1').classList.replace('act','done');
   }
   showPg('bilan');
-  toast('info', '📋 Bilan pour ' + (c.prenom||'') + ' ' + (c.nom||''));
+  toast('info', '📋 Bilan — ' + (c.prenom||'') + ' ' + (c.nom||'') + ' · Commencez à Profession');
 }
 
 // ═══════════════════════════════════════════════════
@@ -1580,16 +1592,6 @@ function finalizeClosing(clientId) {
   if (!c) return;
   c.statut = 'Closé';
   c.closedAt = new Date().toISOString();
-  // Init phaseRuns si vide
-  if (!c.phaseRuns || c.phaseRuns.length === 0) {
-    var o = c.sig_offre_id ? loadOffres().find(function(x){return x.id===c.sig_offre_id;}) : null;
-    var mode = o ? o.modeOffre : null;
-    var phaseKey = mode === 'transformation' ? 'reset' : mode === 'cours_collectifs' ? 'collectif' : 'action';
-    c.phaseRuns = [{ phaseKey: phaseKey, offreId: c.sig_offre_id||null, jaugeVal: 0, certified: false, startDate: new Date().toISOString().split('T')[0] }];
-    c.cycle = 1;
-    var allPh = getClientPhasesAll(c);
-    c.phases = allPh.map(function(p){ return {id:p.id, done:false, startDate:null}; });
-  }
   c.updated_at = new Date().toISOString();
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
@@ -3610,41 +3612,87 @@ function renderModeStages(clientId, c, container) {
     container.appendChild(acc);
   });
 
-  // Boutons de fin / continuation
-  var allStagesDone = stagesDef.every(function(sd, si){
-    return c.mode_stages[si] && c.mode_stages[si].steps.every(function(s){return s.done;});
-  });
+  // ── Boutons de continuation après le dernier stage validé
+  var mode = null;
+  if (c.sig_offre_id) { var ooM=loadOffres().find(function(x){return x.id===c.sig_offre_id;}); if(ooM) mode=ooM.modeOffre; }
 
-  if (allStagesDone) {
-    var mode = null;
-    if (c.sig_offre_id) { var oo=loadOffres().find(function(x){return x.id===c.sig_offre_id;}); if(oo) mode=oo.modeOffre; }
+  // Trouver le dernier stage complété qui est le stage courant actif
+  var lastCompletedStageDef = lastDoneStage >= 0 ? stagesDef[lastDoneStage] : null;
+  var lastCompletedData = lastDoneStage >= 0 ? (c.mode_stages[lastDoneStage] || {steps:[]}) : null;
+  var lastCompletedStageDone = lastCompletedData && lastCompletedData.steps.length > 0 && lastCompletedData.steps.every(function(s){return s.done;});
+
+  if (lastCompletedStageDone && lastCompletedStageDef) {
     var endDiv = document.createElement('div');
     endDiv.style.cssText = 'padding:14px;background:rgba(0,163,98,.06);border:1.5px solid rgba(0,163,98,.25);border-radius:var(--r2);margin-bottom:12px;text-align:center';
-    endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">🏁 Parcours terminé !</div>';
-    // Bouton Nouvelle offre
-    var newBtn = document.createElement('button');
-    newBtn.className = 'btn btn-bx btn-sm'; newBtn.style.margin = '4px';
-    newBtn.innerHTML = '💼 Nouvelle offre';
-    newBtn.onclick = (function(cid){ return function(){ openNewOffreForClient(cid); }; })(clientId);
-    endDiv.appendChild(newBtn);
-    // Pour Transformation : boutons ACTIV CONTINUE
-    if (mode === 'transformation') {
-      ['reset','sculpt','health'].forEach(function(key){
-        var contBtn = document.createElement('button');
-        contBtn.className = 'btn btn-dk btn-sm'; contBtn.style.margin = '4px';
-        contBtn.innerHTML = '⏺ ACTIV CONTINUE — '+key.toUpperCase();
-        contBtn.onclick = (function(cid, k){ return function(){ addActivContinue(cid, k); }; })(clientId, key);
-        endDiv.appendChild(contBtn);
-      });
+
+    function mkBtn(cls, ico, lbl, fn) {
+      var b = document.createElement('button');
+      b.className = cls + ' btn-sm'; b.style.margin = '4px';
+      b.innerHTML = ico + ' ' + lbl;
+      b.onclick = fn;
+      return b;
     }
-    // Bouton Relancer (Action)
-    if (mode === 'action') {
-      var relBtn = document.createElement('button');
-      relBtn.className = 'btn btn-dk btn-sm'; relBtn.style.margin = '4px';
-      relBtn.innerHTML = '⏺ Relancer l\'étape';
-      relBtn.onclick = (function(cid){ return function(){ relancerEtapeAction(cid); }; })(clientId);
-      endDiv.appendChild(relBtn);
+
+    var sid = lastCompletedStageDef.id;
+
+    if (sid === 'activ_reset') {
+      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">✅ ACTIV RESET VALIDÉE !</div>';
+      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
+      endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — RESET',  function(){ addActivContinue(clientId,'reset'); }));
+      endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — SCULPT', function(){ addActivContinue(clientId,'sculpt'); }));
+      endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — HEALTH', function(){ addActivContinue(clientId,'health'); }));
+
+    } else if (sid === 'activ_continue_reset') {
+      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">✅ ACTIV CONTINUE RESET VALIDÉE !</div>';
+      endDiv.appendChild(mkBtn('btn btn-dk', '🔂', 'Relancer',               function(){ relancerActivContinueStage(clientId,'reset'); }));
+      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre',         function(){ openNewOffreForClient(clientId); }));
+      endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — SCULPT',function(){ addActivContinue(clientId,'sculpt'); }));
+
+    } else if (sid === 'activ_continue_sculpt') {
+      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">✅ ACTIV CONTINUE SCULPT VALIDÉE !</div>';
+      // Option certification (disponible 3 mois après activation)
+      var startDt = lastCompletedData.steps[0] && lastCompletedData.steps[0].doneAt ? new Date(lastCompletedData.steps[0].doneAt) : null;
+      var certAvail = startDt && (new Date() - startDt) >= 90*24*3600*1000;
+      if (certAvail && !lastCompletedData.certified) {
+        endDiv.innerHTML += '<div style="font-size:11px;color:var(--Y);margin-bottom:8px">🏆 Certification ACTIV SCULPT disponible !</div>';
+        endDiv.appendChild(mkBtn('btn btn-Y', '🏆', 'Certifier ACTIV SCULPT', function(){ certifyActivContinue(clientId,lastDoneStage,'sculpt'); }));
+      } else if (!certAvail && startDt) {
+        var daysLeft = Math.ceil((90*24*3600*1000 - (new Date()-startDt))/(24*3600*1000));
+        endDiv.innerHTML += '<div style="font-size:11px;color:var(--tx4);margin-bottom:8px">🏆 Certification dans '+ daysLeft +' jours</div>';
+      }
+      endDiv.appendChild(mkBtn('btn btn-dk', '🔂', 'Relancer',               function(){ relancerActivContinueStage(clientId,'sculpt'); }));
+      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre',         function(){ openNewOffreForClient(clientId); }));
+      endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — HEALTH',function(){ addActivContinue(clientId,'health'); }));
+
+    } else if (sid === 'activ_continue_health') {
+      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">✅ ACTIV CONTINUE HEALTH VALIDÉE !</div>';
+      var startDtH = lastCompletedData.steps[0] && lastCompletedData.steps[0].doneAt ? new Date(lastCompletedData.steps[0].doneAt) : null;
+      var certAvailH = startDtH && (new Date() - startDtH) >= 90*24*3600*1000;
+      if (certAvailH && !lastCompletedData.certified) {
+        endDiv.innerHTML += '<div style="font-size:11px;color:var(--Y);margin-bottom:8px">🏆 Certification ACTIV HEALTH disponible !</div>';
+        endDiv.appendChild(mkBtn('btn btn-Y', '🏆', 'Certifier ACTIV HEALTH', function(){ certifyActivContinue(clientId,lastDoneStage,'health'); }));
+      } else if (!certAvailH && startDtH) {
+        var daysLeftH = Math.ceil((90*24*3600*1000 - (new Date()-startDtH))/(24*3600*1000));
+        endDiv.innerHTML += '<div style="font-size:11px;color:var(--tx4);margin-bottom:8px">🏆 Certification dans '+ daysLeftH +' jours</div>';
+      }
+      endDiv.appendChild(mkBtn('btn btn-dk', '🔂', 'Relancer',               function(){ relancerActivContinueStage(clientId,'health'); }));
+      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre',         function(){ openNewOffreForClient(clientId); }));
+
+    } else if (mode === 'action') {
+      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">🏁 Parcours terminé !</div>';
+      endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'Relancer l\'étape', function(){ relancerEtapeAction(clientId); }));
+      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre',   function(){ openNewOffreForClient(clientId); }));
+
+    } else if (mode === 'cours_collectifs') {
+      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">🏁 Parcours terminé !</div>';
+      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
+
+    } else {
+      // Transformation — dernier stage avant ACTIV CONTINUE (onboarding, rapport, etc.)
+      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">✅ Étape validée !</div>';
+      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
     }
+
     container.appendChild(endDiv);
   }
 }
@@ -3690,6 +3738,35 @@ function relancerEtapeAction(clientId) {
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
   toast('info', '⏺ Étape relancée');
+  renderClientModal(clientId);
+}
+
+function relancerActivContinueStage(clientId, key) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  var stagesDef = getActiveStageDefs(c);
+  initModeStages(c, stagesDef);
+  var stageIdx = -1;
+  stagesDef.forEach(function(sd, si){ if (sd.id === 'activ_continue_' + key) stageIdx = si; });
+  if (stageIdx < 0) return;
+  c.mode_stages[stageIdx].steps.forEach(function(s){ s.done = false; s.doneAt = null; });
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  toast('info', '🔂 ACTIV CONTINUE ' + key.toUpperCase() + ' relancée');
+  renderClientModal(clientId);
+}
+
+function certifyActivContinue(clientId, stageIdx, type) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  if (!c.mode_stages[stageIdx]) return;
+  c.mode_stages[stageIdx].certified = true;
+  c.mode_stages[stageIdx].certifiedAt = new Date().toISOString();
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  toast('ok', '🏆 Certification ACTIV ' + type.toUpperCase() + ' validée !');
   renderClientModal(clientId);
 }
 
@@ -3763,195 +3840,13 @@ function renderClientModal(id) {
     return; // Nouveau système uniquement
   }
 
-  // ── Init phaseRuns (ancien système pour rétro-compatibilité)
-  if (!c.phaseRuns || c.phaseRuns.length === 0) {
-    c.phaseRuns = [{phaseKey:'run1', offreId:null, jaugeVal:0, certified:false}];
-  }
-
-  var allPhases = getClientPhasesAll(c);
-  if (!c.phases) c.phases = [];
-  while (c.phases.length < allPhases.length) {
-    c.phases.push({id:allPhases[c.phases.length].id, done:false, startDate:null});
-  }
-
-  var currentRunIdx = c.phaseRuns.length - 1;
-
-  // ── Afficher chaque run
-  c.phaseRuns.forEach(function(run, ri) {
-    var isCurrentRun = (ri === currentRunIdx);
-    var runPhases = allPhases.filter(function(p){ return p.runIdx === ri; });
-    var phaseOffset = allPhases.filter(function(p){ return p.runIdx < ri; }).length;
-    var doneCnt = runPhases.filter(function(p, i){ return c.phases[phaseOffset+i] && c.phases[phaseOffset+i].done; }).length;
-    var pct = runPhases.length > 0 ? Math.round(doneCnt/runPhases.length*100) : 0;
-    var allDone = doneCnt === runPhases.length && runPhases.length > 0;
-
-    var offres = loadOffres();
-    var runOffre = run.offreId ? offres.find(function(o){ return o.id===run.offreId; }) : null;
-    var runLabel = ri===0 ? 'RDV Bilan' : ('Run '+(ri+1)+' — '+(runOffre ? runOffre.name : 'Programme'));
-    var runIco = ri===0 ? '📅' : (runOffre && !runOffre.parcours ? '💼' : '🔴');
-
-    // Accordéon
-    var acc = document.createElement('div');
-    acc.style.cssText = 'background:var(--bg2);border:1.5px solid '+(isCurrentRun?'var(--bx)':'var(--rim3)')+';border-radius:var(--r2);margin-bottom:10px;overflow:hidden';
-
-    // Header
-    var hd = document.createElement('div');
-    hd.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;'+(isCurrentRun?'background:rgba(139,21,32,.04)':'');
-    hd.onclick = (function(a){ return function(){
-      var b = a.querySelector('.run-body');
-      b.style.display = b.style.display==='none'?'block':'none';
-    }; })(acc);
-
-    var pbar = '<div style="height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:4px"><div style="height:100%;width:'+pct+'%;background:'+(allDone?'var(--G)':'var(--bx)')+';border-radius:2px;transition:width .3s"></div></div>';
-    hd.innerHTML = '<span style="font-size:18px">'+runIco+'</span>'
-      + '<div style="flex:1;min-width:0">'
-      + '<div style="font-weight:700;font-size:13.5px;color:'+(isCurrentRun?'var(--bx)':'var(--tx)')+'">'+runLabel
-      + (isCurrentRun?'<span style="font-size:9px;background:var(--bx);color:#fff;padding:2px 6px;border-radius:50px;margin-left:6px">EN COURS</span>':'')
-      + (allDone&&!isCurrentRun?'<span style="font-size:9px;background:var(--G);color:#fff;padding:2px 6px;border-radius:50px;margin-left:6px">✓</span>':'')
-      + '</div>'
-      + '<div style="font-size:11px;color:var(--tx3);margin-top:1px">'+(ri===0?'Entrée client · ':'')+doneCnt+'/'+runPhases.length+' étapes'+(runOffre&&ri>0?' · '+runOffre.name:'')+'</div>'
-      + pbar+'</div>'
-      + '<span style="color:var(--tx4);font-size:11px">'+(isCurrentRun?'▼':'▶')+'</span>';
-    acc.appendChild(hd);
-
-    // Body
-    var body = document.createElement('div');
-    body.className = 'run-body';
-    body.style.cssText = 'padding:12px 14px;border-top:1px solid var(--rim3);display:'+(isCurrentRun?'block':'none');
-
-    // Sélecteur offre (Run 1)
-    if (ri === 0) {
-      var offreLbl = document.createElement('div');
-      offreLbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px';
-      offreLbl.textContent = 'Offre choisie';
-      body.appendChild(offreLbl);
-      var offreSel = document.createElement('select');
-      offreSel.style.marginBottom = '12px';
-      offreSel.innerHTML = '<option value="">— Choisir —</option>';
-      loadOffres().forEach(function(o){
-        var opt = document.createElement('option');
-        opt.value = o.id; opt.textContent = o.name+' — '+o.price+'€';
-        if (run.offreId===o.id) opt.selected = true;
-        offreSel.appendChild(opt);
-      });
-      offreSel.onchange = (function(runIdx, clientId){ return function(){
-        ST.clients.find(function(x){return x.id==clientId;}).phaseRuns[runIdx].offreId = this.value;
-        localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-        renderClientModal(clientId);
-      }; })(ri, id);
-      body.appendChild(offreSel);
-    }
-
-    // Étapes thermomètre
-    var thWrap = document.createElement('div');
-    thWrap.className = 'parcours-wrap';
-    var thSteps = document.createElement('div');
-    thSteps.className = 'parcours-steps';
-    runPhases.forEach(function(ph, i){
-      var gi = phaseOffset + i;
-      var isDone = c.phases[gi] && c.phases[gi].done;
-      var ps = document.createElement('div');
-      ps.className = 'ps' + (isDone?' done':'');
-      ps.title = ph.lbl + (ph.days>0?' ('+ph.days+'j)':'');
-      ps.dataset.gi = gi; ps.dataset.cid = id;
-      ps.onclick = function(){ togglePhase(this.dataset.cid, parseInt(this.dataset.gi)); };
-      ps.innerHTML = '<div class="ps-dot">'+(isDone?'✓':ph.ico)+'</div>'
-        +'<div class="ps-lbl">'+ph.lbl+(ph.days>0?'<br><span style="font-size:7px;color:var(--bx3)">'+ph.days+'j</span>':'')+'</div>';
-      thSteps.appendChild(ps);
-    });
-    thWrap.appendChild(thSteps);
-    body.appendChild(thWrap);
-
-    // Action si run actuel terminé
-    if (isCurrentRun && allDone) {
-      var actionDiv = document.createElement('div');
-      actionDiv.style.cssText = 'margin-top:12px;padding:12px;background:rgba(139,21,32,.05);border:1.5px solid var(--bx);border-radius:var(--r2);text-align:center';
-      if (ri === 0) {
-        actionDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--bx);margin-bottom:8px">✅ Entrée validée — Démarrer le programme ?</div>';
-        var startBtn = document.createElement('button');
-        startBtn.className = 'btn btn-bx btn-sm';
-        startBtn.textContent = runOffre ? ('▶ Démarrer '+runOffre.name.split(' ').slice(0,3).join(' ')) : '▶ Démarrer Run 2';
-        startBtn.dataset.cid = id;
-        startBtn.onclick = function(){ startRun2(this.dataset.cid); };
-        actionDiv.appendChild(startBtn);
-      } else {
-        if (!run.certified) {
-          run.certified = true;
-          localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-        }
-        var pl = PHASE_LABELS[run.phaseKey] || PHASE_LABELS.reset;
-        actionDiv.innerHTML = '<div style="font-weight:800;font-size:14px;color:var(--bx);margin-bottom:8px">🏆 '+(pl.cert||'Certification')+'</div>'
-          + '<div style="font-size:11.5px;color:var(--tx3);margin-bottom:10px">Choisir la suite :</div>';
-        loadSuiteOptions().forEach(function(s){
-          var btn = document.createElement('button');
-          btn.className = 'btn btn-dk btn-w btn-sm';
-          btn.style.cssText = 'margin-bottom:6px;text-align:left;justify-content:flex-start';
-          btn.textContent = s.ico+' '+s.label;
-          btn.dataset.cid=id; btn.dataset.suitekey=s.key; btn.dataset.phasekey=s.phaseKey||run.phaseKey;
-          btn.onclick = function(){ activateCycle2(this.dataset.cid,'suite',{suiteKey:this.dataset.suitekey,phaseKey:this.dataset.phasekey}); };
-          actionDiv.appendChild(btn);
-        });
-      }
-      body.appendChild(actionDiv);
-    }
-
-    acc.appendChild(body);
-    container.appendChild(acc);
-  });
-
-  // ── Historique (si > 1 run)
-  if (c.phaseRuns.length > 1) {
-    var histBtn = document.createElement('button');
-    histBtn.className = 'btn btn-dk btn-sm';
-    histBtn.style.cssText = 'width:100%;margin-bottom:10px;font-size:11px';
-    histBtn.textContent = 'Voir historique ('+( c.phaseRuns.length-1)+' run'+(c.phaseRuns.length>2?'s':'')+' précédent'+(c.phaseRuns.length>2?'s':'')+')';
-    var histOpen = false;
-    histBtn.onclick = function(){
-      histOpen = !histOpen;
-      var bodies = container.querySelectorAll('.run-body');
-      for(var bi=0;bi<bodies.length-1;bi++) bodies[bi].style.display = histOpen?'block':'none';
-      histBtn.textContent = histOpen ? 'Masquer historique' : 'Voir historique ('+( c.phaseRuns.length-1)+' run'+(c.phaseRuns.length>2?'s':'')+' précédent'+(c.phaseRuns.length>2?'s':'')+')';
-    };
-    container.insertBefore(histBtn, container.children[2]||container.lastChild);
-  }
-
-  // ── Actions
-  var actWrap = document.createElement('div');
-  actWrap.style.cssText = 'display:flex;flex-direction:column;gap:7px;margin-top:8px';
-
-  var editBtn = document.createElement('button');
-  editBtn.className = 'btn btn-dk btn-w btn-sm';
-  editBtn.textContent = '✏️ Modifier les infos';
-  editBtn.dataset.cid = id;
-  editBtn.onclick = function(){ openEditClientModal(this.dataset.cid); };
-  actWrap.appendChild(editBtn);
-
-  var statusBtn = document.createElement('button');
-  statusBtn.className = 'btn btn-dk btn-w btn-sm';
-  statusBtn.textContent = '🔄 Changer le statut';
-  statusBtn.onclick = (function(clientId){ return function(){
-    showDialog({
-      title:'Changer le statut',
-      inputs:[{id:'statut',label:'Statut',type:'select',value:c.statut||'Closé',
-        options:['Closé|✅ Closé','Non closé|👤 Non closé','À relancer|🔁 À relancer','Refusé|❌ Refusé']}],
-      confirmLabel:'Appliquer'
-    }).then(function(r){
-      if(!r.confirmed) return;
-      updateStatutParcours(clientId, r.values.statut);
-      renderClients();
-      closeModal('client');
-    });
-  }; })(id);
-  actWrap.appendChild(statusBtn);
-
-  var delBtn = document.createElement('button');
-  delBtn.className = 'btn btn-R btn-w btn-sm';
-  delBtn.textContent = '🗑 Supprimer ce dossier';
-  delBtn.dataset.cid = id;
-  delBtn.onclick = function(){ deleteClient(this.dataset.cid); };
-  actWrap.appendChild(delBtn);
-
-  container.appendChild(actWrap);
+  // ── Aucune offre sélectionnée — inviter à démarrer
+  var noOffreDiv = document.createElement('div');
+  noOffreDiv.style.cssText = 'text-align:center;padding:20px 16px;background:var(--bg3);border:1.5px dashed var(--rim2);border-radius:var(--r2);color:var(--tx3);font-size:13px;margin-bottom:8px';
+  noOffreDiv.innerHTML = '<div style="font-size:28px;margin-bottom:8px">💼</div>'
+    + '<div style="font-weight:700;color:var(--tx2);margin-bottom:4px">Aucun parcours actif</div>'
+    + '<div>Appuyez sur <strong>Nouvelle offre</strong> pour démarrer le parcours client.</div>';
+  container.appendChild(noOffreDiv);
   openModal('client');
 }
 
