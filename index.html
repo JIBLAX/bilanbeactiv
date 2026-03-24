@@ -3568,7 +3568,7 @@ async function syncAllOffresToFinances() {
 
 // Pousse TOUS les clients (closés et non closés) → prospects de Business
 async function syncAllClientsToFinances() {
-  var clients = ST.clients || [];
+  var clients = (ST.clients || []).filter(function(c) { return c.statut === 'Clos'; });
   if (!clients.length) { toast('info', 'Aucun client à synchroniser'); return; }
   var done = 0;
   for (var i = 0; i < clients.length; i++) {
@@ -3808,32 +3808,19 @@ async function syncClientToFinances(c) {
   var statutBiz  = isClosed ? 'CLOSE' : (c.statut === 'À relancer' ? 'CONTACT' : c.statut === 'Refusé' ? 'REFUS' : 'RDV');
   var closingBiz = isClosed ? 'OUI' : 'NON';
 
-  // Payload mappé sur les colonnes réelles de la table prospects de Business
+  // Payload mappé sur les colonnes réelles de la table be_activ_clients de Business
   var payload = {
-    id:              'bcrm_' + c.id,   // préfixe pour éviter collision avec IDs Business natifs
-    user_id:         FINANCES_USER_ID, // UUID du compte Business — obligatoire (NOT NULL)
-    sex:             c.sex || (c.bilan_summary && c.bilan_summary.sex) || 'F',
-    name:            fullName,
-    contact:         c.tel || c.email || '',
-    source:          c.source || '',
-    statut:          statutBiz,
-    date:            c.date || '',
-    type:            c.rdvType || '',
-    presence:        c.rdvStatut || '',
-    heure:           '',
-    objectif:        c.isPro ? (c.proType || '') : (c.objectif || ''),
-    objection:       (c.objections && c.objections.length) ? c.objections[0] : '',
-    closing:         closingBiz,
-    offre:           offreName || '-',
-    notes:           c.notes || '',
-    profile:         c.profil_code || '',
-    prix_reel:       c.montant ? parseFloat(c.montant) : 0,
-    note_bilan:      (c.final_report && c.final_report.scoreGlobal) || 0,
-    note_profil:     0,
-    bilan_validated: !!(c.final_report),
-    age:             c.age ? parseInt(c.age) : null,
-    sap_enabled:     false,
-    updated_at:      new Date().toISOString()
+    id:            'bcrm_' + c.id,
+    user_id:       FINANCES_USER_ID,
+    name:          fullName,
+    phone:         c.tel || c.email || '',
+    offre:         offreName || '',
+    start_date:    c.date || '',
+    current_phase: 0,
+    phases:        '[]',
+    cycle:         c.cycle || 1,
+    notes:         c.notes || '',
+    updated_at:    new Date().toISOString()
   };
 
   var headers = {
@@ -3844,7 +3831,7 @@ async function syncClientToFinances(c) {
   };
 
   try {
-    var res = await fetch(bizUrl + '/rest/v1/prospects', {
+    var res = await fetch(bizUrl + '/rest/v1/be_activ_clients', {
       method: 'POST', headers: headers, body: JSON.stringify(payload)
     });
     if (!res.ok) {
