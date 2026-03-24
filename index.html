@@ -4689,12 +4689,14 @@ function togglePhase(clientId, globalIdx) {
 var FINANCES_USER_ID = 'f7dc5ec6-ac35-4179-b3a9-68d9c4edf888';
 
 async function syncClientToFinances(c) {
-  // Cible : table activ_reset_clients du Supabase BE ACTIV BUSINESS
+  // Cible : table prospects du Supabase BE ACTIV BUSINESS
+  // closing="OUI" + statut="CLIENT" → apparaît dans Clients > Actifs
+  // closing="OUI" + statut="ARCHIVÉ" → apparaît dans Clients > Inactifs
   var bizUrl   = ST.bizUrl   || BIZ_URL_DEFAULT;
   var bizSrKey = ST.bizSrKey || '';
 
   if (!bizSrKey) {
-    console.warn('syncClientToFinances: bizSrKey (Service Role Key Business) non configurée → Config');
+    console.warn('syncClientToFinances: bizSrKey non configurée → Config');
     return;
   }
 
@@ -4703,32 +4705,52 @@ async function syncClientToFinances(c) {
   if (!fullName) return;
 
   // Résoudre le nom de l'offre depuis sig_offre_id (nouveau système) ou c.offres (legacy)
-  var offreName = '';
+  var offreName = '-';
   if (c.sig_offre_id) {
     var _sigO = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
     if (_sigO) offreName = _sigO.name;
   }
-  if (!offreName && c.offres) offreName = c.offres.split(',')[0].trim();
+  if (offreName === '-' && c.offres) offreName = c.offres.split(',')[0].trim() || '-';
 
-  // Date de démarrage = date de closing ou date du bilan
-  var startDate = (c.closedAt ? c.closedAt.split('T')[0] : '') || c.date || '';
+  // Normaliser le sexe → "F" ou "H" (format attendu par Business)
+  var sexBiz = 'F';
+  var rawSex = c.sexe || c.sex || '';
+  if (rawSex === 'Homme' || rawSex === 'H' || rawSex === 'M') sexBiz = 'H';
 
-  // Sérialiser les étapes du parcours pour le champ phases
-  var phasesJson = JSON.stringify(c.mode_stages || []);
+  // Statut Business : CLIENT (actif) ou ARCHIVÉ (inactif si programme terminé)
+  var allStagesDone = false;
+  if (c.mode_stages && c.mode_stages.length > 0) {
+    allStagesDone = c.mode_stages.every(function(s) {
+      return s.steps && s.steps.length > 0 && s.steps.every(function(st){ return st.done; });
+    });
+  }
+  var statutBiz = allStagesDone ? 'ARCHIVÉ' : 'CLIENT';
 
-  // Payload mappé sur la table activ_reset_clients de BE ACTIV BUSINESS
+  // Payload mappé sur les colonnes réelles de la table prospects de BE ACTIV BUSINESS
   var payload = {
     id:               'bcrm_' + c.id,
     user_id:          FINANCES_USER_ID,
+    sex:              sexBiz,
     name:             fullName,
-    phone:            c.tel || '',
-    offre:            offreName || '',
-    start_date:       startDate,
-    current_phase:    0,
-    phases:           phasesJson,
-    objectif_atteint: null,
-    cycle:            c.cycle || 1,
+    contact:          c.tel || '',
+    source:           c.source || '',
+    statut:           statutBiz,
+    date:             (c.closedAt ? c.closedAt.split('T')[0] : '') || c.date || '',
+    type:             c.rdvType || '',
+    presence:         '',
+    heure:            '',
+    objectif:         c.objectif || '',
+    objection:        (c.objections && c.objections[0]) || '',
+    closing:          'OUI',
+    offre:            offreName,
     notes:            c.notes || '',
+    profile:          c.profil_code || '',
+    prix_reel:        parseFloat(c.montant) || 0,
+    note_bilan:       c.score_global || 0,
+    note_profil:      0,
+    bilan_validated:  !!(c.bilan_summary),
+    age:              parseInt(c.age) || null,
+    sap_enabled:      false,
     updated_at:       new Date().toISOString()
   };
 
@@ -4740,7 +4762,7 @@ async function syncClientToFinances(c) {
   };
 
   try {
-    var res = await fetch(bizUrl + '/rest/v1/activ_reset_clients', {
+    var res = await fetch(bizUrl + '/rest/v1/prospects', {
       method: 'POST', headers: headers, body: JSON.stringify(payload)
     });
     if (!res.ok) {
@@ -4750,7 +4772,7 @@ async function syncClientToFinances(c) {
         toast('info', '🔑 Sync échouée — vérifie la Service Role Key Business dans Config');
       }
     } else {
-      console.log('syncClientToFinances: ' + fullName + ' → activ_reset_clients OK');
+      console.log('syncClientToFinances: ' + fullName + ' → prospects [' + statutBiz + '] OK');
     }
   } catch(e) {
     console.warn('syncClientToFinances error:', e);
