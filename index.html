@@ -1178,9 +1178,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
         <button class="btn btn-bx btn-sm btn-w" onclick="syncAllClientsToFinances()" style="text-align:left;justify-content:flex-start;font-size:12px">
           📤 Pousser TOUS les clients → BE ACTIV BUSINESS
         </button>
-        <button class="btn btn-dk btn-sm btn-w" onclick="pullClientsFromFinances()" style="text-align:left;justify-content:flex-start;font-size:12px">
-          📥 Importer prospects ← BE ACTIV BUSINESS
-        </button>
       </div>
     </div>
 
@@ -1345,6 +1342,8 @@ function renderProspectModal(id, c, container) {
   var infoRows = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">';
   if (c.ville) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Ville</div><div style="font-weight:600">'+c.ville+'</div></div>';
   if (c.age)   infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Âge</div><div style="font-weight:600">'+c.age+' ans</div></div>';
+  var _sexeDisplay = c.sexe || (c.sex==='F'?'Femme':c.sex==='M'?'Homme':'');
+  if (_sexeDisplay) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Sexe</div><div style="font-weight:600">'+_sexeDisplay+'</div></div>';
   if (c.tel)   infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Téléphone</div><div style="font-weight:600">'+c.tel+'</div></div>';
   if (c.email) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+c.email+'</div></div>';
   if (c.rdvType || c.date) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">RDV Bilan</div><div style="font-weight:600">'+dateStr+(c.rdvType?' · '+c.rdvType:'')+'</div></div>';
@@ -2628,7 +2627,7 @@ function renderStats() {
   barEl('stats-sources',srcs,'var(--bx)');
   const objs={};yc.forEach(c=>{if(c.objectif)objs[c.objectif]=(objs[c.objectif]||0)+1;});
   barEl('stats-objectifs',objs,'var(--G)');
-  const sexes={};yc.forEach(c=>{if(c.sex){const k=c.sex==='F'?'Femmes':'Hommes';sexes[k]=(sexes[k]||0)+1;}});
+  const sexes={};yc.forEach(c=>{const sv=c.sexe||(c.sex==='F'?'Femme':c.sex==='M'?'Homme':'');if(sv){const k=sv==='Femme'||sv==='F'?'Femmes':'Hommes';sexes[k]=(sexes[k]||0)+1;}});
   barEl('stats-sexes',sexes,'var(--V)');
   const objMap={};yc.forEach(c=>{(c.objections||[]).forEach(o=>{if(o)objMap[o]=(objMap[o]||0)+1;});});
   barEl('stats-objections-detail',objMap,'var(--R)');
@@ -3216,6 +3215,8 @@ function openEditClientModal(clientId) {
     inputs: [
       {id:'prenom',  label:'Prénom',     type:'text',   value: c.prenom||''},
       {id:'nom',     label:'Nom',        type:'text',   value: c.nom||''},
+      {id:'age',     label:'Âge',        type:'number', value: c.age||''},
+      {id:'sexe',    label:'Sexe',       type:'select', value: c.sexe||(c.sex==='F'?'Femme':c.sex==='M'?'Homme':''), options:['|— Choisir —','Homme|Homme','Femme|Femme']},
       {id:'tel',     label:'Téléphone',  type:'text',   value: c.tel||''},
       {id:'email',   label:'Email',      type:'email',  value: c.email||''},
       {id:'ville',   label:'Ville',      type:'text',   value: c.ville||''},
@@ -3227,6 +3228,8 @@ function openEditClientModal(clientId) {
     if (!r.confirmed) return;
     c.prenom     = r.values.prenom.trim()  || c.prenom;
     c.nom        = r.values.nom.trim()     || c.nom;
+    c.age        = r.values.age.trim();
+    c.sexe       = r.values.sexe;
     c.tel        = r.values.tel.trim();
     c.email      = r.values.email.trim();
     c.ville      = r.values.ville.trim();
@@ -3824,6 +3827,23 @@ function renderClientModal(id) {
     + (c.offres ? '<span class="pill pill-Y" style="font-size:10px">'+c.offres.split(',')[0].trim()+'</span>' : '')
     + (c.profil_code && c.profil_code!=='PRO' ? '<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.profil_code+'</span>' : '');
   container.appendChild(pills);
+
+  // ── Fiche infos client
+  var clientInfoRows = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">';
+  if (c.ville) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Ville</div><div style="font-weight:600">'+c.ville+'</div></div>';
+  if (c.age)   clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Âge</div><div style="font-weight:600">'+c.age+' ans</div></div>';
+  var _cSexeDisplay = c.sexe || (c.sex==='F'?'Femme':c.sex==='M'?'Homme':'');
+  if (_cSexeDisplay) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Sexe</div><div style="font-weight:600">'+_cSexeDisplay+'</div></div>';
+  if (c.tel)   clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Téléphone</div><div style="font-weight:600">'+c.tel+'</div></div>';
+  if (c.email) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+c.email+'</div></div>';
+  if (c.profession) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Profession</div><div style="font-weight:600">'+c.profession+'</div></div>';
+  clientInfoRows += '</div>';
+  if (c.ville || c.age || _cSexeDisplay || c.tel || c.email || c.profession) {
+    var clientInfoCard = document.createElement('div');
+    clientInfoCard.className = 'card'; clientInfoCard.style.marginBottom = '12px';
+    clientInfoCard.innerHTML = clientInfoRows;
+    container.appendChild(clientInfoCard);
+  }
 
   // ── Boutons d'action client
   var clientActions = document.createElement('div');
