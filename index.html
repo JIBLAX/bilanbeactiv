@@ -2803,9 +2803,8 @@ function openWrapped() {
 
   content.innerHTML =
     '<div class="wr-hero">' +
-      '<div class="wr-year">BE ACTIV CRM · ' + year + '</div>' +
-      '<div class="wr-title">Votre<br>Année 🎯</div>' +
-      '<div class="wr-sub">Coach JM · Récap complet</div>' +
+      '<div class="wr-title" style="font-size:28px;line-height:1.2">Mon Année ' + year + ' 🎯</div>' +
+      '<div class="wr-sub">Coach JM · BE ACTIV CRM</div>' +
     '</div>' +
 
     '<div class="wr-grid">' +
@@ -2859,8 +2858,8 @@ function exportWrappedPDF() {
   doc.rect(0,0,100,180,'F');
   doc.setTextColor(255,255,255);
   doc.setFontSize(10); doc.setFont('helvetica','bold');
-  doc.text('BE ACTIV CRM · '+year, 50, 14, {align:'center'});
-  doc.setFontSize(18); doc.text('VOTRE ANNÉE 🎯', 50, 24, {align:'center'});
+  doc.setFontSize(18); doc.text('MON ANNÉE '+year+' 🎯', 50, 18, {align:'center'});
+  doc.setFontSize(9); doc.text('Coach JM · BE ACTIV CRM', 50, 26, {align:'center'});
   // Extract KPIs from DOM
   var kpis = card.querySelectorAll('.wr-kpi');
   var y = 40;
