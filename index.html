@@ -855,8 +855,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div class="steps">
     <div class="step act" id="s1"><div class="step-c">1</div><div class="step-l">Pré-qualif</div></div>
     <div class="step" id="s2"><div class="step-c">2</div><div class="step-l">Bilan</div></div>
-    <div class="step" id="s3"><div class="step-c">3</div><div class="step-l">Tests</div></div>
-    <div class="step" id="s4"><div class="step-c">4</div><div class="step-l">Rapport</div></div>
+    <div class="step" id="s4"><div class="step-c">3</div><div class="step-l">Rapport</div></div>
   </div>
   <div class="card">
     <div style="font-weight:700;font-size:15px;margin-bottom:12px">📋 Réponses formulaire Tally</div>
@@ -877,8 +876,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div class="steps">
     <div class="step done" id="b-s1"><div class="step-c">1</div><div class="step-l">Pré-qualif</div></div>
     <div class="step act" id="b-s2"><div class="step-c">2</div><div class="step-l">Bilan</div></div>
-    <div class="step" id="b-s3"><div class="step-c">3</div><div class="step-l">Tests</div></div>
-    <div class="step" id="b-s4"><div class="step-c">4</div><div class="step-l">Rapport</div></div>
+    <div class="step" id="b-s4"><div class="step-c">3</div><div class="step-l">Rapport</div></div>
   </div>
   <div id="bilan-form-container"><!-- rempli par renderBilanForm() --></div>
   <div class="brow" style="margin-bottom:18px">
@@ -887,7 +885,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
   <div id="bilan-result" style="display:none"></div>
   <div id="bilan-cta" style="display:none;margin:10px 0 18px">
-    <button class="btn btn-bx btn-w" onclick="showPg('tests')">Passer aux Tests →</button>
+    <button class="btn btn-bx btn-w" onclick="showPg('rapport')">Générer le Rapport →</button>
     <!-- Décision bilan : si prospect avec ST.clientId défini -->
     <div id="bilan-decision-wrap" style="display:none;margin-top:12px;background:var(--bg2);border:1.5px solid var(--rim);border-radius:var(--r2);padding:14px">
       <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📋 Décision suite au Bilan</div>
@@ -922,10 +920,9 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div class="steps">
     <div class="step done" id="r-s1"><div class="step-c">1</div><div class="step-l">Pré-qualif</div></div>
     <div class="step done" id="r-s2"><div class="step-c">2</div><div class="step-l">Bilan</div></div>
-    <div class="step done" id="r-s3"><div class="step-c">3</div><div class="step-l">Tests</div></div>
-    <div class="step act" id="r-s4"><div class="step-c">4</div><div class="step-l">Rapport</div></div>
+    <div class="step act" id="r-s4"><div class="step-c">3</div><div class="step-l">Rapport</div></div>
   </div>
-  <div id="rpt-empty"><div class="empty"><div class="empty-ico">🤖</div><div class="empty-t">Rapport IA final</div><div class="empty-s">Complétez le bilan et les tests,<br>puis générez le compte rendu.</div><button class="btn btn-bx" style="margin-top:16px" onclick="genReport()">✨ Générer le rapport</button></div></div>
+  <div id="rpt-empty"><div class="empty"><div class="empty-ico">🤖</div><div class="empty-t">Rapport IA final</div><div class="empty-s">Complétez le bilan (F1+F2),<br>puis générez le rapport.</div><button class="btn btn-bx" style="margin-top:16px" onclick="genReport()">✨ Générer le rapport</button></div></div>
   <div id="rpt-loading" style="display:none"><div class="ldwrap"><div class="ldring"></div><div class="ldmsg"><strong>Rapport en cours…</strong>L'IA analyse toutes les données</div></div></div>
   <div id="rpt-content" style="display:none"></div>
   <div id="rpt-actions" style="display:none;margin-bottom:28px">
@@ -1151,6 +1148,40 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 </div>
 
     </div><!-- /scroller -->
+
+<!-- ══════ MODAL TESTS PARCOURS ══════ -->
+<div id="mdl-tests-parcours" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.65);overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:16px 0 40px">
+    <div style="width:100%;max-width:480px;background:var(--bg);border-radius:var(--r);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.3)">
+      <div class="mdl-t">📏 Tests Physiques — F3 <button class="mdl-x" onclick="closeTestsParcours()">✕</button></div>
+      <div style="padding:16px 20px 24px">
+        <div style="font-size:12px;color:var(--tx3);background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:16px">Ces tests sont réalisés <strong>après la signature</strong>. Les résultats complètent le Rapport Complet.</div>
+        <div id="tests-parcours-form"></div>
+        <div class="brow" style="margin-top:16px">
+          <button class="btn btn-dk" onclick="closeTestsParcours()">Annuler</button>
+          <button class="btn btn-bx" onclick="saveTestsParcours()">💾 Enregistrer les Tests</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MODAL RAPPORT COMPLET PARCOURS ══════ -->
+<div id="mdl-rapport-complet" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.65);overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:16px 0 40px">
+    <div style="width:100%;max-width:480px;background:var(--bg);border-radius:var(--r);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.3)">
+      <div class="mdl-t">🤖 Rapport Complet — F1+F2+F3 <button class="mdl-x" onclick="document.getElementById('mdl-rapport-complet').style.display='none'">✕</button></div>
+      <div style="padding:16px 20px 24px">
+        <div id="rpt-complet-loading" style="display:none"><div class="ldwrap"><div class="ldring"></div><div class="ldmsg"><strong>Rapport en cours…</strong>Analyse F1+F2+F3</div></div></div>
+        <div id="rpt-complet-content"></div>
+        <div id="rpt-complet-actions" style="display:none;margin-top:12px">
+          <button class="btn btn-bx btn-w" onclick="dlPDF_complet()">📄 Télécharger PDF</button>
+          <button class="btn btn-dk btn-w" style="margin-top:8px" onclick="document.getElementById('mdl-rapport-complet').style.display='none'">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ══════ MODAL WRAPPED ══════ -->
 <div id="mdl-wrapped" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.65);overflow-y:auto;-webkit-overflow-scrolling:touch">
@@ -3703,8 +3734,7 @@ function getClientPhasesAll(c) {
 var MODE_STAGE_DEFS = {
   action: [
     {id:'rapport', lbl:'1er RAPPORT', ico:'📊', steps:[
-      {id:'tests',lbl:'Tests physiques'},
-      {id:'rapport_complet',lbl:'Rapport complet (Pré-qualif + Bilan + Tests)'},
+      {id:'rapport_leger',lbl:'Rapport Léger (F1+F2) envoyé'},
       {id:'done',lbl:'Terminée ✅',isFinal:true}
     ]},
     {id:'demarrage', lbl:'DÉMARRAGE', ico:'🚀', steps:[
@@ -3953,6 +3983,14 @@ function validateModeStep(clientId, stageIdx, stepIdx) {
   if (stepIdx > 0 && !c.mode_stages[stageIdx].steps[stepIdx-1].done) {
     toast('err', '⚠️ Validez l\'étape précédente d\'abord'); return;
   }
+  var stepDef = stagesDef[stageIdx] && stagesDef[stageIdx].steps[stepIdx];
+  // Étapes spéciales : ouvrir F3 ou générer rapport complet
+  if (stepDef && stepDef.id === 'tests') {
+    openTestsParcours(clientId, stageIdx, stepIdx); return;
+  }
+  if (stepDef && stepDef.id === 'rapport_complet') {
+    genReportComplet(clientId, stageIdx, stepIdx); return;
+  }
   c.mode_stages[stageIdx].steps[stepIdx].done = true;
   c.mode_stages[stageIdx].steps[stepIdx].doneAt = new Date().toISOString();
   c.updated_at = new Date().toISOString();
@@ -3960,6 +3998,105 @@ function validateModeStep(clientId, stageIdx, stepIdx) {
   saveToSupabase(c);
   toast('ok', '✅ ' + stagesDef[stageIdx].steps[stepIdx].lbl);
   renderClientModal(clientId);
+}
+
+// ── F3 dans le parcours (post-signature) ─────────────
+var _testsParcoursCtx = null; // {clientId, stageIdx, stepIdx}
+
+function openTestsParcours(clientId, stageIdx, stepIdx) {
+  _testsParcoursCtx = {clientId:clientId, stageIdx:stageIdx, stepIdx:stepIdx};
+  var container = document.getElementById('tests-parcours-form');
+  container.innerHTML = '';
+  // Réutiliser le formulaire Tests existant (renderTestsForm) dans ce conteneur
+  var def = loadFormDef('tests');
+  def.forEach(function(section) {
+    var secDiv = document.createElement('div');
+    secDiv.style.marginBottom = '14px';
+    secDiv.innerHTML = '<div style="font-weight:700;font-size:12px;color:var(--bx);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">'+section.title+'</div>';
+    section.fields.forEach(function(field) {
+      var fDiv = document.createElement('div');
+      fDiv.className = 'f';
+      fDiv.innerHTML = '<label>'+field.label+'</label><input id="tp-'+field.id+'" type="'+(field.type||'text')+'" placeholder="'+(field.placeholder||'')+'">';
+      secDiv.appendChild(fDiv);
+    });
+    container.appendChild(secDiv);
+  });
+  document.getElementById('mdl-tests-parcours').style.display = 'block';
+}
+
+function closeTestsParcours() {
+  document.getElementById('mdl-tests-parcours').style.display = 'none';
+  _testsParcoursCtx = null;
+}
+
+function saveTestsParcours() {
+  if (!_testsParcoursCtx) return;
+  var ctx = _testsParcoursCtx;
+  var c = ST.clients.find(function(x){ return x.id == ctx.clientId; });
+  if (!c) return;
+  // Collecter les données des inputs tp-*
+  var testsData = {};
+  document.querySelectorAll('#tests-parcours-form input').forEach(function(el) {
+    var key = el.id.replace('tp-', '');
+    testsData[key] = el.value;
+  });
+  c.tests_data = testsData;
+  // Valider le step Tests
+  c.mode_stages[ctx.stageIdx].steps[ctx.stepIdx].done = true;
+  c.mode_stages[ctx.stageIdx].steps[ctx.stepIdx].doneAt = new Date().toISOString();
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  closeTestsParcours();
+  toast('ok', '✅ Tests enregistrés — générez maintenant le Rapport Complet');
+  renderClientModal(ctx.clientId);
+}
+
+async function genReportComplet(clientId, stageIdx, stepIdx) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  if (!c.tests_data) { toast('err', '⚠️ Effectuez les tests physiques d\'abord'); return; }
+  var mdl = document.getElementById('mdl-rapport-complet');
+  mdl.style.display = 'block';
+  document.getElementById('rpt-complet-loading').style.display = 'block';
+  document.getElementById('rpt-complet-content').innerHTML = '';
+  document.getElementById('rpt-complet-actions').style.display = 'none';
+  try {
+    var t = c.tests_data || {};
+    var imc = t.poids && t.taille ? (parseFloat(t.poids)/Math.pow(parseFloat(t.taille)/100,2)).toFixed(1) : 'NC';
+    var pqCtx = c.pq_summary ? 'PRÉ-BILAN: '+c.pq_summary.resumeProfil+' | Profil: '+c.pq_summary.profilTypeCode : 'Pré-bilan non effectué';
+    var bilanCtx = c.bilan_summary ? 'BILAN: '+c.bilan_summary.syntheseBilan+' | Leviers: '+(c.bilan_summary.facteursLeviers||'NC') : 'Bilan non effectué';
+    var sys = 'Tu es Jonathan, coach Transformation & Énergie BE ACTIV. Rédige le RAPPORT COMPLET (F1+F2+F3) personnalisé pour le client post-signature. Ce rapport inclut les tests physiques réels. Style : professionnel, bienveillant, concret. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
+    var usr = 'CLIENT: '+(c.prenom||'')+' '+(c.nom||'')+', '+(c.age||'?')+' ans, '+(c.ville||'NC')+'\nIMC: '+imc+'\n'+pqCtx+'\n'+bilanCtx+'\nTESTS PHYSIQUES: Taille='+t.taille+'cm Poids='+t.poids+'kg Tour nombril='+t.tn+' Tour taille='+t.tt+'\nMobilité='+t.mobGlobal+'/100 IRD='+t.ird+' Planche='+t.planche+'s\nOffre: '+(c.offres||'NC')+'\n\nJSON strict:\n{"profilGlobal":"paragraphe","analyseMorphologique":"mesures","analyseMobilite":"mobilité","analyseCardio":"cardio","analyseForce":"force","pointsForts":["pt1","pt2"],"freinsPrincipaux":["f1","f2"],"planAction90J":"plan","conseilsTraining":"texte","conseilsNutrition":"texte","conseilsRecuperation":"texte","messageMotivation":"message","scoreMobilite":0,"scoreCondition":0,"scoreGlobal":0,"niveauGlobal":"Débutant|Intermédiaire|Avancé"}';
+    var r = await callAI(sys, usr, 'claude-sonnet-4-6', 3000);
+    c.final_report = r; c.final_report._client = c; c.final_report._tests = t;
+    // Valider le step rapport_complet
+    var stagesDef = getActiveStageDefs(c);
+    c.mode_stages[stageIdx].steps[stepIdx].done = true;
+    c.mode_stages[stageIdx].steps[stepIdx].doneAt = new Date().toISOString();
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    // Afficher le résumé
+    document.getElementById('rpt-complet-loading').style.display = 'none';
+    document.getElementById('rpt-complet-content').innerHTML = '<div class="ai-card">'
+      + '<div class="ai-title">🤖 Rapport Complet généré</div>'
+      + (r.profilGlobal?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--bx)">Profil global</div><div class="ai-blk-c">'+r.profilGlobal+'</div></div>':'')
+      + (r.planAction90J?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--G)">Plan 90 jours</div><div class="ai-blk-c">'+r.planAction90J+'</div></div>':'')
+      + (r.messageMotivation?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">Message</div><div class="ai-blk-c">'+r.messageMotivation+'</div></div>':'')
+      + '</div>';
+    document.getElementById('rpt-complet-actions').style.display = 'block';
+    renderClientModal(clientId);
+    toast('ok', '✨ Rapport Complet généré !');
+  } catch(e) {
+    document.getElementById('rpt-complet-loading').style.display = 'none';
+    document.getElementById('rpt-complet-content').innerHTML = '<div style="color:var(--R)">❌ '+e.message+'</div>';
+  }
+}
+
+function dlPDF_complet() {
+  var c = ST.clients.find(function(x){ return x.final_report && x.final_report._tests; });
+  toast('info', '📄 Export PDF rapport complet — même fonction que rapport standard');
 }
 
 function addActivContinue(clientId, key) {
@@ -4715,6 +4852,15 @@ async function pullOffresFromFinances() {
     // Mapper les champs Business → BILAN CRM
     var offres = rows.filter(function(r){ return r.active !== false; }).map(function(r) {
       var dur = r.duration || {};
+      var nm  = (r.name  || '').toUpperCase();
+      var th  = (r.theme || '').toUpperCase();
+      // Auto-detect modeOffre from name/theme
+      var modeOffre = 'action'; // default
+      if (/RESET|PROGRAM|TRANSFORMATION|ACTIV CONTINUE/.test(nm) || /RESET|TRANSFORMATION/.test(th)) {
+        modeOffre = 'transformation';
+      } else if (/CARDIO|COLLECTIF|TRAINING|MOUV/.test(nm) || /COLLECTIF/.test(th)) {
+        modeOffre = 'collectif';
+      }
       return {
         id:          r.id,
         name:        r.name || 'Offre',
@@ -4727,6 +4873,7 @@ async function pullOffresFromFinances() {
         isAbonnement:false,
         test:        'none',
         theme:       r.theme || 'PROGRAMMES',
+        modeOffre:   modeOffre,
         readOnly:    true   // offres Business → non modifiable dans BILAN CRM
       };
     });
