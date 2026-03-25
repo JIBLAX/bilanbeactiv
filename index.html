@@ -860,9 +860,9 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="step" id="s4"><div class="step-c">4</div><div class="step-l">Rapport</div></div>
   </div>
   <div class="card">
-    <div style="font-weight:700;font-size:15px;margin-bottom:12px">📋 Réponses formulaire Tally</div>
-    <div class="highlight">Collez ici le contenu brut reçu par le prospect via votre formulaire Tally pré-bilan.</div>
-    <div class="f"><label>Réponses Tally</label><textarea id="pq-raw" rows="10" placeholder="Collez ici les réponses complètes du prospect…"></textarea></div>
+    <div style="font-weight:700;font-size:15px;margin-bottom:12px">📋 Réponses questionnaire Calendly</div>
+    <div class="highlight">Collez ici les réponses reçues via Calendly (questionnaire pré-RDV 10 questions).</div>
+    <div class="f"><label>Réponses Calendly</label><textarea id="pq-raw" rows="10" placeholder="Collez ici les réponses complètes du prospect…"></textarea></div>
     <button class="btn btn-bx btn-w" id="btn-pq" onclick="analyzePQ()">✨ Analyser le profil</button>
     <button class="btn btn-dk btn-w" style="margin-top:8px" onclick="skipPQ()">⏭ Passer directement au Bilan</button>
   </div>
@@ -1037,11 +1037,11 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
       <span style="font-size:20px">📋</span>
       <div>
         <div style="font-weight:700;font-size:14px;color:var(--tx)">FORMULAIRE PRÉ-QUALIF (optionnel)</div>
-        <div style="font-size:12px;color:var(--tx3);margin-top:2px">Collez les réponses Tally pour une analyse IA du profil</div>
+        <div style="font-size:12px;color:var(--tx3);margin-top:2px">Collez les réponses Calendly pour une analyse IA du profil</div>
       </div>
     </div>
-    <div class="f"><label>Réponses formulaire Tally</label>
-      <textarea id="pq-new-raw" rows="5" placeholder="Collez ici les réponses du formulaire pré-bilan Tally…&#10;Ou laissez vide pour créer la fiche manuellement."></textarea>
+    <div class="f"><label>Réponses questionnaire Calendly</label>
+      <textarea id="pq-new-raw" rows="5" placeholder="Collez ici les réponses du questionnaire Calendly (pré-RDV)…&#10;Ou laissez vide pour créer la fiche manuellement."></textarea>
     </div>
     <button class="btn btn-bx btn-w btn-sm" id="btn-pq-new" onclick="analyzePQForNewProspect()">✨ Analyser & remplir le profil</button>
     <div id="pq-new-loading" style="display:none" class="ldwrap" style="padding:16px"><div class="ldring"></div><div class="ldmsg"><strong>Analyse IA…</strong></div></div>
@@ -1402,8 +1402,10 @@ function renderSelectBar(){
 function deleteSelected(){
   var n=ST.selectedIds.length;
   if(!n) return;
+  var bar=document.getElementById('sel-bar');
+  if(bar) bar.style.display='none';
   dlgConfirm('Supprimer définitivement '+n+' dossier'+(n>1?'s':'')+' ?','Supprimer').then(function(r){
-    if(!r.confirmed) return;
+    if(!r.confirmed){ if(bar) bar.style.display='flex'; return; }
     var ids=ST.selectedIds.slice();
     ST.clients=ST.clients.filter(function(c){ return ids.indexOf(c.id)===-1; });
     localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
@@ -3036,7 +3038,7 @@ async function callAI(system,user,model,maxTokens){
 }
 
 async function analyzePQ(){
-  const raw=gv('pq-raw');if(raw.length<20){toast('err','⚠️ Collez les réponses Tally');return;}
+  const raw=gv('pq-raw');if(raw.length<20){toast('err','⚠️ Collez les réponses Calendly');return;}
   const btn=document.getElementById('btn-pq');btn.disabled=true;btn.textContent='⏳ Analyse…';
   try{
     const pg=Object.entries(PROFILS).map(([k,v])=>k+'='+v).join(' | ');
@@ -3203,7 +3205,7 @@ var _pqNewSummary = null; // stocke le résultat IA de la pré-qualif pour le no
 
 function analyzePQForNewProspect() {
   var raw = (document.getElementById('pq-new-raw').value || '').trim();
-  if (!raw) { toast('err', '⚠️ Collez les réponses Tally avant d\'analyser'); return; }
+  if (!raw) { toast('err', '⚠️ Collez les réponses Calendly avant d\'analyser'); return; }
   if (!ST.apiKey) { toast('err', '⚠️ Clé API Anthropic requise (Config)'); return; }
   var btn = document.getElementById('btn-pq-new');
   var ldg = document.getElementById('pq-new-loading');
