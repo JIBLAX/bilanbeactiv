@@ -5051,9 +5051,20 @@ function isSectionActiveForProgramme(sec, programme) {
 function buildFieldRow(formKey, def, si, fi, f) {
   var row = document.createElement('div');
   row.className = 'field-row';
-  var lbl = document.createElement('span');
+  var lbl = document.createElement('input');
   lbl.className = 'field-row-lbl';
-  lbl.textContent = f.label || f.id;
+  lbl.type = 'text';
+  lbl.value = f.label || f.id;
+  lbl.style.cssText = 'border:none;outline:none;background:transparent;font-family:inherit;width:100%;min-width:0;cursor:text';
+  lbl.onchange = function() {
+    var d = loadFormDef(formKey);
+    if(d[si] && d[si].fields && d[si].fields[fi]) {
+      d[si].fields[fi].label = this.value;
+      saveFormDef(formKey, d);
+    }
+  };
+  lbl.onfocus = function(){ this.style.background='var(--bg3)'; this.style.borderRadius='4px'; this.style.padding='2px 6px'; };
+  lbl.onblur  = function(){ this.style.background='transparent'; this.style.padding='0'; };
   row.appendChild(lbl);
   var type = document.createElement('span');
   type.className = 'field-row-type';
