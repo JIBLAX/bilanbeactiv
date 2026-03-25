@@ -1344,6 +1344,8 @@ function switchClientTab(tab) {
     if(chips) chips.style.display='none';
   }
   ST.filterStatut='all';
+  // Reset sélection au changement d'onglet
+  if(ST.selectMode){ ST.selectMode=false; ST.selectedIds=[]; var bsm=document.getElementById('btn-select-mode'); if(bsm){bsm.style.background='';bsm.style.color='';} }
   document.querySelectorAll('#chips-statut .chip').forEach(function(c){c.classList.toggle('on',c.dataset.v==='all');});
   renderClients();
 }
@@ -4137,7 +4139,7 @@ async function loadFromSupabase(){
     rows.forEach(row=>{
       let pq=null,bilan=null,final=null;
       try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;}catch(e){}
-      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,ville:row.ville,profession:row.profession,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offres,pretPayer:row.pret_payer,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,updated_at:row.updated_at};
+      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,ville:row.ville,profession:row.profession,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offres,pretPayer:row.pret_payer,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,updated_at:row.updated_at,groupId:row.group_id||null};
       const i=ST.clients.findIndex(c=>c.id===sc.id);if(i>=0)ST.clients[i]=sc;else ST.clients.unshift(sc);
     });
     localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
@@ -4148,7 +4150,7 @@ async function loadFromSupabase(){
 async function saveToSupabase(c){
   if(!ST.sbUrl||!ST.sbKey)return;
   try{
-    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,age:parseInt(c.age)||null,ville:c.ville,profession:c.profession,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offres:c.offres,pret_payer:c.pretPayer,montant:c.montant?parseFloat(c.montant):null,statut:c.statut,score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report}),updated_at:c.updated_at})});
+    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,age:parseInt(c.age)||null,ville:c.ville,profession:c.profession,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offres:c.offres,pret_payer:c.pretPayer,montant:c.montant?parseFloat(c.montant):null,statut:c.statut,score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report}),updated_at:c.updated_at,group_id:c.groupId||null})});
   }catch(e){}
 }
 
