@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 /* ═══ LAYOUT GLOBAL ═══ */
 *, *::before, *::after { box-sizing: border-box; }
@@ -2877,7 +2878,18 @@ function exportWrappedPDF() {
 }
 
 function exportWrappedPNG() {
-  toast('info','📸 Capture… utilisez la fonction screenshot de votre téléphone pour sauvegarder cette vue');
+  var card = document.getElementById('wrapped-card');
+  if (!card) return;
+  if (!window.html2canvas) { toast('err','html2canvas non disponible'); return; }
+  var year = ST.statsYear || new Date().getFullYear();
+  toast('info','⏳ Génération en cours…');
+  html2canvas(card, { scale:2, useCORS:true, backgroundColor:null }).then(function(canvas){
+    var link = document.createElement('a');
+    link.download = 'beactiv-wrapped-'+year+'.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('ok','🖼 PNG téléchargé !');
+  }).catch(function(){ toast('err','Erreur export PNG'); });
 }
 
 function renderGraph() {
