@@ -404,6 +404,19 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .cname{font-weight:700;font-size:14.5px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cmeta{font-size:11.5px;color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cbadges{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+/* Sélection multiple */
+.ccrd.selected{border-color:var(--bx)!important;background:var(--bx-light)!important;box-shadow:0 0 0 2px rgba(139,21,32,.18)!important}
+.ccrd.select-mode:hover{transform:none}
+.sel-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--rim2);flex-shrink:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;transition:all .15s}
+.sel-check.on{background:var(--bx);border-color:var(--bx);color:#fff;font-size:13px}
+/* Barre d'actions flottante */
+.sel-bar{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--tx);color:#fff;border-radius:16px;padding:12px 16px;display:flex;align-items:center;gap:10px;z-index:999;box-shadow:0 6px 28px rgba(0,0,0,.35);white-space:nowrap;max-width:calc(100vw - 32px)}
+.sel-bar-count{font-size:13px;font-weight:700;flex:1}
+.sel-bar-btn{padding:7px 13px;border-radius:10px;border:none;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+.sel-bar-del{background:var(--R);color:#fff}
+.sel-bar-cancel{background:rgba(255,255,255,.15);color:#fff}
+/* Badge groupe */
+.badge-group{display:inline-flex;align-items:center;padding:2px 8px;border-radius:50px;font-size:10px;font-weight:700;background:rgba(108,92,231,.12);color:var(--V);border:1px solid rgba(108,92,231,.3);text-transform:uppercase;letter-spacing:.5px}
 
 /* ═══════════════════════════════════════════════════
    OFFRES
@@ -812,6 +825,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
   <div class="srch">
     <input class="srch-i" type="search" placeholder="🔍  Rechercher…" id="srch-i" oninput="renderClients()">
+    <button id="btn-select-mode" class="btn btn-dk btn-sm" onclick="toggleSelectMode()" title="Sélection multiple" style="padding:0 10px;font-size:12px">☑</button>
     <button class="btn btn-bx btn-sm" onclick="showPg('prospect')" title="Ajouter un prospect">＋</button>
     <button class="btn btn-dk btn-sm" onclick="showPg('pro')" title="Nouvelle structure pro" style="padding:0 10px">🏢</button>
   </div>
@@ -1342,6 +1356,56 @@ function deleteClient(clientId) {
     closeModal('client');
     renderClients();
     toast('ok','Dossier supprimé');
+  });
+}
+
+// ─── SÉLECTION MULTIPLE ───────────────────────────────────────────
+function toggleSelectMode(){
+  ST.selectMode=!ST.selectMode;
+  ST.selectedIds=[];
+  var btn=document.getElementById('btn-select-mode');
+  if(btn){
+    btn.style.background=ST.selectMode?'var(--bx)':'';
+    btn.style.color=ST.selectMode?'#fff':'';
+  }
+  renderClients();
+}
+
+function toggleClientSelect(id,e){
+  if(e) e.stopPropagation();
+  var idx=ST.selectedIds.indexOf(id);
+  if(idx>-1){ ST.selectedIds.splice(idx,1); }
+  else { ST.selectedIds.push(id); }
+  renderClients();
+}
+
+function renderSelectBar(){
+  // Supprimer l'ancienne barre si présente
+  var old=document.getElementById('sel-bar');
+  if(old) old.remove();
+  if(!ST.selectMode||ST.selectedIds.length===0) return;
+  var n=ST.selectedIds.length;
+  var bar=document.createElement('div');
+  bar.className='sel-bar'; bar.id='sel-bar';
+  bar.innerHTML='<span class="sel-bar-count">'+n+' sélectionné'+(n>1?'s':'')+'</span>'
+    +'<button class="sel-bar-btn sel-bar-del" onclick="deleteSelected()">🗑 Supprimer</button>'
+    +'<button class="sel-bar-btn sel-bar-cancel" onclick="toggleSelectMode()">✕ Annuler</button>';
+  document.body.appendChild(bar);
+}
+
+function deleteSelected(){
+  var n=ST.selectedIds.length;
+  if(!n) return;
+  dlgConfirm('Supprimer définitivement '+n+' dossier'+(n>1?'s':'')+' ?','Supprimer').then(function(r){
+    if(!r.confirmed) return;
+    var ids=ST.selectedIds.slice();
+    ST.clients=ST.clients.filter(function(c){ return ids.indexOf(c.id)===-1; });
+    localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
+    ST.selectMode=false; ST.selectedIds=[];
+    var btn=document.getElementById('btn-select-mode');
+    if(btn){ btn.style.background=''; btn.style.color=''; }
+    renderClients();
+    toast('ok',n+' dossier'+(n>1?'s':'')+' supprimé'+(n>1?'s':''));
   });
 }
 
@@ -1991,7 +2055,8 @@ const ST = {
   bizSrKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlZWNjaXd3YnFzdm1uYWlhaHB3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzEzMTUzNiwiZXhwIjoyMDg4NzA3NTM2fQ.a1YwFPZpGkCGI9-vBbfp9ehynIl7ZVMB9s2rUw_xVmA',
   clientId:null, pqSummary:null, bilanSummary:null, finalReport:null,
   clients:[], rdvs:[], statsYear:null,
-  filterStatut:'all', filterProfil:'all'
+  filterStatut:'all', filterProfil:'all',
+  selectMode:false, selectedIds:[]
 };
 
 const PROFILS = {P1:'Je sais mais je n\'y arrive pas',P2:'Besoin d\'être guidé(e)',P3:'Motivé(e) mais instable',P4:'Déconnecté(e) de son corps',P5:'Mental fort / corps bloqué',P6:'Multi-problèmes / désorganisé(e)',P7:'Corps en résistance',P8:'Hyper-actif(ve)',P9:'Image corporelle abîmée',P10:'Performant(e) pro / chaos perso',P11:'Non compatible BE ACTIV',P12:'Cas médical / clinique'};
@@ -3463,6 +3528,9 @@ function renderClients(){
   });
   if(!list.length){document.getElementById('clients-list').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun contact</div><div class="empty-s">'+(isProspectTab?'Ajoutez votre premier prospect.':'Aucun client closé.')+'</div></div>';return;}
   const sp={'Closé':'pill-G','Non closé':'pill-B','Closing en cours':'pill-Y','À relancer':'pill-Y','Refusé':'pill-R'};
+  // Compter les membres par groupId pour les badges
+  var groupCounts={};
+  ST.clients.forEach(function(c){ if(c.groupId){ groupCounts[c.groupId]=(groupCounts[c.groupId]||0)+1; } });
   document.getElementById('clients-list').innerHTML=list.map(function(c){
     var init = c.isPro ? '🏢' : ((c.prenom||'?')[0]+(c.nom||'?')[0]).toUpperCase();
     var isClosing = c.statut === 'Closing en cours';
@@ -3472,17 +3540,32 @@ function renderClients(){
     var statPill = c.statut ? '<span class="pill '+(sp[c.statut]||'')+'" style="font-size:10px'+(isClosing?';animation:pulse-y 2s ease-in-out infinite':'')+'">'+(isNew?'🆕 ':'')+c.statut+'</span>' : '';
     var newBadge = isNew ? '<span class="badge-new">New</span>' : '';
     var closingBadge = isClosing ? '<span class="badge-closing">Closing</span>' : '';
-    return '<div class="ccrd" onclick="openClient(\''+c.id+'\')" style="'+(isNew?'animation:slide-in-new 2s ease-out':isClosing?'border-color:rgba(200,130,10,.4)':'')+'">'
+    // Badge groupe
+    var groupBadge='';
+    if(c.groupId && groupCounts[c.groupId]){
+      var n=groupCounts[c.groupId];
+      var lbl=n===2?'DUO':n===3?'TRIO':'GROUPE';
+      groupBadge='<span class="badge-group">'+lbl+'</span>';
+    }
+    // Mode sélection
+    var isSelected=ST.selectMode&&ST.selectedIds.indexOf(c.id)>-1;
+    var selCheck=ST.selectMode?'<div class="sel-check'+(isSelected?' on':'')+'>'+(isSelected?'✓':'')+'</div>':'';
+    var cardClasses='ccrd'+(ST.selectMode?' select-mode':'')+(isSelected?' selected':'');
+    var cardClick=ST.selectMode?'toggleClientSelect(\''+c.id+'\',event)':'openClient(\''+c.id+'\')';
+    var cardStyle=ST.selectMode?'':(isNew?'animation:slide-in-new 2s ease-out':isClosing?'border-color:rgba(200,130,10,.4)':'');
+    return '<div class="'+cardClasses+'" onclick="'+cardClick+'" style="'+cardStyle+'">'
+      +selCheck
       +'<div class="cav" style="'+(isClosing?'background:var(--Y)':isNew?'background:var(--G)':'')+'">'+init+'</div>'
       +'<div class="cinfo"><div class="cname">'+(c.prenom||'')+' '+(c.nom||'')+'</div>'
       +'<div class="cmeta">'+(c.ville||'—')+' · '+offreTxt+' · '+dt+'</div></div>'
       +'<div class="cbadges">'
         +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
-        + newBadge + closingBadge
+        + newBadge + closingBadge + groupBadge
         + ((!isNew&&!isClosing)?(c.statut?statPill:''):'')
         +(c.score_global!=null?'<span style="font-size:11px;color:var(--tx3)">★ '+c.score_global+'</span>':'')
       +'</div></div>';
   }).join('');
+  renderSelectBar();
 }
 
 function openClient(id) {
