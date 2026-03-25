@@ -1631,7 +1631,7 @@ function renderSignatureAccordion(clientId, c, container) {
     chk.className = 'sig-check' + (st.done ? ' done' : isLocked ? ' locked' : '');
     var lbl = document.createElement('div');
     lbl.className = 'sig-lbl' + (st.done ? ' done' : isLocked ? ' locked' : '');
-    lbl.innerHTML = '<span style="margin-right:5px">'+step.ico+'</span>' + step.lbl;
+    lbl.innerHTML = '<span style="margin-right:5px">'+step.ico+'</span>' + getPLbl('sig_'+step.id, step.lbl);
     if (!st.done && !isLocked) {
       chk.style.cursor = 'pointer';
       chk.title = 'Valider cette étape';
@@ -3785,6 +3785,11 @@ var ACTIV_CONTINUE_STAGES = {
   health: {id:'activ_continue_health', lbl:'ACTIV CONTINUE — HEALTH', ico:'🟢♾️', steps:[{id:'test_maj',lbl:'Test (MAJ)'},{id:'go',lbl:'GO'},{id:'optimisation',lbl:'Optimisation'},{id:'done',lbl:'VALIDÉE ✅',isFinal:true}]}
 };
 
+// ─── Labels personnalisés parcours ───────────────────
+function loadParcoursLabels(){try{var s=localStorage.getItem('ba_parcours_labels');if(s)return JSON.parse(s);}catch(e){}return{};}
+function saveParcoursLabel(key,val){var labels=loadParcoursLabels();labels[key]=val;localStorage.setItem('ba_parcours_labels',JSON.stringify(labels));}
+function getPLbl(key,dflt){var l=loadParcoursLabels();return(l[key]&&l[key].trim())?l[key]:dflt;}
+
 function initModeStages(c, stagesDef) {
   if (!c.mode_stages) c.mode_stages = [];
   stagesDef.forEach(function(stageDef, si){
@@ -3805,9 +3810,10 @@ function getActiveStageDefs(c) {
     var o2 = loadOffres().find(function(x){return x.id===c.phaseRuns[0].offreId;});
     if (o2) mode = o2.modeOffre;
   }
-  var baseDefs = MODE_STAGE_DEFS[mode] || MODE_STAGE_DEFS['action'];
+  var modeKey = mode || 'action';
+  var baseDefs = (MODE_STAGE_DEFS[modeKey] || MODE_STAGE_DEFS['action']).map(function(s){return Object.assign({},s,{_mode:modeKey});});
   // Ajouter les ACTIV CONTINUE si présents
-  var continueDefs = (c.activ_continue_stages || []).map(function(key){return ACTIV_CONTINUE_STAGES[key];}).filter(Boolean);
+  var continueDefs = (c.activ_continue_stages || []).map(function(ck){var s=ACTIV_CONTINUE_STAGES[ck];return s?Object.assign({},s,{_mode:'continue_'+ck}):null;}).filter(Boolean);
   return baseDefs.concat(continueDefs);
 }
 
@@ -3848,9 +3854,11 @@ function renderModeStages(clientId, c, container) {
     var pct = stageData.steps.length > 0 ? Math.round(doneCnt/stageData.steps.length*100) : 0;
     var pbar = '<div style="height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:4px"><div style="height:100%;width:'+pct+'%;background:'+(isPast?'var(--G)':'var(--bx)')+';border-radius:2px;transition:width .3s"></div></div>';
 
+    var _stageM=stageDef._mode||'action';
+    var _stageLbl=getPLbl('stage_'+_stageM+'_'+stageDef.id, stageDef.lbl);
     hd.innerHTML = '<span style="font-size:20px">'+stageDef.ico+'</span>'
       + '<div style="flex:1;min-width:0">'
-      + '<div style="font-weight:700;font-size:13.5px;color:'+(isActive?'var(--bx)':isPast?'var(--G)':'var(--tx4)')+'">ÉTAPE : '+stageDef.lbl+statusBadge+'</div>'
+      + '<div style="font-weight:700;font-size:13.5px;color:'+(isActive?'var(--bx)':isPast?'var(--G)':'var(--tx4)')+'">ÉTAPE : '+_stageLbl+statusBadge+'</div>'
       + '<div style="font-size:11px;color:var(--tx3);margin-top:1px">'+doneCnt+'/'+stageData.steps.length+' étapes</div>'
       + pbar + '</div>'
       + '<span style="color:var(--tx4);font-size:11px">'+(isActive||isPast?'▼':'▶')+'</span>';
@@ -3873,7 +3881,7 @@ function renderModeStages(clientId, c, container) {
         chk.className = 'sig-check' + (st.done?' done':isLocked?' locked':'');
         var lbl = document.createElement('div');
         lbl.className = 'sig-lbl' + (st.done?' done':isLocked?' locked':'');
-        lbl.innerHTML = step.lbl + (step.isFinal ? '' : '');
+        lbl.innerHTML = getPLbl('step_'+_stageM+'_'+stageDef.id+'_'+step.id+'_'+stepIdx, step.lbl);
         if (!st.done && !isLocked && isActive) {
           chk.style.cursor = 'pointer';
           chk.onclick = (function(cid, sIdx, stIdx){ return function(){
@@ -4345,6 +4353,15 @@ function renderSectionsEditor(formKey) {
   });
 }
 
+function _pInp(key, dflt) {
+  var val = getPLbl(key, dflt).replace(/"/g,'&quot;');
+  return '<input type="text" value="'+val+'" style="font-size:12px;flex:1;border:1px solid var(--rim2);border-radius:5px;padding:3px 8px;background:var(--bg3);color:var(--tx);font-family:inherit;width:100%;box-sizing:border-box" onchange="saveParcoursLabel(\''+key+'\',this.value)">';
+}
+function _pInpSm(key, dflt) {
+  var val = getPLbl(key, dflt).replace(/"/g,'&quot;');
+  return '<input type="text" value="'+val+'" style="font-size:11px;font-weight:700;flex:1;border:1px solid var(--rim2);border-radius:5px;padding:2px 7px;background:var(--bg3);color:var(--tx3);font-family:inherit;text-transform:uppercase;letter-spacing:.4px;width:100%;box-sizing:border-box" onchange="saveParcoursLabel(\''+key+'\',this.value)">';
+}
+
 function renderParcoursEditor() {
   var el = document.getElementById('parcours-modes-view');
   if (!el) return;
@@ -4353,36 +4370,62 @@ function renderParcoursEditor() {
     { key:'transformation', ico:'🔄', label:'MODE TRANSFORMATION', color:'var(--V)' },
     { key:'collectif',      ico:'🔥', label:'MODE COLLECTIF',      color:'var(--B)' }
   ];
-  var continueLbls = { reset:'♾️ ACTIV CONTINUE — RESET', sculpt:'♾️ ACTIV CONTINUE — SCULPT', health:'♾️ ACTIV CONTINUE — HEALTH' };
   var html = '';
-  // Signature commune à tous les modes
+
+  // ── Signature commune
   html += '<div style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:12px 14px;margin-bottom:10px">'
     + '<div style="font-weight:700;font-size:12px;color:var(--bx);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">✍️ SIGNATURE — Commune à tous les modes</div>'
-    + '<div style="display:flex;flex-direction:column;gap:4px">'
-    + ['Offre choisie','Contrat signé','Paiement validé','Terminée ✅'].map(function(s,i){
-        return '<div style="font-size:12.5px;color:var(--tx2);padding:4px 8px;background:var(--bg3);border-radius:5px">'+['💼','📄','💳','🏆'][i]+' '+s+'</div>';
-      }).join('')
-    + '</div></div>';
+    + '<div style="display:flex;flex-direction:column;gap:5px">';
+  SIG_STEPS.forEach(function(step){
+    html += '<div style="display:flex;align-items:center;gap:6px">'
+      + '<span style="font-size:14px;flex-shrink:0">'+step.ico+'</span>'
+      + _pInp('sig_'+step.id, step.lbl)
+      + '</div>';
+  });
+  html += '</div></div>';
+
+  // ── Modes
   modes.forEach(function(m) {
     var stages = MODE_STAGE_DEFS[m.key] || [];
     html += '<div style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:12px 14px;margin-bottom:10px">'
       + '<div style="font-weight:700;font-size:12px;color:'+m.color+';text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">'+m.ico+' '+m.label+'</div>';
     stages.forEach(function(stage) {
-      html += '<div style="margin-bottom:8px">'
-        + '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">'+stage.ico+' '+stage.lbl+'</div>'
-        + '<div style="display:flex;flex-direction:column;gap:3px;padding-left:10px">'
-        + stage.steps.map(function(s){ return '<div style="font-size:12px;color:var(--tx2);padding:3px 7px;background:var(--bg3);border-radius:4px">'+(s.isFinal?'✅ ':'→ ')+s.lbl+'</div>'; }).join('')
-        + '</div></div>';
+      var stageKey = 'stage_'+m.key+'_'+stage.id;
+      html += '<div style="margin-bottom:10px">'
+        + '<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">'
+        + '<span style="font-size:13px;flex-shrink:0">'+stage.ico+'</span>'
+        + _pInpSm(stageKey, stage.lbl)
+        + '</div>'
+        + '<div style="display:flex;flex-direction:column;gap:4px;padding-left:12px">';
+      stage.steps.forEach(function(s, si) {
+        var stepKey = 'step_'+m.key+'_'+stage.id+'_'+s.id+'_'+si;
+        html += '<div style="display:flex;align-items:center;gap:5px">'
+          + '<span style="font-size:10px;color:var(--tx4);flex-shrink:0">'+(s.isFinal?'✅':'→')+'</span>'
+          + _pInp(stepKey, s.lbl)
+          + '</div>';
+      });
+      html += '</div></div>';
     });
+    // ACTIV CONTINUE sous transformation
     if (m.key === 'transformation') {
-      Object.entries(continueLbls).forEach(function(entry) {
-        var stage = ACTIV_CONTINUE_STAGES[entry[0]];
+      ['reset','sculpt','health'].forEach(function(ck) {
+        var stage = ACTIV_CONTINUE_STAGES[ck];
         if (!stage) return;
-        html += '<div style="margin-bottom:8px">'
-          + '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">'+stage.ico+' '+stage.lbl+'</div>'
-          + '<div style="display:flex;flex-direction:column;gap:3px;padding-left:10px">'
-          + stage.steps.map(function(s){ return '<div style="font-size:12px;color:var(--tx2);padding:3px 7px;background:var(--bg3);border-radius:4px">'+(s.isFinal?'✅ ':'→ ')+s.lbl+'</div>'; }).join('')
-          + '</div></div>';
+        var stageKey = 'stage_continue_'+ck+'_'+stage.id;
+        html += '<div style="margin-bottom:10px">'
+          + '<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">'
+          + '<span style="font-size:13px;flex-shrink:0">'+stage.ico+'</span>'
+          + _pInpSm(stageKey, stage.lbl)
+          + '</div>'
+          + '<div style="display:flex;flex-direction:column;gap:4px;padding-left:12px">';
+        stage.steps.forEach(function(s, si) {
+          var stepKey = 'step_continue_'+ck+'_'+stage.id+'_'+s.id+'_'+si;
+          html += '<div style="display:flex;align-items:center;gap:5px">'
+            + '<span style="font-size:10px;color:var(--tx4);flex-shrink:0">'+(s.isFinal?'✅':'→')+'</span>'
+            + _pInp(stepKey, s.lbl)
+            + '</div>';
+        });
+        html += '</div></div>';
       });
     }
     html += '</div>';
