@@ -775,7 +775,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
   <div class="sh sh-B">📅 Prochain RDV Bilan</div>
   <div id="home-rdv"><div class="rdv-empty">Aucun RDV — ajoutez en via le bouton ci-dessous</div></div>
-  <button class="btn btn-dk btn-sm" onclick="openModal('rdv')" style="margin-bottom:14px">📅 + Ajouter un RDV</button>
+  <button class="btn btn-dk btn-sm" onclick="openRDVModal()" style="margin-bottom:14px">📅 + Ajouter un RDV</button>
 </div>
 
 <!-- ══════ PAGE STATS ══════ -->
@@ -1060,7 +1060,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     </div>
     <div class="f"><label>Téléphone</label><input id="np-tel" type="tel" placeholder="06 xx xx xx xx"></div>
     <div class="f"><label>Email</label><input id="np-email" type="email" placeholder="email@exemple.fr"></div>
-    <div class="f"><label>Adresse</label><input id="np-adresse" type="text" placeholder="123 rue de la Paix"></div>
     <div class="f"><label>Ville</label><input id="np-ville" type="text" placeholder="Grenoble"></div>
   </div>
 
@@ -1232,7 +1231,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <div class="mbg" id="m-rdv">
   <div class="mdl">
     <div class="mdl-t">📅 Ajouter un RDV Bilan <button class="mdl-x" onclick="closeModal('rdv')">✕</button></div>
-    <div class="f"><label>Nom du prospect</label><input type="text" id="rdv-name" placeholder="Prénom Nom"></div>
+    <div class="f"><label>Prospect</label><select id="rdv-prospect-id" style="font-size:14px"><option value="">— Choisir un prospect —</option></select></div>
     <div class="g2">
       <div class="f"><label>Date</label><input type="date" id="rdv-date"></div>
       <div class="f"><label>Heure</label><input type="time" id="rdv-time"></div>
@@ -1240,7 +1239,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="f"><label>Type</label><select id="rdv-type"><option>Physique</option><option>Visio</option><option>Appel</option></select></div>
     <div class="brow" style="margin-top:16px">
       <button class="btn btn-dk" onclick="closeModal('rdv')">Annuler</button>
-      <button class="btn btn-bx" onclick="saveRDV()">Ajouter</button>
+      <button class="btn btn-bx" onclick="saveRDV()">Ajouter ✅</button>
     </div>
   </div>
 </div>
@@ -1439,7 +1438,7 @@ function renderProspectModal(id, c, container) {
   var _sexeDisplay = c.sexe || (c.sex==='F'?'Femme':c.sex==='M'?'Homme':'');
   if (_sexeDisplay) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Sexe</div><div style="font-weight:600">'+_sexeDisplay+'</div></div>';
   if (c.tel)   infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Téléphone</div><div style="font-weight:600">'+c.tel+'</div></div>';
-  if (c.email) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+c.email+'</div></div>';
+  if (c.email) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+cleanEmail(c.email)+'</div></div>';
   if (c.rdvType || c.date) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">RDV Bilan</div><div style="font-weight:600">'+dateStr+(c.rdvType?' · '+c.rdvType:'')+'</div></div>';
   if (c.profession) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Profession</div><div style="font-weight:600">'+c.profession+'</div></div>';
   infoRows += '</div>';
@@ -1448,10 +1447,21 @@ function renderProspectModal(id, c, container) {
   container.appendChild(infoCard);
 
   // Résumé pré-qualif si disponible
-  if (c.pq_summary && c.pq_summary.resumeProfil) {
+  if (c.pq_summary) {
+    var pq = c.pq_summary;
+    var ucCls = {Critique:'pill-R',Élevé:'pill-Y',Moyen:'pill-B',Faible:'pill-G'}[pq.niveauUrgence]||'';
+    var ccCls = {Chaud:'pill-R',Tiède:'pill-Y',Froid:'pill-B','À qualifier':'pill-V'}[pq.closingStatusSuggestion]||'';
     var pqCard = document.createElement('div'); pqCard.className='ai-card'; pqCard.style.marginBottom='12px';
-    pqCard.innerHTML = '<div class="ai-title">📋 Analyse Pré-qualif</div>'
-      + '<div class="ai-blk"><div class="ai-blk-c">'+c.pq_summary.resumeProfil+'</div></div>';
+    pqCard.innerHTML = '<div class="ai-title">🧬 Analyse Pré-qualif IA</div>'
+      + (pq.profilTypeCode ? '<div class="pbadge"><span class="pcode">'+pq.profilTypeCode+'</span><span class="plabel">'+(pq.profilTypeLabel||'')+'</span></div>' : '')
+      + '<div class="crow" style="margin-bottom:10px"><div><div class="cscore">'+(pq.closingPotential||0)+'%</div><div class="clbl">Potentiel closing</div></div>'
+      + '<div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px">'
+      + (pq.niveauUrgence ? '<span class="pill '+ucCls+'">'+pq.niveauUrgence+'</span>' : '')
+      + (pq.closingStatusSuggestion ? '<span class="pill '+ccCls+'">'+pq.closingStatusSuggestion+'</span>' : '')
+      + '</div></div>'
+      + (pq.resumeProfil ? '<div class="ai-blk"><div class="ai-blk-c">'+pq.resumeProfil+'</div></div>' : '')
+      + (pq.objectifPrincipal ? '<div class="ai-blk"><div class="ai-blk-t" style="color:var(--B)">🎯 Objectif</div><div class="ai-blk-c">'+pq.objectifPrincipal+'</div></div>' : '')
+      + (pq.approcheCoachingRecommandee ? '<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">🧠 Approche</div><div class="ai-blk-c">'+pq.approcheCoachingRecommandee+'</div></div>' : '');
     container.appendChild(pqCard);
   }
 
@@ -2609,7 +2619,7 @@ function showPg(name) {
   const pg=document.getElementById('pg-'+name); if(pg) pg.classList.add('on');
   document.querySelectorAll('[data-pg="'+name+'"]').forEach(n=>n.classList.add('on'));
   document.getElementById('scroller').scrollTop=0;
-  if(name==='clients') renderClients();
+  if(name==='clients') { renderClients(); loadFromSupabase(); }
   if(name==='stats'){renderStats();setTimeout(renderGraph,80);}
   if(name==='home'){updateKPIs();renderNextRDV();}
   if(name==='offres') renderOffresPage();
@@ -2671,13 +2681,39 @@ function updateKPIs() {
 // ═══════════════════════════════════════════════════
 // RDV
 // ═══════════════════════════════════════════════════
+function openRDVModal() {
+  var sel = document.getElementById('rdv-prospect-id');
+  sel.innerHTML = '<option value="">— Choisir un prospect —</option>';
+  var prospects = ST.clients.filter(function(c){ return c.statut !== 'Closé' && !c.isPro && (c.prenom||c.nom); });
+  prospects.forEach(function(c){
+    var opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = (c.prenom||'') + ' ' + (c.nom||'');
+    sel.appendChild(opt);
+  });
+  document.getElementById('rdv-date').value = new Date().toISOString().split('T')[0];
+  openModal('rdv');
+}
+
 function saveRDV() {
-  const name=gv('rdv-name'); if(!name){toast('err','⚠️ Nom requis');return;}
-  const rdv={id:Date.now().toString(),name,date:gv('rdv-date'),time:gv('rdv-time'),type:gv('rdv-type')};
-  ST.rdvs.push(rdv); ST.rdvs.sort((a,b)=>a.date.localeCompare(b.date));
-  localStorage.setItem('ba_rdvs_v8',JSON.stringify(ST.rdvs));
-  closeModal('rdv'); renderNextRDV(); toast('ok','✅ RDV ajouté');
-  document.getElementById('rdv-name').value='';
+  var prospectId = document.getElementById('rdv-prospect-id').value;
+  if (!prospectId) { toast('err','⚠️ Choisis un prospect'); return; }
+  var c = ST.clients.find(function(x){ return x.id === prospectId; });
+  if (!c) { toast('err','⚠️ Prospect introuvable'); return; }
+  var name = (c.prenom||'') + ' ' + (c.nom||'');
+  var rdv = {id:Date.now().toString(), clientId:prospectId, name:name, date:gv('rdv-date'), time:gv('rdv-time'), type:gv('rdv-type')};
+  ST.rdvs.push(rdv); ST.rdvs.sort(function(a,b){return a.date.localeCompare(b.date);});
+  localStorage.setItem('ba_rdvs_v8', JSON.stringify(ST.rdvs));
+  // Passer automatiquement le prospect en "Closing en cours"
+  if (c.statut === 'Non closé' || !c.statut) {
+    c.statut = 'Closing en cours';
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    renderClients();
+  }
+  closeModal('rdv'); renderNextRDV();
+  toast('ok', '✅ RDV ajouté — ' + name + ' → Closing en cours');
 }
 function renderNextRDV() {
   const el=document.getElementById('home-rdv'); if(!el)return;
@@ -3254,8 +3290,7 @@ function saveNewProspect() {
     age: document.getElementById('np-age').value || '',
     sexe: document.getElementById('np-sexe').value || '',
     tel: (document.getElementById('np-tel').value || '').trim(),
-    email: (document.getElementById('np-email').value || '').trim(),
-    adresse: (document.getElementById('np-adresse').value || '').trim(),
+    email: cleanEmail((document.getElementById('np-email').value || '').trim()),
     ville: (document.getElementById('np-ville').value || '').trim(),
     statut: 'Non closé',
     pq_summary: _pqNewSummary || null,
@@ -3269,7 +3304,7 @@ function saveNewProspect() {
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(prospect);
   // Reset form
-  ['np-prenom','np-nom','np-age','np-tel','np-email','np-adresse','np-ville'].forEach(function(id){
+  ['np-prenom','np-nom','np-age','np-tel','np-email','np-ville'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('np-sexe').value = '';
@@ -3285,7 +3320,7 @@ function saveNewProspect() {
 }
 
 function resetProspectForm() {
-  ['np-prenom','np-nom','np-age','np-tel','np-email','np-adresse','np-ville'].forEach(function(id){
+  ['np-prenom','np-nom','np-age','np-tel','np-email','np-ville'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
   });
   var sel = document.getElementById('np-sexe'); if (sel) sel.value = '';
@@ -3788,6 +3823,8 @@ var ACTIV_CONTINUE_STAGES = {
 };
 
 // ─── Labels personnalisés parcours ───────────────────
+function cleanEmail(e){ return e ? e.replace(/^mailto:/i,'').trim() : e; }
+
 function loadParcoursLabels(){try{var s=localStorage.getItem('ba_parcours_labels');if(s)return JSON.parse(s);}catch(e){}return{};}
 function saveParcoursLabel(key,val){var labels=loadParcoursLabels();labels[key]=val;localStorage.setItem('ba_parcours_labels',JSON.stringify(labels));saveSettingRemote('ba_parcours_labels',labels);}
 function getPLbl(key,dflt){var l=loadParcoursLabels();return(l[key]&&l[key].trim())?l[key]:dflt;}
@@ -4127,7 +4164,7 @@ function renderClientModal(id) {
   var _cSexeDisplay = c.sexe || (c.sex==='F'?'Femme':c.sex==='M'?'Homme':'');
   if (_cSexeDisplay) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Sexe</div><div style="font-weight:600">'+_cSexeDisplay+'</div></div>';
   if (c.tel)   clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Téléphone</div><div style="font-weight:600">'+c.tel+'</div></div>';
-  if (c.email) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+c.email+'</div></div>';
+  if (c.email) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+cleanEmail(c.email)+'</div></div>';
   if (c.profession) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Profession</div><div style="font-weight:600">'+c.profession+'</div></div>';
   clientInfoRows += '</div>';
   if (c.ville || c.age || _cSexeDisplay || c.tel || c.email || c.profession) {
