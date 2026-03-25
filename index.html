@@ -2085,7 +2085,7 @@ function loadOffres() {
   try { const s=localStorage.getItem('ba_offres_v8'); if(s) return JSON.parse(s); } catch(e){}
   return OFFRES_DEFAULT.map(function(o){return Object.assign({},o);});
 }
-function saveOffres(arr) { localStorage.setItem('ba_offres_v8', JSON.stringify(arr)); }
+function saveOffres(arr) { localStorage.setItem('ba_offres_v8', JSON.stringify(arr)); saveSettingRemote('ba_offres_v8', arr); }
 function getOffreCA(o, paiementsEffectues) {
   // CA collecté = (price / paiement) * paiementsEffectues — default: tout payé
   return o.price;
@@ -2194,7 +2194,7 @@ function loadFormDef(key) {
   try { const s=localStorage.getItem('ba_form_'+key); if(s) return JSON.parse(s); } catch(e){}
   return key==='bilan' ? BILAN_FORM_DEFAULT : TESTS_FORM_DEFAULT;
 }
-function saveFormDef(key, def) { localStorage.setItem('ba_form_'+key, JSON.stringify(def)); }
+function saveFormDef(key, def) { localStorage.setItem('ba_form_'+key, JSON.stringify(def)); saveSettingRemote('ba_form_'+key, def); }
 
 // ═══════════════════════════════════════════════════
 // FORM RENDERER
@@ -2553,6 +2553,7 @@ window.onload = function() {
   // Activer auto-save brouillon bilan dès le chargement
   setupBilanDraftAutosave();
   loadFromSupabase();
+  loadSettingsFromSupabase();
   // Charger les offres depuis BE ACTIV BUSINESS au démarrage si configuré
   if (ST.bizUrl) {
     pullOffresFromFinances().catch(function(){});
@@ -2595,6 +2596,7 @@ function saveConfig() {
   closeModal('cfg');
   document.getElementById('cfg-banner').style.display = ST.apiKey ? 'none' : 'flex';
   loadFromSupabase();
+  loadSettingsFromSupabase();
   toast('ok','✅ Configuration enregistrée');
 }
 
@@ -3661,7 +3663,7 @@ function loadSuiteOptions() {
   try { var s=localStorage.getItem('ba_suite_opts'); if(s) return JSON.parse(s); } catch(e){}
   return SUITE_OPTIONS_DEFAULT.map(function(o){return Object.assign({},o);});
 }
-function saveSuiteOptions(arr) { localStorage.setItem('ba_suite_opts', JSON.stringify(arr)); }
+function saveSuiteOptions(arr) { localStorage.setItem('ba_suite_opts', JSON.stringify(arr)); saveSettingRemote('ba_suite_opts', arr); }
 
 
 // Étapes communes à toutes les phases (personnalisables dans l'éditeur)
@@ -3705,6 +3707,7 @@ function loadPhasesCustom() {
 function savePhasesCustom(phases) {
   try {
     localStorage.setItem('ba_phases_custom', JSON.stringify(phases));
+    saveSettingRemote('ba_phases_custom', phases);
   } catch(e) {}
 }
 
@@ -3787,7 +3790,7 @@ var ACTIV_CONTINUE_STAGES = {
 
 // ─── Labels personnalisés parcours ───────────────────
 function loadParcoursLabels(){try{var s=localStorage.getItem('ba_parcours_labels');if(s)return JSON.parse(s);}catch(e){}return{};}
-function saveParcoursLabel(key,val){var labels=loadParcoursLabels();labels[key]=val;localStorage.setItem('ba_parcours_labels',JSON.stringify(labels));}
+function saveParcoursLabel(key,val){var labels=loadParcoursLabels();labels[key]=val;localStorage.setItem('ba_parcours_labels',JSON.stringify(labels));saveSettingRemote('ba_parcours_labels',labels);}
 function getPLbl(key,dflt){var l=loadParcoursLabels();return(l[key]&&l[key].trim())?l[key]:dflt;}
 
 function initModeStages(c, stagesDef) {
@@ -4171,6 +4174,52 @@ function toast(type,msg){const el=document.getElementById('toast');el.textConten
 function gv(id){const el=document.getElementById(id);return el?el.value.trim():'';}
 
 function sv2(id,v){const el=document.getElementById(id);if(el&&v!=null)el.textContent=v;}
+
+// ═══════════════════════════════════════════════════
+// SYNC PARAMÈTRES — ba_settings (Supabase)
+// ═══════════════════════════════════════════════════
+// Clés synchronisées (hors config car chicken-and-egg)
+var SYNC_SETTINGS_KEYS = ['ba_parcours_labels','ba_form_bilan','ba_form_tests','ba_offres_v8','ba_suite_opts','ba_phases_custom'];
+
+async function saveSettingRemote(lsKey, value) {
+  if (!ST.sbUrl || !ST.sbKey) return;
+  try {
+    await fetch(ST.sbUrl + '/rest/v1/ba_settings', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},
+      body: JSON.stringify({ key: lsKey, value: JSON.stringify(value), updated_at: new Date().toISOString() })
+    });
+  } catch(e) {}
+}
+
+async function loadSettingsFromSupabase() {
+  if (!ST.sbUrl || !ST.sbKey) return;
+  try {
+    var keys = SYNC_SETTINGS_KEYS.map(function(k){ return '"'+k+'"'; }).join(',');
+    var res = await fetch(ST.sbUrl + '/rest/v1/ba_settings?key=in.('+keys+')', {
+      headers: {'apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey}
+    });
+    if (!res.ok) return;
+    var rows = await res.json();
+    var updated = false;
+    rows.forEach(function(row) {
+      var local = localStorage.getItem(row.key);
+      // Prendre la version la plus récente (remote vs local)
+      var localTs = 0;
+      try { var lj = JSON.parse(local||'null'); if(lj && lj.__updated_at) localTs = new Date(lj.__updated_at).getTime(); } catch(e){}
+      var remoteTs = row.updated_at ? new Date(row.updated_at).getTime() : 0;
+      if (remoteTs > localTs || !local) {
+        try { localStorage.setItem(row.key, row.value); updated = true; } catch(e){}
+      }
+    });
+    if (updated) {
+      // Recharger les éléments UI qui dépendent des settings
+      renderBilanForm();
+      renderTestsForm();
+      if (document.getElementById('editor-parcours') && document.getElementById('editor-parcours').style.display !== 'none') renderParcoursEditor();
+    }
+  } catch(e) {}
+}
 
 async function loadFromSupabase(){
   if(!ST.sbUrl||!ST.sbKey)return;
