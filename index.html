@@ -1068,6 +1068,15 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div id="pq-new-summary-body"></div>
   </div>
 
+  <!-- Section Groupe / Amies -->
+  <div style="margin-bottom:14px">
+    <button type="button" class="btn btn-dk btn-w btn-sm" onclick="toggleGroupeSection()" id="btn-add-groupe">👥 + Ajouter une amie / ami (groupe)</button>
+  </div>
+  <div id="groupe-section" style="display:none">
+    <div id="groupe-persons"></div>
+    <button type="button" class="btn btn-dk btn-sm" onclick="addGroupePerson()" id="btn-add-person" style="margin-bottom:14px">➕ Ajouter une autre personne</button>
+  </div>
+
   <div class="brow" style="margin-bottom:20px">
     <button class="btn btn-dk" onclick="showPg('clients')">← Annuler</button>
     <button class="btn btn-bx" onclick="saveNewProspect()">💾 Créer la fiche Prospect</button>
@@ -3279,44 +3288,104 @@ function analyzePQForNewProspect() {
   });
 }
 
+// ── Groupe / Amies ──────────────────────────────────
+var _groupeCount = 0;
+function toggleGroupeSection() {
+  var s = document.getElementById('groupe-section');
+  var visible = s.style.display !== 'none';
+  if (visible) {
+    s.style.display = 'none';
+    document.getElementById('groupe-persons').innerHTML = '';
+    _groupeCount = 0;
+    document.getElementById('btn-add-groupe').textContent = '👥 + Ajouter une amie / ami (groupe)';
+  } else {
+    s.style.display = 'block';
+    document.getElementById('btn-add-groupe').textContent = '✕ Annuler le groupe';
+    addGroupePerson();
+  }
+}
+function addGroupePerson() {
+  if (_groupeCount >= 2) { toast('info', 'Maximum 3 personnes au total'); return; }
+  _groupeCount++;
+  var n = _groupeCount;
+  var div = document.createElement('div');
+  div.id = 'groupe-person-' + n;
+  div.className = 'card';
+  div.style.marginBottom = '10px';
+  div.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--bx);margin-bottom:10px">👤 Personne ' + (n+1) + '</div>'
+    + '<div class="g2"><div class="f"><label>Prénom *</label><input id="gp'+n+'-prenom" type="text" placeholder="Prénom"></div>'
+    + '<div class="f"><label>Nom</label><input id="gp'+n+'-nom" type="text" placeholder="Nom"></div></div>'
+    + '<div class="g2"><div class="f"><label>Âge</label><input id="gp'+n+'-age" type="number" placeholder="30"></div>'
+    + '<div class="f"><label>Sexe</label><select id="gp'+n+'-sexe"><option value="">—</option><option value="Femme">Femme</option><option value="Homme">Homme</option></select></div></div>'
+    + '<div class="f"><label>Téléphone</label><input id="gp'+n+'-tel" type="tel" placeholder="06 xx xx xx xx"></div>'
+    + '<button type="button" class="btn btn-R btn-sm" style="margin-top:4px" onclick="removeGroupePerson('+n+')">✕ Retirer</button>';
+  document.getElementById('groupe-persons').appendChild(div);
+  if (_groupeCount >= 2) document.getElementById('btn-add-person').style.display = 'none';
+}
+function removeGroupePerson(n) {
+  var el = document.getElementById('groupe-person-' + n);
+  if (el) el.remove();
+  _groupeCount--;
+  document.getElementById('btn-add-person').style.display = 'block';
+}
+
 function saveNewProspect() {
   var prenom = (document.getElementById('np-prenom').value || '').trim();
   var nom = (document.getElementById('np-nom').value || '').trim();
   if (!prenom) { toast('err', '⚠️ Prénom requis'); return; }
-  var prospect = {
-    id: Date.now().toString(),
-    prenom: prenom,
-    nom: nom,
-    age: document.getElementById('np-age').value || '',
-    sexe: document.getElementById('np-sexe').value || '',
-    tel: (document.getElementById('np-tel').value || '').trim(),
-    email: cleanEmail((document.getElementById('np-email').value || '').trim()),
-    ville: (document.getElementById('np-ville').value || '').trim(),
-    statut: 'Non closé',
-    pq_summary: _pqNewSummary || null,
-    profil_code: _pqNewSummary ? (_pqNewSummary.profilTypeCode || '') : '',
-    profil_label: _pqNewSummary ? (_pqNewSummary.profilTypeLabel || '') : '',
-    score_global: _pqNewSummary ? (_pqNewSummary.potentielClosing || null) : null,
-    updated_at: new Date().toISOString(),
-    date: new Date().toISOString().split('T')[0]
-  };
-  ST.clients.unshift(prospect);
+  var ville = (document.getElementById('np-ville').value || '').trim();
+  var date = new Date().toISOString().split('T')[0];
+
+  function makeProspect(p, n, a, s, t, v) {
+    return { id: Date.now().toString() + Math.random().toString(36).slice(2),
+      prenom:p, nom:n, age:a, sexe:s, tel:t, ville:v||ville,
+      statut:'Non closé', pq_summary: _pqNewSummary||null,
+      profil_code: _pqNewSummary?(_pqNewSummary.profilTypeCode||''):'',
+      profil_label: _pqNewSummary?(_pqNewSummary.profilTypeLabel||''):'',
+      score_global: _pqNewSummary?(_pqNewSummary.potentielClosing||null):null,
+      updated_at: new Date().toISOString(), date: date };
+  }
+
+  var mainProspect = makeProspect(prenom, nom,
+    document.getElementById('np-age').value||'',
+    document.getElementById('np-sexe').value||'',
+    (document.getElementById('np-tel').value||'').trim(), ville);
+  mainProspect.email = cleanEmail((document.getElementById('np-email').value||'').trim());
+
+  var allProspects = [mainProspect];
+
+  // Ajouter les personnes du groupe
+  for (var i = 1; i <= 2; i++) {
+    var gpPrenom = document.getElementById('gp'+i+'-prenom');
+    if (!gpPrenom) continue;
+    var gp = gpPrenom.value.trim();
+    if (!gp) continue;
+    allProspects.push(makeProspect(gp,
+      (document.getElementById('gp'+i+'-nom').value||'').trim(),
+      (document.getElementById('gp'+i+'-age').value||''),
+      (document.getElementById('gp'+i+'-sexe').value||''),
+      (document.getElementById('gp'+i+'-tel').value||'').trim(), ville));
+  }
+
+  allProspects.forEach(function(p){ ST.clients.unshift(p); saveToSupabase(p); });
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-  saveToSupabase(prospect);
-  // Reset form
-  ['np-prenom','np-nom','np-age','np-tel','np-email','np-ville'].forEach(function(id){
-    var el = document.getElementById(id); if (el) el.value = '';
-  });
+
+  // Reset
+  ['np-prenom','np-nom','np-age','np-tel','np-email','np-ville'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('np-sexe').value = '';
   document.getElementById('pq-new-raw').value = '';
   document.getElementById('pq-new-summary-card').style.display = 'none';
-  _pqNewSummary = null;
+  document.getElementById('groupe-section').style.display = 'none';
+  document.getElementById('groupe-persons').innerHTML = '';
+  document.getElementById('btn-add-groupe').textContent = '👥 + Ajouter une amie / ami (groupe)';
+  _groupeCount = 0; _pqNewSummary = null;
+
   renderClients();
-  toast('ok', '✅ ' + prenom + ' ' + nom + ' ajouté(e) comme prospect');
-  // Aller sur la fiche du prospect directement
+  var msg = allProspects.length > 1 ? '✅ ' + allProspects.length + ' prospects créés !' : '✅ ' + prenom + ' ' + nom + ' ajouté(e)';
+  toast('ok', msg);
   switchClientTab('prospects');
   showPg('clients');
-  setTimeout(function(){ openClient(prospect.id); }, 300);
+  setTimeout(function(){ openClient(mainProspect.id); }, 300);
 }
 
 function resetProspectForm() {
