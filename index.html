@@ -4135,12 +4135,15 @@ function validateModeStep(clientId, stageIdx, stepIdx) {
     toast('err', '⚠️ Validez l\'étape précédente d\'abord'); return;
   }
   var stepDef = stagesDef[stageIdx] && stagesDef[stageIdx].steps[stepIdx];
-  // Étapes spéciales : ouvrir F3 ou générer rapport complet
+  // Étapes spéciales : ouvrir F3 ou générer rapport
   if (stepDef && stepDef.id === 'tests') {
     openTestsParcours(clientId, stageIdx, stepIdx); return;
   }
   if (stepDef && stepDef.id === 'rapport_complet') {
     genReportComplet(clientId, stageIdx, stepIdx); return;
+  }
+  if (stepDef && stepDef.id === 'rapport_leger') {
+    genRapportLeger(clientId, stageIdx, stepIdx); return;
   }
   c.mode_stages[stageIdx].steps[stepIdx].done = true;
   c.mode_stages[stageIdx].steps[stepIdx].doneAt = new Date().toISOString();
@@ -4248,6 +4251,52 @@ async function genReportComplet(clientId, stageIdx, stepIdx) {
 function dlPDF_complet() {
   var c = ST.clients.find(function(x){ return x.final_report && x.final_report._tests; });
   toast('info', '📄 Export PDF rapport complet — même fonction que rapport standard');
+}
+
+// ── Rapport Léger ACTION (F1+F2) ─────────────────────
+async function genRapportLeger(clientId, stageIdx, stepIdx) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  if (!c.bilan_summary && !c.pq_summary) {
+    toast('err', '⚠️ Effectuez au moins F1 (Préqualif) avant de générer le rapport');
+    return;
+  }
+  var mdl = document.getElementById('mdl-rapport-complet');
+  mdl.style.display = 'block';
+  document.getElementById('rpt-complet-loading').style.display = 'block';
+  document.getElementById('rpt-complet-content').innerHTML = '';
+  document.getElementById('rpt-complet-actions').style.display = 'none';
+  // Titre
+  var titleEl = mdl.querySelector('h2');
+  if (titleEl) titleEl.textContent = '📋 Rapport Léger (F1+F2)';
+  try {
+    var pqCtx = c.pq_summary ? 'PRÉ-BILAN: '+c.pq_summary.resumeProfil+' | Profil: '+c.pq_summary.profilTypeCode+' | Potentiel closing: '+c.pq_summary.closingPotential+'%' : 'Pré-bilan non effectué';
+    var bilanCtx = c.bilan_summary ? 'BILAN: '+c.bilan_summary.syntheseBilan+' | Leviers: '+(c.bilan_summary.facteursLeviers||'NC')+' | Objectif: '+(c.bilan_summary.objectifPrincipal||'NC') : 'Bilan non effectué';
+    var sys = 'Tu es Jonathan, coach BE ACTIV. Rédige un RAPPORT LÉGER (F1+F2) pour le client, sans tests physiques. Style : chaleureux, professionnel, orienté action. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
+    var usr = 'CLIENT: '+(c.prenom||'')+' '+(c.nom||'')+', '+(c.age||'?')+' ans, '+(c.ville||'NC')+'\n'+pqCtx+'\n'+bilanCtx+'\nOffre choisie: '+(c.offres||'NC')+'\n\nJSON strict:\n{"profilGlobal":"paragraphe synthèse","pointsForts":["pt1","pt2","pt3"],"freinsPrincipaux":["f1","f2"],"planAction30J":"actions concrètes 30 jours","conseilsCoach":"conseils personnalisés","messageMotivation":"message encourageant","prochainRDV":"suggestion prochaine étape"}';
+    var r = await callAI(sys, usr, 'claude-sonnet-4-6', 1500);
+    c.rapport_leger = r;
+    // Valider le step
+    c.mode_stages[stageIdx].steps[stepIdx].done = true;
+    c.mode_stages[stageIdx].steps[stepIdx].doneAt = new Date().toISOString();
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    document.getElementById('rpt-complet-loading').style.display = 'none';
+    document.getElementById('rpt-complet-content').innerHTML = '<div class="ai-card">'
+      + '<div class="ai-title">📋 Rapport Léger généré</div>'
+      + (r.profilGlobal?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--bx)">Profil</div><div class="ai-blk-c">'+r.profilGlobal+'</div></div>':'')
+      + (r.planAction30J?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--G)">Plan 30 jours</div><div class="ai-blk-c">'+r.planAction30J+'</div></div>':'')
+      + (r.conseilsCoach?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--B)">Conseils coach</div><div class="ai-blk-c">'+r.conseilsCoach+'</div></div>':'')
+      + (r.messageMotivation?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">Message</div><div class="ai-blk-c">'+r.messageMotivation+'</div></div>':'')
+      + '</div>';
+    document.getElementById('rpt-complet-actions').style.display = 'block';
+    renderClientModal(clientId);
+    toast('ok', '✨ Rapport Léger généré !');
+  } catch(e) {
+    document.getElementById('rpt-complet-loading').style.display = 'none';
+    document.getElementById('rpt-complet-content').innerHTML = '<div style="color:var(--R)">❌ '+e.message+'</div>';
+  }
 }
 
 function addActivContinue(clientId, key) {
