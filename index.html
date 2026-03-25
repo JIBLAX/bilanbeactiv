@@ -1446,8 +1446,8 @@ function renderProspectModal(id, c, container) {
   infoCard.innerHTML = infoRows;
   container.appendChild(infoCard);
 
-  // Résumé pré-qualif si disponible
-  if (c.pq_summary) {
+  // Résumé pré-qualif si disponible et réel (analyse IA effectuée)
+  if (c.pq_summary && (c.pq_summary.resumeProfil || c.pq_summary.closingPotential > 0)) {
     var pq = c.pq_summary;
     var ucCls = {Critique:'pill-R',Élevé:'pill-Y',Moyen:'pill-B',Faible:'pill-G'}[pq.niveauUrgence]||'';
     var ccCls = {Chaud:'pill-R',Tiède:'pill-Y',Froid:'pill-B','À qualifier':'pill-V'}[pq.closingStatusSuggestion]||'';
