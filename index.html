@@ -678,6 +678,28 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   .pg-bilan .card,.pg-tests .card,.pg-pq .card{margin-bottom:10px}
   .g2{grid-template-columns:1fr 1fr}
 }
+/* ═══ PRINT / PDF ══════════════════════════════════════ */
+@media print {
+  body > *:not(#print-zone) { display:none !important; }
+  #print-zone {
+    display:block !important;
+    position:static !important;
+    width:100% !important;
+    background:#fff !important;
+    color:#111 !important;
+    font-family:Georgia,serif;
+    padding:24px;
+  }
+  #print-zone h1 { font-size:22px; margin-bottom:4px; color:#c0002a; }
+  #print-zone h2 { font-size:15px; color:#555; font-weight:normal; margin-bottom:20px; border-bottom:1px solid #ddd; padding-bottom:8px; }
+  #print-zone .rpt-section { margin-bottom:18px; }
+  #print-zone .rpt-section-title { font-size:13px; font-weight:bold; color:#c0002a; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+  #print-zone .rpt-section-body { font-size:13px; line-height:1.6; color:#222; }
+  #print-zone .rpt-list { padding-left:18px; margin:4px 0; }
+  #print-zone .rpt-list li { margin-bottom:3px; }
+  #print-zone .rpt-footer { margin-top:30px; font-size:11px; color:#888; border-top:1px solid #ddd; padding-top:10px; }
+  #print-zone .rpt-score { display:inline-block; background:#f5f5f5; border-radius:6px; padding:4px 12px; font-size:13px; font-weight:bold; margin-right:8px; }
+}
 </style>
 </head>
 <body>
@@ -4249,8 +4271,50 @@ async function genReportComplet(clientId, stageIdx, stepIdx) {
 }
 
 function dlPDF_complet() {
-  var c = ST.clients.find(function(x){ return x.final_report && x.final_report._tests; });
-  toast('info', '📄 Export PDF rapport complet — même fonction que rapport standard');
+  // Trouver le client dont le rapport est ouvert (dernier généré)
+  var c = ST.clients.find(function(x){ return x.final_report || x.rapport_leger; });
+  if (!c) { toast('err', '⚠️ Aucun rapport trouvé'); return; }
+  var r = c.final_report || c.rapport_leger;
+  var isComplet = !!c.final_report;
+  var titre = isComplet ? 'Rapport Complet — F1+F2+F3' : 'Rapport Léger — F1+F2';
+  var t = isComplet ? (c.tests_data || {}) : null;
+
+  function sec(title, body) {
+    if (!body) return '';
+    return '<div class="rpt-section"><div class="rpt-section-title">'+title+'</div><div class="rpt-section-body">'+body+'</div></div>';
+  }
+  function listSec(title, arr) {
+    if (!arr || !arr.length) return '';
+    return '<div class="rpt-section"><div class="rpt-section-title">'+title+'</div><ul class="rpt-list">'+arr.map(function(i){return '<li>'+i+'</li>';}).join('')+'</ul></div>';
+  }
+
+  var html = '<h1>'+titre+'</h1>'
+    + '<h2>'+(c.prenom||'')+' '+(c.nom||'')+' · '+(c.age||'?')+' ans · '+(c.ville||'')+(c.offres?' · '+c.offres:'')+'</h2>'
+    + sec('Profil global', r.profilGlobal)
+    + listSec('Points forts', r.pointsForts)
+    + listSec('Freins principaux', r.freinsPrincipaux);
+
+  if (isComplet && t) {
+    var imc = t.poids && t.taille ? (parseFloat(t.poids)/Math.pow(parseFloat(t.taille)/100,2)).toFixed(1) : 'NC';
+    html += sec('Données physiques', 'Taille : '+t.taille+' cm | Poids : '+t.poids+' kg | IMC : '+imc+'<br>Tour nombril : '+t.tn+' cm | Tour taille : '+t.tt+' cm<br>Mobilité : '+t.mobGlobal+'/100 | IRD : '+t.ird+' | Planche : '+t.planche+' s');
+    html += sec('Analyse morphologique', r.analyseMorphologique);
+    html += sec('Analyse mobilité', r.analyseMobilite);
+    html += sec('Plan 90 jours', r.planAction90J);
+    html += sec('Conseils training', r.conseilsTraining);
+    html += sec('Conseils nutrition', r.conseilsNutrition);
+    html += sec('Conseils récupération', r.conseilsRecuperation);
+    if (r.scoreGlobal) html += '<div class="rpt-section"><div class="rpt-section-title">Scores</div><div class="rpt-section-body"><span class="rpt-score">Mobilité '+r.scoreMobilite+'/100</span><span class="rpt-score">Condition '+r.scoreCondition+'/100</span><span class="rpt-score">Global '+r.scoreGlobal+'/100 — '+r.niveauGlobal+'</span></div></div>';
+  } else {
+    html += sec('Plan 30 jours', r.planAction30J);
+    html += sec('Conseils coach', r.conseilsCoach);
+    html += sec('Prochaine étape', r.prochainRDV);
+  }
+  html += sec('Message personnalisé', r.messageMotivation);
+  html += '<div class="rpt-footer">Rapport généré le '+new Date().toLocaleDateString('fr-FR')+' · BE ACTIV BILAN CRM · Coach JM</div>';
+
+  var pz = document.getElementById('print-zone');
+  pz.innerHTML = html;
+  window.print();
 }
 
 // ── Rapport Léger ACTION (F1+F2) ─────────────────────
@@ -5555,5 +5619,6 @@ function renderPhaseList(cycleKey, phasesArr, containerId) {
 
 <!-- TOAST NOTIFICATION -->
 <div id="toast"></div>
+<div id="print-zone" style="display:none"></div>
 </body>
 </html>
