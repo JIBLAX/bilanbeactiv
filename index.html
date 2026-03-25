@@ -932,6 +932,9 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div id="rpt-actions" style="display:none;margin-bottom:28px">
     <div class="g2" style="gap:9px;margin-top:12px">
       <button class="btn btn-dk btn-w" id="btn-pdf" onclick="dlPDF()">📄 PDF</button>
+      <button class="btn btn-dk btn-w" id="btn-png" onclick="dlPNG()">🖼 PNG</button>
+    </div>
+    <div class="g2" style="gap:9px;margin-top:8px">
       <button class="btn btn-B btn-w" id="btn-mail" onclick="openEmailModal()">📧 Email</button>
     </div>
     <button class="btn btn-dk btn-w" style="margin-top:8px" onclick="saveClient()">💾 Sauvegarder client</button>
@@ -3147,6 +3150,28 @@ async function dlPDF(){
     doc.save(fn);toast('ok','📄 PDF téléchargé !');
   }catch(e){toast('err','❌ PDF : '+e.message);}
   btn.disabled=false;btn.textContent='📄 PDF';
+}
+
+// ═══════════════════════════════════════════════════
+// PNG
+// ═══════════════════════════════════════════════════
+async function dlPNG(){
+  if(!ST.finalReport){toast('err','⚠️ Générez d\'abord le rapport');return;}
+  if(!window.html2canvas){toast('err','html2canvas non disponible');return;}
+  const btn=document.getElementById('btn-png');btn.disabled=true;btn.textContent='⏳…';
+  const r=ST.finalReport,b=r._client||{};
+  const content=document.getElementById('rpt-content');
+  if(!content){btn.disabled=false;btn.textContent='🖼 PNG';return;}
+  toast('info','⏳ Génération PNG…');
+  try{
+    const canvas=await html2canvas(content,{scale:2,useCORS:true,backgroundColor:'#faf8f5'});
+    const link=document.createElement('a');
+    link.download=('BeActiv_'+(b.prenom||'Client')+'_'+(b.nom||'')+'_'+today()+'.png').replace(/\s+/g,'_');
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    toast('ok','🖼 PNG téléchargé !');
+  }catch(e){toast('err','❌ PNG : '+e.message);}
+  btn.disabled=false;btn.textContent='🖼 PNG';
 }
 
 // ═══════════════════════════════════════════════════
