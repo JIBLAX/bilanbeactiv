@@ -4181,22 +4181,74 @@ var _testsParcoursCtx = null; // {clientId, stageIdx, stepIdx}
 
 function openTestsParcours(clientId, stageIdx, stepIdx) {
   _testsParcoursCtx = {clientId:clientId, stageIdx:stageIdx, stepIdx:stepIdx};
-  var container = document.getElementById('tests-parcours-form');
-  container.innerHTML = '';
-  // Réutiliser le formulaire Tests existant (renderTestsForm) dans ce conteneur
-  var def = loadFormDef('tests');
-  def.forEach(function(section) {
-    var secDiv = document.createElement('div');
-    secDiv.style.marginBottom = '14px';
-    secDiv.innerHTML = '<div style="font-weight:700;font-size:12px;color:var(--bx);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">'+section.title+'</div>';
-    section.fields.forEach(function(field) {
-      var fDiv = document.createElement('div');
-      fDiv.className = 'f';
-      fDiv.innerHTML = '<label>'+field.label+'</label><input id="tp-'+field.id+'" type="'+(field.type||'text')+'" placeholder="'+(field.placeholder||'')+'">';
-      secDiv.appendChild(fDiv);
-    });
-    container.appendChild(secDiv);
-  });
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  var td = (c && c.tests_data) || {};
+  var offresLabel = (c && c.offres) ? c.offres : 'Non renseigné';
+  var nom = c ? ((c.prenom||'')+' '+(c.nom||'')) : '';
+  var age = (c && c.age) ? c.age+' ans' : '';
+
+  function chk(id, opts) {
+    return opts.map(function(o){
+      var checked = td[id] && td[id].indexOf(o) > -1 ? ' checked' : '';
+      return '<label class="chk-item" style="cursor:pointer"><input type="checkbox" data-f3="'+id+'" value="'+o+'"'+checked+'><div class="chk-box"></div><span class="chk-lbl">'+o+'</span></label>';
+    }).join('');
+  }
+  function num(id, ph, stored) {
+    var val = stored !== undefined ? stored : (td[id] || '');
+    return '<input id="f3-'+id+'" type="number" placeholder="'+ph+'" value="'+val+'" style="width:100%">';
+  }
+
+  var html = ''
+    // Client recap
+    + '<div style="background:var(--bg3);border-radius:8px;padding:9px 14px;margin-bottom:14px;font-size:13px">'
+    + '<strong>'+(nom.trim()||'Client')+'</strong>'+(age?' · '+age:'')+' · <span style="color:var(--bx)">'+offresLabel+'</span></div>'
+    // Programme
+    + '<div class="sh sh-B">📋 Programme</div><div class="card">'
+    + '<div class="f"><label>Programme</label><select id="f3-programme"><option'+(td.programme==="TEST ACTIV' 360°"?' selected':'')+">TEST ACTIV' 360°</option><option"+(td.programme==="TEST ACTIV' 90°"?' selected':'')+">TEST ACTIV' 90°</option><option"+(td.programme==='À la Carte'?' selected':'')+">À la Carte</option></select></div>"
+    + '</div>'
+    // Métriques 2-col
+    + '<div class="sh sh-Y">📏 Métriques corporelles</div><div class="card">'
+    + '<div class="g2" style="gap:10px">'
+    + '<div class="f"><label>Taille (cm)</label>'+num('taille','170')+'</div>'
+    + '<div class="f"><label>Poids (kg)</label>'+num('poids','70')+'</div>'
+    + '<div class="f"><label>Tour nombril (cm)</label>'+num('tn','85')+'</div>'
+    + '<div class="f"><label>Tour taille (cm)</label>'+num('tt','78')+'</div>'
+    + '<div class="f"><label>Tour hanche (cm)</label>'+num('th','95')+'</div>'
+    + '<div class="f"><label>Tour cuisses (cm)</label>'+num('tc','55')+'</div>'
+    + '</div>'
+    + '<div class="f"><label>Tour bras (cm)</label>'+num('tb','30')+'</div>'
+    + '</div>'
+    // Cardio 2-col
+    + '<div class="sh sh-V">❤️ Ruffier-Dickson</div><div class="card">'
+    + '<div class="g2" style="gap:10px">'
+    + '<div class="f"><label>P1 repos (bpm)</label>'+num('p1','65')+'</div>'
+    + '<div class="f"><label>P2 effort (bpm)</label>'+num('p2','120')+'</div>'
+    + '<div class="f"><label>P3 récup (bpm)</label>'+num('p3','90')+'</div>'
+    + '<div class="f"><label>FC Max (bpm)</label>'+num('fcmax','190')+'</div>'
+    + '</div></div>'
+    // Mobilité
+    + '<div class="sh sh-G">🤸 Mobilité GOWOD</div><div class="card">'
+    + '<div class="f"><label>Score global (/100)</label>'+num('mobGlobal','62')+'</div>'
+    + '<div class="f"><label>Zones limitantes</label>'
+    + chk('mobZones',['Chaîne postérieure','Épaules','Hanches','Chevilles'])
+    + '</div></div>'
+    // Force
+    + '<div class="sh sh-B">🦵 Force & Gainage</div><div class="card">'
+    + '<div class="f"><label>Planche (secondes)</label>'+num('planche','60')+'</div>'
+    + '<div class="f"><label>Squat</label>'
+    + chk('squatObs',['Talons qui décollent','Genoux valgus','Buste en avant','Validé R.A.S'])
+    + '</div></div>'
+    // Douleurs
+    + '<div class="sh">🩺 Douleurs / Blessures</div><div class="card">'
+    + '<div class="f"><label>Zones</label>'
+    + chk('douleurs',['Genoux','Lombaires','Hanches','Épaules','Cervicales','Chevilles','Poignets','R.A.S'])
+    + '</div></div>'
+    // Notes
+    + '<div class="card"><div class="f"><label>Notes libres</label>'
+    + '<textarea id="f3-notes" rows="2" placeholder="Observations complémentaires…">'+(td.notes||'')+'</textarea>'
+    + '</div></div>';
+
+  document.getElementById('tests-parcours-form').innerHTML = html;
   document.getElementById('mdl-tests-parcours').style.display = 'block';
 }
 
@@ -4210,12 +4262,25 @@ function saveTestsParcours() {
   var ctx = _testsParcoursCtx;
   var c = ST.clients.find(function(x){ return x.id == ctx.clientId; });
   if (!c) return;
-  // Collecter les données des inputs tp-*
+  // Collecter les champs f3-* (inputs numériques + select + textarea)
   var testsData = {};
-  document.querySelectorAll('#tests-parcours-form input').forEach(function(el) {
-    var key = el.id.replace('tp-', '');
+  document.querySelectorAll('#tests-parcours-form input[id^="f3-"], #tests-parcours-form select[id^="f3-"], #tests-parcours-form textarea[id^="f3-"]').forEach(function(el) {
+    var key = el.id.replace('f3-', '');
     testsData[key] = el.value;
   });
+  // Collecter les checkboxes groupées (data-f3)
+  var cbGroups = {};
+  document.querySelectorAll('#tests-parcours-form input[type=checkbox][data-f3]').forEach(function(el) {
+    var k = el.getAttribute('data-f3');
+    if (!cbGroups[k]) cbGroups[k] = [];
+    if (el.checked) cbGroups[k].push(el.value);
+  });
+  Object.assign(testsData, cbGroups);
+  // Calculer IRD automatiquement si P1/P2/P3 présents
+  if (testsData.p1 && testsData.p2 && testsData.p3) {
+    var ird = ((parseFloat(testsData.p1)+parseFloat(testsData.p2)+parseFloat(testsData.p3)-200)/10).toFixed(1);
+    testsData.ird = ird;
+  }
   c.tests_data = testsData;
   // Valider le step Tests
   c.mode_stages[ctx.stageIdx].steps[ctx.stepIdx].done = true;
@@ -4240,11 +4305,23 @@ async function genReportComplet(clientId, stageIdx, stepIdx) {
   try {
     var t = c.tests_data || {};
     var imc = t.poids && t.taille ? (parseFloat(t.poids)/Math.pow(parseFloat(t.taille)/100,2)).toFixed(1) : 'NC';
-    var pqCtx = c.pq_summary ? 'PRÉ-BILAN: '+c.pq_summary.resumeProfil+' | Profil: '+c.pq_summary.profilTypeCode : 'Pré-bilan non effectué';
-    var bilanCtx = c.bilan_summary ? 'BILAN: '+c.bilan_summary.syntheseBilan+' | Leviers: '+(c.bilan_summary.facteursLeviers||'NC') : 'Bilan non effectué';
-    var sys = 'Tu es Jonathan, coach Transformation & Énergie BE ACTIV. Rédige le RAPPORT COMPLET (F1+F2+F3) personnalisé pour le client post-signature. Ce rapport inclut les tests physiques réels. Style : professionnel, bienveillant, concret. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
-    var usr = 'CLIENT: '+(c.prenom||'')+' '+(c.nom||'')+', '+(c.age||'?')+' ans, '+(c.ville||'NC')+'\nIMC: '+imc+'\n'+pqCtx+'\n'+bilanCtx+'\nTESTS PHYSIQUES: Taille='+t.taille+'cm Poids='+t.poids+'kg Tour nombril='+t.tn+' Tour taille='+t.tt+'\nMobilité='+t.mobGlobal+'/100 IRD='+t.ird+' Planche='+t.planche+'s\nOffre: '+(c.offres||'NC')+'\n\nJSON strict:\n{"profilGlobal":"paragraphe","analyseMorphologique":"mesures","analyseMobilite":"mobilité","analyseCardio":"cardio","analyseForce":"force","pointsForts":["pt1","pt2"],"freinsPrincipaux":["f1","f2"],"planAction90J":"plan","conseilsTraining":"texte","conseilsNutrition":"texte","conseilsRecuperation":"texte","messageMotivation":"message","scoreMobilite":0,"scoreCondition":0,"scoreGlobal":0,"niveauGlobal":"Débutant|Intermédiaire|Avancé"}';
-    var r = await callAI(sys, usr, 'claude-sonnet-4-6', 3000);
+    var pqCtx = c.pq_summary ? (c.pq_summary.resumeProfil||'NC')+' | Profil: '+(c.pq_summary.profilTypeCode||'NC') : 'Non effectué';
+    var bilanCtx = c.bilan_summary ? (c.bilan_summary.syntheseBilan||'NC')+' | Leviers: '+(c.bilan_summary.facteursLeviers||'NC') : 'Non effectué';
+    var douleurs = Array.isArray(t.douleurs) ? t.douleurs.join(', ') : (t.douleurs||'NC');
+    var mobZones = Array.isArray(t.mobZones) ? t.mobZones.join(', ') : (t.mobZones||'NC');
+    var sys = 'Tu es Jonathan, coach BE ACTIV. Génère un rapport complet F1+F2+F3 en JSON strict sans backticks. Sois concret, personnalisé, bienveillant. Français uniquement.';
+    var usr = 'CLIENT: '+(c.prenom||'NC')+' '+(c.nom||'')+', '+(c.age||'?')+' ans, '+(c.ville||'NC')
+      +'\nIMC: '+imc+' | Poids: '+(t.poids||'NC')+'kg | Taille: '+(t.taille||'NC')+'cm'
+      +'\nMesures: nombril='+(t.tn||'NC')+' taille='+(t.tt||'NC')+' hanche='+(t.th||'NC')+' cuisses='+(t.tc||'NC')+' bras='+(t.tb||'NC')
+      +'\nCardio: P1='+(t.p1||'NC')+' P2='+(t.p2||'NC')+' P3='+(t.p3||'NC')+' IRD='+(t.ird||'NC')+' FCmax='+(t.fcmax||'NC')
+      +'\nMobilité: '+(t.mobGlobal||'NC')+'/100 | Zones: '+mobZones
+      +'\nForce: Planche='+(t.planche||'NC')+'s'
+      +'\nDouleurs: '+douleurs
+      +'\nPré-bilan: '+pqCtx
+      +'\nBilan: '+bilanCtx
+      +'\nOffre: '+(c.offres||'NC')
+      +'\n\nJSON:\n{"profilGlobal":"","analyseMorphologique":"","analyseMobilite":"","analyseCardio":"","analyseForce":"","pointsForts":["",""],"freinsPrincipaux":["",""],"planAction90J":"","conseilsTraining":"","conseilsNutrition":"","conseilsRecuperation":"","messageMotivation":"","scoreMobilite":0,"scoreCondition":0,"scoreGlobal":0,"niveauGlobal":""}';
+    var r = await callAI(sys, usr, 'claude-haiku-4-5-20251001', 2000);
     c.final_report = r; c.final_report._client = c; c.final_report._tests = t;
     // Valider le step rapport_complet
     var stagesDef = getActiveStageDefs(c);
@@ -5265,6 +5342,16 @@ async function pullOffresFromFinances() {
         modeOffre:   modeOffre,
         readOnly:    true   // offres Business → non modifiable dans BILAN CRM
       };
+    });
+    // Merge intelligent : conserver les modeOffre modifiés manuellement
+    var existingOffres = loadOffres();
+    offres = offres.map(function(o) {
+      var existing = existingOffres.find(function(e){ return e.id === o.id; });
+      // Si l'offre existait déjà et que son modeOffre a été modifié manuellement → le garder
+      if (existing && existing.modeOffre && existing.modeOffre !== o.modeOffre && !existing.readOnly) {
+        o.modeOffre = existing.modeOffre;
+      }
+      return o;
     });
     saveOffres(offres);
     localStorage.setItem('ba_offres_from_business', '1');
