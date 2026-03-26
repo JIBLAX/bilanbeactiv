@@ -904,7 +904,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div id="bilan-form-container"><!-- rempli par renderBilanForm() --></div>
   <div class="brow" style="margin-bottom:18px">
     <button class="btn btn-dk" onclick="showPg('pq')">← Retour</button>
-    <button class="btn btn-bx" onclick="saveClient()">💾 Enregistrer le Bilan</button>
+    <button class="btn btn-bx" onclick="saveBilanAndReturn()">💾 Enregistrer le Bilan</button>
   </div>
   <div id="bilan-result" style="display:none"></div>
   <div id="bilan-cta" style="display:none;margin:10px 0 18px">
@@ -1566,6 +1566,36 @@ function renderProspectModal(id, c, container) {
     renderSignatureAccordion(id, c, container);
   }
 
+  // ── Section bilan post-RDV
+  var today2 = new Date().toISOString().split('T')[0];
+  var bilanDone = c.rdvStatut === 'Présent' || c.rdvStatut === 'Absent' || (c.date && c.date <= today2);
+  if (!c.isPro && bilanDone && !isClosingEnCours) {
+    var bilanSection = document.createElement('div');
+    bilanSection.style.cssText = 'margin-bottom:12px';
+    if (c.bilan_summary) {
+      var bs = c.bilan_summary;
+      var rcCls = {'Démarrer maintenant':'pill-G','Envoyer offre':'pill-Y','Relancer dans 1 semaine':'pill-B','Ne pas continuer':'pill-R'}[bs.recommandationSuiteRDV]||'';
+      bilanSection.innerHTML = '<div class="ai-card" style="border-color:rgba(26,110,219,.2);margin-bottom:10px">'
+        + '<div class="ai-title" style="color:var(--B)">🩺 Synthèse Bilan</div>'
+        + (bs.profilTypeCodeUpdated ? '<div class="pbadge"><span class="pcode" style="color:var(--B)">'+bs.profilTypeCodeUpdated+'</span><span class="plabel">'+(bs.profilTypeLabelUpdated||'')+'</span></div>' : '')
+        + '<div class="crow" style="margin-bottom:8px"><div><div class="cscore" style="color:var(--B)">'+(bs.closingPotentialUpdated||0)+'%</div><div class="clbl">Closing</div></div>'
+        + '<div style="margin-left:auto"><span class="pill '+rcCls+'">'+(bs.recommandationSuiteRDV||'')+'</span></div></div>'
+        + (bs.syntheseBilan ? '<div class="ai-blk"><div class="ai-blk-c">'+bs.syntheseBilan+'</div></div>' : '')
+        + (bs.prioritesCoaching ? '<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">🎯 Priorités</div><div class="ai-blk-c">'+bs.prioritesCoaching+'</div></div>' : '')
+        + (bs.offreRecommandee ? '<div style="font-size:12px;color:var(--tx3);margin-top:6px">💼 Offre recommandée : <strong style="color:var(--Y)">'+bs.offreRecommandee+'</strong></div>' : '')
+        + '</div>'
+        + '<div style="background:var(--bg2);border:1.5px solid var(--rim);border-radius:var(--r2);padding:12px">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">📋 Décision suite au Bilan</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+        + '<button class="btn btn-R" onclick="setBilanDecision(\'refus\')">❌ REFUS</button>'
+        + '<button class="btn btn-G" onclick="setBilanDecision(\'ok\')">✅ OK → Closing</button>'
+        + '</div></div>';
+    } else {
+      bilanSection.innerHTML = '<button id="btn-synth-bilan-'+id+'" class="btn btn-bx btn-w" onclick="genSyntheseBilanFromClient(\''+id+'\')">🤖 Générer synthèse bilan</button>';
+    }
+    container.appendChild(bilanSection);
+  }
+
   // ── 3 BOUTONS D'ACTION
   var actionsDiv = document.createElement('div'); actionsDiv.style.cssText='display:flex;flex-direction:column;gap:8px;margin-top:4px';
 
@@ -1857,6 +1887,47 @@ function getModeOffreLabel(mode) {
 // ═══════════════════════════════════════════════════
 // DÉCISION BILAN : REFUS ou OK → Closing en cours
 // ═══════════════════════════════════════════════════
+// Génère la synthèse bilan depuis les données sauvegardées (appel post-RDV depuis la fiche)
+async function genSyntheseBilanFromClient(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) { toast('err', 'Client introuvable'); return; }
+  var btn = document.getElementById('btn-synth-bilan-'+clientId);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Analyse…'; }
+  try {
+    var br = c.bilan_raw || {};
+    var pqCtx = c.pq_summary
+      ? 'Pré-bilan : '+c.pq_summary.profilTypeCode+' — '+c.pq_summary.profilTypeLabel+'. Closing: '+c.pq_summary.closingPotential+'%. Vigilances: '+(c.pq_summary.pointsDeVigilance||'aucune')+'.'
+      : '';
+    var sys = 'Tu es l\'assistant IA du coach Jonathan (BE ACTIV, Grenoble/Lyon). Analyse les données du bilan coach et produis une synthèse interne professionnelle. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. 4 LEVIERS : BOUGER | MANGER | RÉCUPÉRER | RÉGULER. 3 PHASES : RESET | SCULPT | HEALTH. Jamais de restriction sévère.\n\n'+BA_PROFILS_SYS+'\n\nConfirme ou affine le profil BE ACTIV. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
+    var usr = pqCtx
+      + '\nProspect : '+c.prenom+' '+c.nom+', '+(c.age||'?')+' ans, '+(c.ville||'NC')
+      + '\nOffre souhaitée : '+(c.offres||'NC')+' | Montant : '+(c.montant||'NC')+'€'
+      + (br.vision6m   ? '\nVision 6 mois : '+br.vision6m.slice(0,200)   : '')
+      + (br.blocages   ? '\nBlocages : '+br.blocages.slice(0,150)         : '')
+      + (br.pointA     ? '\nPoint A : '+br.pointA.slice(0,150)            : '')
+      + (br.notesTrain ? '\nEntraînement : '+br.notesTrain.slice(0,150)   : '')
+      + (br.pas        ? '\nNEAT : '+br.pas+' pas/jour'                   : '')
+      + (br.notesAlim  ? '\nAlimentation : '+br.notesAlim.slice(0,150)    : '')
+      + (br.notesVie   ? '\nMode de vie : '+br.notesVie.slice(0,150)      : '')
+      + (br.attenteCoach ? '\nAttente coaching : '+br.attenteCoach.slice(0,100) : '')
+      + '\n\nJSON strict :\n{"syntheseBilan":"3-4 phrases","hypotheseCoach":"texte","facteursLimitants":"texte","facteursLeviers":"texte","incoherencesOuVigilances":"texte ou null","prioritesCoaching":"3 priorités","profilTypeCodeUpdated":"P1..P11","profilTypeLabelUpdated":"libellé","closingPotentialUpdated":0,"recommandationSuiteRDV":"Démarrer maintenant|Envoyer offre|Relancer dans 1 semaine|Ne pas continuer","offreRecommandee":"texte"}';
+    var r = await callAI(sys, usr, 'claude-haiku-4-5-20251001', 1400);
+    c.bilan_summary = r;
+    c.profil_code = r.profilTypeCodeUpdated || c.profil_code;
+    c.profil_label = r.profilTypeLabelUpdated || c.profil_label;
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    ST.bilanSummary = r;
+    toast('ok', '✅ Synthèse bilan générée !');
+    closeModal('client');
+    setTimeout(function(){ openClient(clientId); }, 200);
+  } catch(e) {
+    toast('err', '❌ '+e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '🤖 Générer synthèse bilan'; }
+  }
+}
+
 function setBilanDecision(decision) {
   var clientId = ST.clientId;
   if (!clientId) return;
@@ -2196,7 +2267,33 @@ const ST = {
   selectMode:false, selectedIds:[]
 };
 
-const PROFILS = {P1:'Je sais mais je n\'y arrive pas',P2:'Besoin d\'être guidé(e)',P3:'Motivé(e) mais instable',P4:'Déconnecté(e) de son corps',P5:'Mental fort / corps bloqué',P6:'Multi-problèmes / désorganisé(e)',P7:'Corps en résistance',P8:'Hyper-actif(ve)',P9:'Image corporelle abîmée',P10:'Performant(e) pro / chaos perso',P11:'Non compatible BE ACTIV',P12:'Cas médical / clinique'};
+const PROFILS = {
+  P1:'Sait mais n\'y arrive pas',
+  P2:'Motivé(e) mais instable',
+  P3:'Déconnecté(e) de son corps',
+  P4:'Mental fort / corps bloqué',
+  P5:'Multi-problèmes / désorganisé(e)',
+  P6:'Corps en résistance',
+  P7:'Hyper-actif(ve)',
+  P8:'Image corporelle abîmée',
+  P9:'Performant(e) pro / chaos perso',
+  P10:'Non compatible BE ACTIV',
+  P11:'Cas médical / clinique'
+};
+
+// Référence détaillée des profils pour les prompts IA
+const BA_PROFILS_SYS = `PROFILS BE ACTIV (assigne P1..P11 — 1 principal obligatoire, 1 secondaire optionnel) :
+P1 "Sait mais n'y arrive pas" — sur-contrôle, culpabilité, burnout. Posture : sécuriser avant d'optimiser, enlever la pression.
+P2 "Motivé mais instable" — dopamine > structure, yo-yo, adore commencer. Posture : constance > intensité, cadre simple et long terme.
+P3 "Déconnecté du corps" — mécanique, peu de sensations, tout dans la tête. Posture : réécoute corporelle, lenteur, mouvement sans objectif esthétique.
+P4 "Mental fort / corps bloqué" — discipliné mais SNS saturé, stagnation physique. Posture : réconcilier mental et corps, le corps protège il ne trahit pas.
+P5 "Multi-problèmes / désorganisé" — tout mélangé (poids/stress/sommeil/émotions), surcharge mentale. Posture : structurer, simplifier, 1 seule priorité à la fois.
+P6 "Corps en résistance" — fait tout bien mais rien ne bouge, sentiment d'injustice. Posture : sécuriser, expliquer le pourquoi, retirer la pression du résultat.
+P7 "Hyper-actif" — jamais au repos, travail/sport/obligations sans arrêt, fuite intérieure. Posture : légitimer le repos, cadrer le rythme, bouger sans s'épuiser.
+P8 "Image corporelle abîmée" — auto-jugement fort, comparaison constante, insatisfaction malgré les progrès, risque TCA. Posture : sortir l'objectif du miroir, reconstruire l'identité.
+P9 "Performant pro / chaos perso" — réussite professionnelle, discipline au travail, mais corps et vie perso négligés. Posture : corps comme levier de performance, vision long terme.
+P10 "Non compatible BE ACTIV" — cherche solution rapide, teste le cadre, négocie, refuse la remise en question. Posture : cadre ferme, refus ou réorientation assumée, zéro compromis.
+P11 "Cas médical / clinique" — TCA actifs, dépression sévère, troubles anxieux lourds, pathologies lourdes. Posture : sécurité avant tout, réorientation ou co-accompagnement, suivi médical obligatoire.`;
 
 // ═══════════════════════════════════════════════════
 // OFFRES
@@ -2239,8 +2336,7 @@ const BILAN_FORM_DEFAULT = [
     {id:'b-ville',label:'Ville',type:'text',placeholder:'Grenoble'},
     {id:'b-prof',label:'Profession',type:'text',placeholder:'Infirmière, étudiant…'}
   ]},
-  {id:'bf2',section:'📡 Source & RDV',type:'group',fields:[
-    {id:'b-source',label:'Source',type:'radio',name:'source',options:['Fitness Park','TikTok','Instagram','Facebook','Bouche à Oreille','Cours Collectifs']},
+  {id:'bf2',section:'📡 RDV',type:'group',fields:[
     {id:'b-rdv-statut',label:'Statut RDV',type:'select',options:['','Présent','Absent']},
     {id:'b-date',label:'Date',type:'date'}
   ]},
@@ -2325,7 +2421,7 @@ const TESTS_FORM_DEFAULT = [
   ]}
 ];
 
-var BILAN_FORM_VERSION = 3; // Incrémenter à chaque suppression/ajout de champ obligatoire
+var BILAN_FORM_VERSION = 4; // Incrémenter à chaque suppression/ajout de champ obligatoire
 function loadFormDef(key) {
   try {
     const s = localStorage.getItem('ba_form_'+key);
@@ -3240,9 +3336,8 @@ async function analyzePQ(){
   const raw=gv('pq-raw');if(raw.length<20){toast('err','⚠️ Collez les réponses Calendly');return;}
   const btn=document.getElementById('btn-pq');btn.disabled=true;btn.textContent='⏳ Analyse…';
   try{
-    const pg=Object.entries(PROFILS).map(([k,v])=>k+'='+v).join(' | ');
-    const sys='Tu es l\'assistant IA du coach Jonathan (BE ACTIV, Grenoble/Lyon). Tu analyses les réponses du questionnaire Calendly pré-RDV pour classer le profil prospect. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. PROCESSUS : ANCRER → SIMPLIFIER → RÉPÉTER → AJUSTER → LÂCHER PRISE. 4 LEVIERS : BOUGER | MANGER | RÉCUPÉRER | RÉGULER. 3 PHASES : RESET | SCULPT | HEALTH. GRILLE PROFILS : '+pg+'. RÈGLES : 1 profil principal obligatoire (P1..P12), 1 secondaire optionnel. Justifie dans le contexte BE ACTIV. Si doute médical → P12. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
-    const usr='Réponses :\n---\n'+raw.slice(0,3000)+'\n---\nJSON strict :\n{"resumeProfil":"2-3 phrases","objectifPrincipal":"court","freinsProbables":"texte","motivationsDominantes":"texte","pointsDeVigilance":"texte","niveauUrgence":"Faible|Moyen|Élevé|Critique","profilTypeCode":"P1..P12","profilTypeLabel":"libellé exact","profilTypeCodeSecondaire":"P1..P12 ou null","profilTypeLabelSecondaire":"libellé ou null","profilTypeReason":"justification","approcheCoachingRecommandee":"texte","closingPotential":0,"closingStatusSuggestion":"Chaud|Tiède|Froid|À qualifier"}';
+    const sys='Tu es l\'assistant IA du coach Jonathan (BE ACTIV, Grenoble/Lyon). Tu analyses les réponses du questionnaire Calendly pré-RDV pour classer le profil prospect. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. 4 LEVIERS : BOUGER | MANGER | RÉCUPÉRER | RÉGULER. 3 PHASES : RESET | SCULPT | HEALTH.\n\n'+BA_PROFILS_SYS+'\n\nRÈGLES : Assigne 1 profil principal obligatoire (P1..P11), 1 secondaire optionnel si pertinent. Justifie selon les réponses. Si doute médical grave → P11. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
+    const usr='Réponses :\n---\n'+raw.slice(0,3000)+'\n---\nJSON strict :\n{"resumeProfil":"2-3 phrases","objectifPrincipal":"court","freinsProbables":"texte","motivationsDominantes":"texte","pointsDeVigilance":"texte","niveauUrgence":"Faible|Moyen|Élevé|Critique","profilTypeCode":"P1..P11","profilTypeLabel":"libellé exact","profilTypeCodeSecondaire":"P1..P11 ou null","profilTypeLabelSecondaire":"libellé ou null","profilTypeReason":"justification courte","approcheCoachingRecommandee":"texte","closingPotential":0,"closingStatusSuggestion":"Chaud|Tiède|Froid|À qualifier"}';
     const r=await callAI(sys,usr,'claude-haiku-4-5-20251001',1200);
     ST.pqSummary=r;renderPQResult(r);
     document.getElementById('pq-result').style.display='block';
@@ -3264,7 +3359,7 @@ async function analyzeBilan(){
   try{
     const b=collectBilan();
     const pqCtx=ST.pqSummary?'Pré-bilan : '+ST.pqSummary.profilTypeCode+' — '+ST.pqSummary.profilTypeLabel+'. Closing: '+ST.pqSummary.closingPotential+'%. Vigilances: '+(ST.pqSummary.pointsDeVigilance||'aucune')+'.'  :'';
-    const sys='Tu es l\'assistant IA du coach Jonathan (BE ACTIV, Grenoble/Lyon). Analyse les données du bilan coach et produis une synthèse interne professionnelle. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. 4 LEVIERS : BOUGER (musculation + NEAT) | MANGER (nourrir sans punir) | RÉCUPÉRER (sommeil prioritaire) | RÉGULER (stress, hormones). 3 PHASES : RESET (reprendre contrôle) | SCULPT (construire/recomposer) | HEALTH (entretenir). Identifie les leviers réels, détermine la phase adaptée, recommande l\'offre cohérente. Jamais de restriction sévère ou comptage calorique avant les fondations. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
+    const sys='Tu es l\'assistant IA du coach Jonathan (BE ACTIV, Grenoble/Lyon). Analyse les données du bilan coach et produis une synthèse interne professionnelle. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. 4 LEVIERS : BOUGER (musculation + NEAT) | MANGER (nourrir sans punir) | RÉCUPÉRER (sommeil prioritaire) | RÉGULER (stress, hormones). 3 PHASES : RESET (reprendre contrôle) | SCULPT (construire/recomposer) | HEALTH (entretenir). Jamais de restriction sévère ou comptage calorique avant les fondations.\n\n'+BA_PROFILS_SYS+'\n\nIdentifie les leviers réels, détermine la phase adaptée, confirme ou affine le profil, recommande l\'offre cohérente. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
     const usr=pqCtx+'\nProspect : '+b.prenom+' '+b.nom+', '+(b.age||'?')+' ans, '+(b.ville||'NC')+'\nSource : '+(b.source||'NC')+' | Profil: '+(b.profilTypeCode||'NC')+'\nVision 6 mois : '+(b.vision6m||'').slice(0,200)+'\nBlocages : '+(b.blocages||'').slice(0,150)+'\nEntraînement : '+(b.notesTrain||'NC')+' | NEAT : '+(b.pas||'NC')+' pas\nAlimentation : '+(b.notesAlim||'NC')+'\nMode de vie : '+(b.notesVie||'NC')+'\nOffres : '+(b.offres||'NC')+' | Montant : '+(b.montant||'NC')+'€\n\nJSON strict :\n{"syntheseBilan":"3-4 phrases","hypotheseCoach":"texte","facteursLimitants":"texte","facteursLeviers":"texte","incoherencesOuVigilances":"texte ou null","prioritesCoaching":"3 priorités","profilTypeCodeUpdated":"P1..P12","profilTypeLabelUpdated":"libellé","closingPotentialUpdated":0,"recommandationSuiteRDV":"Démarrer maintenant|Envoyer offre|Relancer dans 1 semaine|Ne pas continuer","offreRecommandee":"texte"}';
     const r=await callAI(sys,usr,'claude-haiku-4-5-20251001',1300);
     ST.bilanSummary=r;
@@ -3777,7 +3872,6 @@ function openEditClientModal(clientId) {
 function saveClient(){
   const b=collectBilan(),r=ST.finalReport;
   if(!b.prenom&&!b.nom){toast('err','⚠️ Prénom/nom requis');return;}
-  // Récupérer le prospect existant pour préserver ses données (statut, sig_steps, mode_stages, etc.)
   const existingClient = ST.clientId ? ST.clients.find(function(c){return c.id==ST.clientId;}) : null;
   const client=Object.assign({}, existingClient||{}, {
     id:ST.clientId||Date.now().toString(),
@@ -3786,17 +3880,26 @@ function saveClient(){
     age:b.age||((existingClient||{}).age)||'',
     ville:b.ville||((existingClient||{}).ville)||'',
     profession:b.profession,
-    source:b.source,date:b.date,
+    // Préserver source depuis F1 si non saisie en F2
+    source:b.source||((existingClient||{}).source)||'',
+    date:b.date,
     profil_code:(r&&r.profilTypeCodeFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeCodeUpdated)||b.profilTypeCode||((existingClient||{}).profil_code)||'',
     profil_label:(r&&r.profilTypeLabelFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeLabelUpdated)||'',
     offres:b.offres||((existingClient||{}).offres)||'',
     montant:b.montant,objections:b.objections,
-    // Préserver le statut existant si le prospect est déjà en cours de closing
     statut:((existingClient||{}).statut)||'Non closé',
     score_global:r?r.scoreGlobal:((existingClient||{}).score_global)||null,
     pq_summary:ST.pqSummary||((existingClient||{}).pq_summary)||null,
-    bilan_summary:ST.bilanSummary,
+    bilan_summary:ST.bilanSummary||((existingClient||{}).bilan_summary)||null,
     final_report:r,
+    // Champs bruts du bilan pour synthèse post-RDV
+    bilan_raw: {
+      notesTrain:b.notesTrain||'', pas:b.pas||'',
+      notesAlim:b.notesAlim||'', notesVie:b.notesVie||'',
+      vision6m:b.vision6m||'', pointA:b.pointA||'',
+      blocages:b.blocages||'', echec6m:b.echec6m||'',
+      attenteCoach:b.attenteCoach||''
+    },
     updated_at:new Date().toISOString()
   });
   ST.clientId=client.id;
@@ -3809,6 +3912,20 @@ function saveClient(){
   // Effacer le brouillon car client sauvegardé
   clearBilanDraft();
   toast('ok','✅ '+client.prenom+' '+client.nom+' sauvegardé');
+}
+
+// Sauvegarde le bilan et redirige vers la fiche prospect
+function saveBilanAndReturn() {
+  saveClient();
+  var clientId = ST.clientId;
+  if (clientId) {
+    setTimeout(function() {
+      switchClientTab('prospects');
+      showPg('clients');
+      renderClients();
+      setTimeout(function(){ openClient(clientId); }, 350);
+    }, 500);
+  }
 }
 
 function isNewClient(c) {
@@ -3842,7 +3959,8 @@ function renderClients(){
     var dt=c.updated_at?new Date(c.updated_at).toLocaleDateString('fr-FR'):'';
     var offreTxt = ((c.offres||'').split(',')[0].trim()||'—');
     var displayStatut = c.statut;
-    if (c.statut === 'Non closé' && c.date) displayStatut = 'En cours';
+    var todayStr = new Date().toISOString().split('T')[0];
+    if (c.statut === 'Non closé' && c.date && c.date >= todayStr) displayStatut = 'En cours';
     var statPill = c.statut ? '<span class="pill '+(sp[displayStatut]||sp[c.statut]||'')+'" style="font-size:10px'+(isClosing?';animation:pulse-y 2s ease-in-out infinite':'')+'">'+(isNew?'🆕 ':'')+displayStatut+'</span>' : '';
     var newBadge = isNew ? '<span class="badge-new">New</span>' : '';
     var closingBadge = isClosing ? '<span class="badge-closing">Closing</span>' : '';
@@ -4879,7 +4997,7 @@ async function loadSettingsFromSupabase() {
       if (row.key === 'ba_form_bilan') {
         try {
           var remoteForm = row.value || '';
-          if (remoteForm.includes('b-rdv-type') || remoteForm.includes('b-pret-payer') || remoteForm.includes('pret-payer')) {
+          if (remoteForm.includes('b-rdv-type') || remoteForm.includes('b-pret-payer') || remoteForm.includes('pret-payer') || (remoteForm.includes('b-source') && remoteForm.includes('bf2'))) {
             // Ancienne version détectée — pousser le nouveau défaut vers Supabase et ignorer
             saveSettingRemote('ba_form_bilan', BILAN_FORM_DEFAULT);
             localStorage.removeItem('ba_form_bilan');
@@ -4915,9 +5033,9 @@ async function loadFromSupabase(){
     rows.forEach(row=>{
       // Ignorer les enregistrements sans nom (prospects vides/incomplets)
       if(!row.prenom && !row.nom) return;
-      let pq=null,bilan=null,final=null;
-      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;}catch(e){}
-      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,ville:row.ville,profession:row.profession,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offres,pretPayer:row.pret_payer,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,updated_at:row.updated_at,groupId:row.group_id||null};
+      let pq=null,bilan=null,final=null,bilanRaw=null;
+      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;}catch(e){}
+      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,ville:row.ville,profession:row.profession,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offres,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,bilan_raw:bilanRaw,updated_at:row.updated_at,groupId:row.group_id||null};
       const i=ST.clients.findIndex(c=>c.id===sc.id);if(i>=0)ST.clients[i]=sc;else ST.clients.unshift(sc);
     });
     localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
@@ -4930,7 +5048,7 @@ async function saveToSupabase(c){
   // Ne pas sauvegarder un prospect sans nom (évite les enregistrements vides)
   if(!c.prenom && !c.nom) return;
   try{
-    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,age:parseInt(c.age)||null,ville:c.ville,profession:c.profession,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offres:c.offres,pret_payer:c.pretPayer,montant:c.montant?parseFloat(c.montant):null,statut:c.statut,score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report}),updated_at:c.updated_at,group_id:c.groupId||null})});
+    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,age:parseInt(c.age)||null,ville:c.ville,profession:c.profession,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offres:c.offres,montant:c.montant?parseFloat(c.montant):null,statut:c.statut,score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report,bilan_raw:c.bilan_raw||null}),updated_at:c.updated_at,group_id:c.groupId||null})});
   }catch(e){}
 }
 
