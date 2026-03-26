@@ -885,7 +885,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
   <div id="bilan-result" style="display:none"></div>
   <div id="bilan-cta" style="display:none;margin:10px 0 18px">
-    <button class="btn btn-bx btn-w" onclick="showPg('rapport')">Générer le Rapport →</button>
     <!-- Décision bilan : si prospect avec ST.clientId défini -->
     <div id="bilan-decision-wrap" style="display:none;margin-top:12px;background:var(--bg2);border:1.5px solid var(--rim);border-radius:var(--r2);padding:14px">
       <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📋 Décision suite au Bilan</div>
@@ -910,7 +909,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div id="tests-form-container"><!-- rempli par renderTestsForm() --></div>
   <div class="brow" style="margin-bottom:28px">
     <button class="btn btn-dk" onclick="showPg('bilan')">← Retour</button>
-    <button class="btn btn-bx btn-w" onclick="showPg('rapport')">Générer Rapport →</button>
   </div>
 </div>
 
@@ -2135,7 +2133,6 @@ const BILAN_FORM_DEFAULT = [
   ]},
   {id:'bf2',section:'📡 Source & RDV',type:'group',fields:[
     {id:'b-source',label:'Source',type:'radio',name:'source',options:['Fitness Park','TikTok','Instagram','Facebook','Bouche à Oreille','Cours Collectifs']},
-    {id:'b-rdv-type',label:'Type RDV',type:'select',options:['','Physique','Visio','Appel']},
     {id:'b-rdv-statut',label:'Statut RDV',type:'select',options:['','Présent','Absent']},
     {id:'b-date',label:'Date',type:'date'}
   ]},
@@ -2173,9 +2170,8 @@ const BILAN_FORM_DEFAULT = [
   ]},
   {id:'bf9',section:'💼 Offre & Closing',type:'group',fields:[
     {id:'b-offres',label:'Offre proposée',type:'offres'},
-    {id:'b-pret-payer',label:'Prêt à payer',type:'radio',name:'pret-payer',options:['Oui','Non']},
     {id:'b-montant',label:'Montant (€)',type:'number',placeholder:'0'},
-    {id:'b-objections',label:'Objections',type:'checkboxes',options:['Budget','Manque de temps','Peur/Confiance','Besoin de réfléchir']},
+    {id:'b-objections',label:'Objections',type:'checkboxes',options:['Budget','Manque de temps','Peur/Confiance','Besoin de réfléchir','Aucun']},
     {id:'b-objection-notes',label:'Notes objections',type:'textarea',placeholder:'Ce qui a bloqué…'}
   ]}
 ];
@@ -2238,6 +2234,9 @@ function renderField(f) {
   const lbl = '<label>' + (f.label||f.id) + '</label>';
   switch(f.type) {
     case 'text': case 'number': case 'date':
+      if (f.id === 'b-montant') {
+        return '<div class="f">' + lbl + '<input id="' + f.id + '" type="number" placeholder="' + (f.placeholder||'') + '" oninput="updateMontantHintFromInput()"><div id="b-montant-hint" style="font-size:11px;margin-top:3px;color:var(--tx3)"></div></div>';
+      }
       return '<div class="f">' + lbl + '<input id="' + f.id + '" type="' + f.type + '" placeholder="' + (f.placeholder||'') + '"' + (f.oninput ? ' oninput="'+f.oninput+'"' : '') + '></div>';
     case 'textarea':
       return '<div class="f">' + lbl + '<textarea id="' + f.id + '" rows="2" placeholder="' + (f.placeholder||'') + '"></textarea></div>';
@@ -2981,13 +2980,13 @@ function getCheckedIn(sel){return Array.from(document.querySelectorAll(sel+' inp
 function collectBilan(){
   return{
     prenom:gv('b-pn'),nom:gv('b-nn'),age:gv('b-age'),ville:gv('b-ville'),profession:gv('b-prof'),
-    source:getRadioVal('source'),rdvType:gv('b-rdv-type'),rdvStatut:gv('b-rdv-statut'),date:gv('b-date'),
+    source:getRadioVal('source'),rdvStatut:gv('b-rdv-statut'),date:gv('b-date'),
     notesTrain:gv('b-notes-train'),dispoJours:Array.from(document.querySelectorAll('input[name="dispo"]:checked')).map(i=>i.value).join(', '),
     notesNeat:gv('b-notes-neat'),pas:gv('b-pas'),notesAlim:gv('b-notes-alim'),notesVie:gv('b-notes-vie'),
     profilTypeCode:getRadioVal('profil'),
     vision6m:gv('b-vision6m'),pointA:gv('b-pointA'),blocages:gv('b-blocages'),echec6m:gv('b-echec6m'),attenteCoach:gv('b-attente-coach'),
     offres:getCheckedIn('#bilan-offres-list').join(', '),
-    pretPayer:getRadioVal('pret-payer'),montant:gv('b-montant'),
+    montant:gv('b-montant'),
     objections:getCheckedIn('#bilan-form-container .card:last-of-type'),
     objectionNotes:gv('b-objection-notes')
   };
@@ -3077,8 +3076,8 @@ async function analyzeBilan(){
   try{
     const b=collectBilan();
     const pqCtx=ST.pqSummary?'Pré-bilan : '+ST.pqSummary.profilTypeCode+' — '+ST.pqSummary.profilTypeLabel+'. Closing: '+ST.pqSummary.closingPotential+'%. Vigilances: '+(ST.pqSummary.pointsDeVigilance||'aucune')+'.'  :'';
-    const sys='Tu es l\'assistant IA du coach Jonathan BE ACTIV. Analyse les données du bilan coach. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
-    const usr=pqCtx+'\nProspect : '+b.prenom+' '+b.nom+', '+(b.age||'?')+' ans, '+(b.ville||'NC')+'\nSource : '+(b.source||'NC')+' | Profil: '+(b.profilTypeCode||'NC')+'\nVision 6 mois : '+(b.vision6m||'').slice(0,200)+'\nBlocages : '+(b.blocages||'').slice(0,150)+'\nEntraînement : '+(b.notesTrain||'NC')+' | NEAT : '+(b.pas||'NC')+' pas\nAlimentation : '+(b.notesAlim||'NC')+'\nMode de vie : '+(b.notesVie||'NC')+'\nOffres : '+(b.offres||'NC')+' | Prêt à payer : '+(b.pretPayer||'NC')+' | Montant : '+(b.montant||'NC')+'€\n\nJSON strict :\n{"syntheseBilan":"3-4 phrases","hypotheseCoach":"texte","facteursLimitants":"texte","facteursLeviers":"texte","incoherencesOuVigilances":"texte ou null","prioritesCoaching":"3 priorités","profilTypeCodeUpdated":"P1..P12","profilTypeLabelUpdated":"libellé","closingPotentialUpdated":0,"recommandationSuiteRDV":"Démarrer maintenant|Envoyer offre|Relancer dans 1 semaine|Ne pas continuer","offreRecommandee":"texte"}';
+    const sys='Tu es l\'assistant IA du coach Jonathan (BE ACTIV, Grenoble/Lyon). Analyse les données du bilan coach et produis une synthèse interne professionnelle. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. 4 LEVIERS : BOUGER (musculation + NEAT) | MANGER (nourrir sans punir) | RÉCUPÉRER (sommeil prioritaire) | RÉGULER (stress, hormones). 3 PHASES : RESET (reprendre contrôle) | SCULPT (construire/recomposer) | HEALTH (entretenir). Identifie les leviers réels, détermine la phase adaptée, recommande l\'offre cohérente. Jamais de restriction sévère ou comptage calorique avant les fondations. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
+    const usr=pqCtx+'\nProspect : '+b.prenom+' '+b.nom+', '+(b.age||'?')+' ans, '+(b.ville||'NC')+'\nSource : '+(b.source||'NC')+' | Profil: '+(b.profilTypeCode||'NC')+'\nVision 6 mois : '+(b.vision6m||'').slice(0,200)+'\nBlocages : '+(b.blocages||'').slice(0,150)+'\nEntraînement : '+(b.notesTrain||'NC')+' | NEAT : '+(b.pas||'NC')+' pas\nAlimentation : '+(b.notesAlim||'NC')+'\nMode de vie : '+(b.notesVie||'NC')+'\nOffres : '+(b.offres||'NC')+' | Montant : '+(b.montant||'NC')+'€\n\nJSON strict :\n{"syntheseBilan":"3-4 phrases","hypotheseCoach":"texte","facteursLimitants":"texte","facteursLeviers":"texte","incoherencesOuVigilances":"texte ou null","prioritesCoaching":"3 priorités","profilTypeCodeUpdated":"P1..P12","profilTypeLabelUpdated":"libellé","closingPotentialUpdated":0,"recommandationSuiteRDV":"Démarrer maintenant|Envoyer offre|Relancer dans 1 semaine|Ne pas continuer","offreRecommandee":"texte"}';
     const r=await callAI(sys,usr,'claude-haiku-4-5-20251001',1300);
     ST.bilanSummary=r;
     const rc={'Démarrer maintenant':'pill-G','Envoyer offre':'pill-R','Relancer dans 1 semaine':'pill-Y','Ne pas continuer':'pill-V'}[r.recommandationSuiteRDV]||'';
@@ -3514,11 +3513,11 @@ function saveClient(){
     age:b.age||((existingClient||{}).age)||'',
     ville:b.ville||((existingClient||{}).ville)||'',
     profession:b.profession,
-    source:b.source,rdvType:b.rdvType,date:b.date,
+    source:b.source,date:b.date,
     profil_code:(r&&r.profilTypeCodeFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeCodeUpdated)||b.profilTypeCode||((existingClient||{}).profil_code)||'',
     profil_label:(r&&r.profilTypeLabelFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeLabelUpdated)||'',
     offres:b.offres||((existingClient||{}).offres)||'',
-    pretPayer:b.pretPayer,montant:b.montant,objections:b.objections,
+    montant:b.montant,objections:b.objections,
     // Préserver le statut existant si le prospect est déjà en cours de closing
     statut:((existingClient||{}).statut)||'Non closé',
     score_global:r?r.scoreGlobal:((existingClient||{}).score_global)||null,
@@ -3550,7 +3549,7 @@ function renderClients(){
   var srch=(srchEl?srchEl.value:'').toLowerCase();
   var isProspectTab=currentClientTab==='prospects';
   // Prospects = tout sauf 'Closé'
-  var prospectStatuts=['Non closé','Closing en cours','À relancer','Refusé',''];
+  var prospectStatuts=['Non closé','En cours','Closing en cours','À relancer','Refusé','','Membre CC'];
   var list=ST.clients.filter(function(c){
     var ms=!srch||((c.prenom||'')+' '+(c.nom||'')+' '+(c.ville||'')+' '+(c.structureName||'')).toLowerCase().includes(srch);
     var mv=ST.filterStatut==='all'||c.statut===ST.filterStatut;
@@ -3558,7 +3557,7 @@ function renderClients(){
     return ms&&mv&&tabMatch;
   });
   if(!list.length){document.getElementById('clients-list').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun contact</div><div class="empty-s">'+(isProspectTab?'Ajoutez votre premier prospect.':'Aucun client closé.')+'</div></div>';return;}
-  const sp={'Closé':'pill-G','Non closé':'pill-B','Closing en cours':'pill-Y','À relancer':'pill-Y','Refusé':'pill-R'};
+  const sp={'Closé':'pill-G','Non closé':'pill-B','En cours':'pill-B','Closing en cours':'pill-Y','À relancer':'pill-Y','Refusé':'pill-R','Membre CC':'pill-V'};
   // Compter les membres par groupId pour les badges
   var groupCounts={};
   ST.clients.forEach(function(c){ if(c.groupId){ groupCounts[c.groupId]=(groupCounts[c.groupId]||0)+1; } });
@@ -3568,7 +3567,9 @@ function renderClients(){
     var isNew = isNewClient(c);
     var dt=c.updated_at?new Date(c.updated_at).toLocaleDateString('fr-FR'):'';
     var offreTxt = ((c.offres||'').split(',')[0].trim()||'—');
-    var statPill = c.statut ? '<span class="pill '+(sp[c.statut]||'')+'" style="font-size:10px'+(isClosing?';animation:pulse-y 2s ease-in-out infinite':'')+'">'+(isNew?'🆕 ':'')+c.statut+'</span>' : '';
+    var displayStatut = c.statut;
+    if (c.statut === 'Non closé' && c.date) displayStatut = 'En cours';
+    var statPill = c.statut ? '<span class="pill '+(sp[displayStatut]||sp[c.statut]||'')+'" style="font-size:10px'+(isClosing?';animation:pulse-y 2s ease-in-out infinite':'')+'">'+(isNew?'🆕 ':'')+displayStatut+'</span>' : '';
     var newBadge = isNew ? '<span class="badge-new">New</span>' : '';
     var closingBadge = isClosing ? '<span class="badge-closing">Closing</span>' : '';
     // Badge groupe
@@ -5173,6 +5174,51 @@ function mapStatutFromBusiness(statut, closing) {
 
 function onOffreChanged() {
   renderTestsForm();
+  // Auto-remplir le montant depuis le prix de l'offre sélectionnée
+  var checked = Array.from(document.querySelectorAll('#bilan-offres-list input[type=checkbox]:checked'));
+  if (checked.length > 0) {
+    var offres = loadOffres();
+    var firstOffre = offres.find(function(o){ return o.name === checked[0].value; });
+    if (firstOffre && firstOffre.price > 0) {
+      var montantEl = document.getElementById('b-montant');
+      if (montantEl && !montantEl.value) {
+        montantEl.value = firstOffre.price;
+      }
+      updateMontantHint(firstOffre.price);
+    }
+  } else {
+    var hint = document.getElementById('b-montant-hint');
+    if (hint) hint.textContent = '';
+  }
+}
+
+function updateMontantHint(standardPrice) {
+  var hint = document.getElementById('b-montant-hint');
+  if (!hint) return;
+  hint.dataset.standardPrice = standardPrice;
+  var montantEl = document.getElementById('b-montant');
+  var entered = montantEl ? parseFloat(montantEl.value) : 0;
+  if (!entered || entered === standardPrice) {
+    hint.textContent = 'Prix standard : ' + standardPrice + '€';
+    hint.style.color = 'var(--tx3)';
+  } else {
+    var diff = standardPrice - entered;
+    if (diff > 0) {
+      hint.textContent = 'Remise de ' + diff + '€ (standard : ' + standardPrice + '€)';
+      hint.style.color = 'var(--Y)';
+    } else {
+      hint.textContent = 'Supplément de ' + Math.abs(diff) + '€ vs standard (' + standardPrice + '€)';
+      hint.style.color = 'var(--B)';
+    }
+  }
+}
+
+function updateMontantHintFromInput() {
+  var hint = document.getElementById('b-montant-hint');
+  if (!hint) return;
+  var standardPrice = parseFloat(hint.dataset.standardPrice);
+  if (!standardPrice) return;
+  updateMontantHint(standardPrice);
 }
 
 function isSectionActiveForProgramme(sec, programme) {
