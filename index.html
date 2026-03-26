@@ -2325,8 +2325,26 @@ const TESTS_FORM_DEFAULT = [
   ]}
 ];
 
+var BILAN_FORM_VERSION = 3; // Incrémenter à chaque suppression/ajout de champ obligatoire
 function loadFormDef(key) {
-  try { const s=localStorage.getItem('ba_form_'+key); if(s) return JSON.parse(s); } catch(e){}
+  try {
+    const s = localStorage.getItem('ba_form_'+key);
+    if (s) {
+      const parsed = JSON.parse(s);
+      // Vérification de version pour forcer la mise à jour si les champs ont changé
+      if (key === 'bilan') {
+        const storedVer = parseInt(localStorage.getItem('ba_form_bilan_ver') || '0');
+        if (storedVer < BILAN_FORM_VERSION) {
+          // Réinitialiser aux valeurs par défaut et mettre à jour la version
+          localStorage.removeItem('ba_form_bilan');
+          localStorage.setItem('ba_form_bilan_ver', String(BILAN_FORM_VERSION));
+          return BILAN_FORM_DEFAULT;
+        }
+      }
+      return parsed;
+    }
+  } catch(e){}
+  if (key === 'bilan') localStorage.setItem('ba_form_bilan_ver', String(BILAN_FORM_VERSION));
   return key==='bilan' ? BILAN_FORM_DEFAULT : TESTS_FORM_DEFAULT;
 }
 function saveFormDef(key, def) { localStorage.setItem('ba_form_'+key, JSON.stringify(def)); saveSettingRemote('ba_form_'+key, def); }
