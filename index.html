@@ -904,7 +904,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div id="bilan-form-container"><!-- rempli par renderBilanForm() --></div>
   <div class="brow" style="margin-bottom:18px">
     <button class="btn btn-dk" onclick="showPg('pq')">← Retour</button>
-    <button class="btn btn-bx" id="btn-bilan" onclick="analyzeBilan()">💡 Générer synthèse</button>
+    <button class="btn btn-bx" onclick="saveClient()">💾 Enregistrer le Bilan</button>
   </div>
   <div id="bilan-result" style="display:none"></div>
   <div id="bilan-cta" style="display:none;margin:10px 0 18px">
@@ -2864,13 +2864,35 @@ function saveRDV() {
 function renderNextRDV() {
   const el=document.getElementById('home-rdv'); if(!el)return;
   const today=new Date().toISOString().split('T')[0];
-  const upcoming=ST.rdvs.filter(r=>r.date>=today);
-  if(!upcoming.length){el.innerHTML='<div class="rdv-empty">Aucun RDV — ajoutez en via le bouton ci-dessous</div>';return;}
-  const next=upcoming[0];
-  const d=new Date(next.date+'T12:00:00');
   const days=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
   const months=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-  el.innerHTML='<div class="rdv-card"><div class="rdv-date"><div class="rdv-day">'+d.getDate()+'</div><div class="rdv-month">'+months[d.getMonth()]+'</div></div><div class="rdv-info"><div class="rdv-name">'+next.name+'</div><div class="rdv-meta">'+days[d.getDay()]+(next.time?' · '+next.time:'')+'</div><div class="rdv-badge">'+(next.type||'RDV')+'</div></div></div>';
+
+  // Combiner les RDVs manuels + les RDV Bilan des prospects (date définie, pas encore passé)
+  var allRdvs = ST.rdvs.filter(r=>r.date>=today).map(function(r){
+    return {date:r.date, name:r.name, time:r.time, type:r.type||'RDV', badge:''};
+  });
+
+  // Ajouter les prospects avec un RDV Bilan planifié (date >= aujourd'hui, statut pas Closé/Refusé)
+  ST.clients.forEach(function(c){
+    if (!c.date || c.date < today) return;
+    if (c.statut === 'Closé' || c.statut === 'Refusé') return;
+    if (c.rdvStatut === 'Présent' || c.rdvStatut === 'Absent') return; // déjà passé
+    allRdvs.push({
+      date: c.date,
+      name: (c.prenom||'') + ' ' + (c.nom||''),
+      time: c.rdvType || '',
+      type: 'RDV Bilan',
+      badge: '📋'
+    });
+  });
+
+  // Trier par date
+  allRdvs.sort(function(a,b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+
+  if(!allRdvs.length){el.innerHTML='<div class="rdv-empty">Aucun RDV — ajoutez en via le bouton ci-dessous</div>';return;}
+  const next=allRdvs[0];
+  const d=new Date(next.date+'T12:00:00');
+  el.innerHTML='<div class="rdv-card"><div class="rdv-date"><div class="rdv-day">'+d.getDate()+'</div><div class="rdv-month">'+months[d.getMonth()]+'</div></div><div class="rdv-info"><div class="rdv-name">'+(next.badge?next.badge+' ':'')+next.name+'</div><div class="rdv-meta">'+days[d.getDay()]+(next.time?' · '+next.time:'')+'</div><div class="rdv-badge">'+next.type+'</div></div></div>';
 }
 
 // ═══════════════════════════════════════════════════
@@ -4853,6 +4875,20 @@ async function loadSettingsFromSupabase() {
     var rows = await res.json();
     var updated = false;
     rows.forEach(function(row) {
+      // Bloquer les anciennes définitions de formulaire bilan (champs supprimés)
+      if (row.key === 'ba_form_bilan') {
+        try {
+          var remoteForm = row.value || '';
+          if (remoteForm.includes('b-rdv-type') || remoteForm.includes('b-pret-payer') || remoteForm.includes('pret-payer')) {
+            // Ancienne version détectée — pousser le nouveau défaut vers Supabase et ignorer
+            saveSettingRemote('ba_form_bilan', BILAN_FORM_DEFAULT);
+            localStorage.removeItem('ba_form_bilan');
+            localStorage.setItem('ba_form_bilan_ver', String(BILAN_FORM_VERSION));
+            updated = true;
+            return;
+          }
+        } catch(e) {}
+      }
       var local = localStorage.getItem(row.key);
       // Prendre la version la plus récente (remote vs local)
       var localTs = 0;
