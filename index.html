@@ -1204,7 +1204,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
         <div style="display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-bx btn-w" onclick="saveReactivation('rdv_bilan')">🗓 Nouveau RDV Bilan <span style="font-size:10px;opacity:.7;margin-left:4px">→ À relancer</span></button>
           <button class="btn btn-Y btn-w" onclick="saveReactivation('choix_offre')">💼 Proposer une offre directement <span style="font-size:10px;opacity:.7;margin-left:4px">→ Closing en cours</span></button>
-          <button class="btn btn-dk btn-w" onclick="saveReactivation('manuel')">📝 Relance manuelle <span style="font-size:10px;opacity:.7;margin-left:4px">→ À relancer</span></button>
         </div>
       </div>
     </div>
@@ -1624,7 +1623,7 @@ function renderProspectModal(id, c, container) {
   if (c.relances && c.relances.length > 0) {
     var histDiv = document.createElement('div');
     histDiv.style.cssText = 'margin-top:14px;border-top:1px solid var(--rim3);padding-top:12px';
-    var typeLabels = {rdv_bilan:'🗓 Nouveau RDV Bilan', choix_offre:'💼 Proposition offre', manuel:'📝 Relance manuelle'};
+    var typeLabels = {rdv_bilan:'🗓 Nouveau RDV Bilan', choix_offre:'💼 Proposition offre'};
     histDiv.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">🔄 Historique des relances</div>'
       + c.relances.slice().reverse().map(function(r) {
         var dt = r.date ? new Date(r.date).toLocaleDateString('fr-FR') : '—';
