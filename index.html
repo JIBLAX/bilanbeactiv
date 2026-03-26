@@ -1816,8 +1816,13 @@ function renderSignatureAccordion(clientId, c, container) {
     chk.className = 'sig-check' + (st.done ? ' done' : isLocked ? ' locked' : '');
     var lbl = document.createElement('div');
     lbl.className = 'sig-lbl' + (st.done ? ' done' : isLocked ? ' locked' : '');
-    lbl.innerHTML = '<span style="margin-right:5px">'+step.ico+'</span>' + getPLbl('sig_'+step.id, step.lbl);
-    if (!st.done && !isLocked) {
+    var isMultiPay = step.id === 'paiement_valide' && c.versements && c.versements.length > 1;
+    var paidCnt = isMultiPay ? c.versements.filter(function(v){return v.done;}).length : 0;
+    var lblTxt = isMultiPay
+      ? '<span style="margin-right:5px">'+step.ico+'</span>'+getPLbl('sig_'+step.id, step.lbl)+' <span style="font-size:10px;color:var(--tx3)">('+paidCnt+'/'+c.versements.length+')</span>'
+      : '<span style="margin-right:5px">'+step.ico+'</span>' + getPLbl('sig_'+step.id, step.lbl);
+    lbl.innerHTML = lblTxt;
+    if (!st.done && !isLocked && !isMultiPay) {
       chk.style.cursor = 'pointer';
       chk.title = 'Valider cette étape';
       chk.onclick = (function(cid, idx){ return function(){
@@ -1833,6 +1838,31 @@ function renderSignatureAccordion(clientId, c, container) {
       row.appendChild(ts);
     }
     body.appendChild(row);
+    // Sous-versements pour paiement en plusieurs fois
+    if (isMultiPay && !isLocked) {
+      var vBlock = document.createElement('div');
+      vBlock.style.cssText = 'margin:4px 0 8px 28px;background:var(--bg3);border-radius:var(--r3);overflow:hidden;border:1px solid var(--rim3)';
+      c.versements.forEach(function(v) {
+        var vRow = document.createElement('div');
+        vRow.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--rim3)';
+        var vChk = document.createElement('div');
+        vChk.style.cssText = 'width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px solid '+(v.done?'var(--G)':'var(--rim)');
+        vChk.style.background = v.done ? 'var(--G)' : 'transparent';
+        vChk.innerHTML = v.done ? '<span style="color:#fff;font-size:11px;font-weight:700">✓</span>' : '';
+        if (!v.done) {
+          vChk.style.cursor = 'pointer';
+          vChk.onclick = (function(cid, vn){ return function(){ validateVersement(cid, vn); }; })(clientId, v.num);
+        }
+        var vLbl = document.createElement('div');
+        vLbl.style.cssText = 'flex:1;font-size:12px;color:'+(v.done?'var(--tx3)':'var(--tx)');
+        vLbl.innerHTML = 'Versement '+v.num+' — <strong>'+v.montant+'€</strong>'
+          + (v.doneAt ? ' <span style="color:var(--tx4);font-size:10px">· '+new Date(v.doneAt).toLocaleDateString('fr-FR')+'</span>' : '');
+        vRow.appendChild(vChk);
+        vRow.appendChild(vLbl);
+        vBlock.appendChild(vRow);
+      });
+      body.appendChild(vBlock);
+    }
   });
 
   acc.appendChild(body);
@@ -1867,10 +1897,27 @@ function validateSigStep(clientId, stepIdx) {
   }
   c.sig_steps[stepIdx].done = true;
   c.sig_steps[stepIdx].doneAt = new Date().toISOString();
-  // Copier l'offre dans le champ offres
+  // Copier l'offre dans le champ offres + initialiser les versements
   if (stepIdx === 0 && c.sig_offre_id) {
     var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
-    if (o) c.offres = o.name;
+    if (o) {
+      c.offres = o.name;
+      var nPay = parseInt(o.paiement) || 1;
+      var payAmt = nPay > 1 ? Math.round(o.price / nPay * 100) / 100 : o.price;
+      c.versements = [];
+      for (var vi = 0; vi < nPay; vi++) {
+        c.versements.push({num: vi+1, montant: payAmt, done: false, doneAt: null});
+      }
+    }
+  }
+  // Pour paiement en plusieurs fois : bloquer la validation directe, passer par validateVersement
+  if (SIG_STEPS[stepIdx] && SIG_STEPS[stepIdx].id === 'paiement_valide' && c.versements && c.versements.length > 1) {
+    c.sig_steps[stepIdx].done = false; c.sig_steps[stepIdx].doneAt = null;
+    toast('info', '💳 Validez chaque versement individuellement');
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    renderClientModal(clientId);
+    return;
   }
   c.updated_at = new Date().toISOString();
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
@@ -1970,6 +2017,29 @@ function partagerBilanSummary(clientId) {
     var body = encodeURIComponent(txt);
     window.location.href = 'mailto:?subject=' + subj + '&body=' + body;
   }
+}
+
+function validateVersement(clientId, versNum) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c || !c.versements) return;
+  var v = c.versements.find(function(x){ return x.num == versNum; });
+  if (!v || v.done) return;
+  v.done = true;
+  v.doneAt = new Date().toISOString();
+  var allPaid = c.versements.every(function(x){ return x.done; });
+  if (allPaid) {
+    initSigSteps(c);
+    var payStepIdx = SIG_STEPS.findIndex(function(s){ return s.id === 'paiement_valide'; });
+    if (payStepIdx >= 0) {
+      c.sig_steps[payStepIdx].done = true;
+      c.sig_steps[payStepIdx].doneAt = new Date().toISOString();
+    }
+  }
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  toast('ok', '💳 Versement '+versNum+' reçu'+(allPaid?' — Paiement complet 🎉':''));
+  renderClientModal(clientId);
 }
 
 function setBilanDecision(decision) {
@@ -5931,21 +6001,30 @@ async function syncClientToFinances(c) {
   }
   var statutBiz = allStagesDone ? 'ARCHIVÉ' : 'CLIENT';
 
+  // Montant réel (depuis montant saisi ou prix de l'offre)
+  var _offreObj = c.sig_offre_id ? loadOffres().find(function(x){return x.id===c.sig_offre_id;}) : null;
+  var montantReel = c.montant ? parseFloat(c.montant) : (_offreObj ? _offreObj.price : null);
+  var paiementMode = (c.versements && c.versements.length > 0) ? c.versements.length : ((_offreObj && _offreObj.paiement) ? _offreObj.paiement : 1);
+  var versementsRecus = c.versements ? c.versements.filter(function(v){return v.done;}).length : (c.statut === 'Closé' ? paiementMode : 0);
+
   var prospect = {
-    id:       'bcrm_' + c.id,
-    user_id:  FINANCES_USER_ID,
-    sex:      sexBiz,
-    name:     fullName,
-    contact:  c.tel || '',
-    source:   c.source || '',
-    statut:   statutBiz,
-    date:     (c.closedAt ? c.closedAt.split('T')[0] : '') || c.date || '',
-    objectif: c.objectif || '',
-    closing:  'OUI',
-    offre:    offreName,
-    notes:    c.notes || '',
-    profile:  c.profil_code || '',
-    age:      parseInt(c.age) || null,
+    id:               'bcrm_' + c.id,
+    user_id:          FINANCES_USER_ID,
+    sex:              sexBiz,
+    name:             fullName,
+    contact:          c.tel || '',
+    source:           c.source || '',
+    statut:           statutBiz,
+    date:             (c.closedAt ? c.closedAt.split('T')[0] : '') || c.date || '',
+    objectif:         c.objectif || '',
+    closing:          'OUI',
+    offre:            offreName,
+    notes:            c.notes || '',
+    profile:          c.profil_code || '',
+    age:              parseInt(c.age) || null,
+    montant:          montantReel,
+    paiement_mode:    paiementMode,
+    versements_recus: versementsRecus,
   };
 
   try {
