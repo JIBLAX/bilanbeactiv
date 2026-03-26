@@ -1080,6 +1080,17 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="f"><label>Téléphone</label><input id="np-tel" type="tel" placeholder="06 xx xx xx xx"></div>
     <div class="f"><label>Email</label><input id="np-email" type="email" placeholder="email@exemple.fr"></div>
     <div class="f"><label>Ville</label><input id="np-ville" type="text" placeholder="Grenoble"></div>
+    <div class="g2">
+      <div class="f"><label>Format RDV Bilan</label>
+        <select id="np-rdv-type">
+          <option value="">— Format —</option>
+          <option value="Physique">Physique</option>
+          <option value="Visio">Visio</option>
+          <option value="Appel">Appel</option>
+        </select>
+      </div>
+      <div class="f"><label>Date RDV Bilan</label><input id="np-rdv-date" type="date"></div>
+    </div>
   </div>
 
   <div id="pq-new-summary-card" style="display:none" class="ai-card">
@@ -3404,6 +3415,10 @@ function saveNewProspect() {
     document.getElementById('np-sexe').value||'',
     (document.getElementById('np-tel').value||'').trim(), ville);
   mainProspect.email = cleanEmail((document.getElementById('np-email').value||'').trim());
+  var npRdvType = (document.getElementById('np-rdv-type').value||'').trim();
+  var npRdvDate = (document.getElementById('np-rdv-date').value||'').trim();
+  if (npRdvType) mainProspect.rdvType = npRdvType;
+  if (npRdvDate) mainProspect.date = npRdvDate;
 
   var allProspects = [mainProspect];
 
@@ -3424,7 +3439,7 @@ function saveNewProspect() {
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
 
   // Reset
-  ['np-prenom','np-nom','np-age','np-tel','np-email','np-ville'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['np-prenom','np-nom','np-age','np-tel','np-email','np-ville','np-rdv-date'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; }); var nprt=document.getElementById('np-rdv-type'); if(nprt) nprt.selectedIndex=0;
   document.getElementById('np-sexe').value = '';
   document.getElementById('pq-new-raw').value = '';
   document.getElementById('pq-new-summary-card').style.display = 'none';
@@ -3712,15 +3727,16 @@ function renderClients(){
   var srch=(srchEl?srchEl.value:'').toLowerCase();
   var isProspectTab=currentClientTab==='prospects';
   // Prospects = tout sauf 'Closé'
-  var prospectStatuts=['Non closé','Closing en cours','À relancer','Refusé',''];
+  var prospectStatuts=['Non closé','Closing en cours','À relancer','Refusé','','Membre CC'];
   var list=ST.clients.filter(function(c){
     var ms=!srch||((c.prenom||'')+' '+(c.nom||'')+' '+(c.ville||'')+' '+(c.structureName||'')).toLowerCase().includes(srch);
     var mv=ST.filterStatut==='all'||c.statut===ST.filterStatut;
+    // Clients tab = Closé (pas Membre CC — ils restent dans Prospects)
     var tabMatch=isProspectTab?(!c.statut||prospectStatuts.includes(c.statut)):(c.statut==='Closé');
     return ms&&mv&&tabMatch;
   });
   if(!list.length){document.getElementById('clients-list').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun contact</div><div class="empty-s">'+(isProspectTab?'Ajoutez votre premier prospect.':'Aucun client closé.')+'</div></div>';return;}
-  const sp={'Closé':'pill-G','Non closé':'pill-B','Closing en cours':'pill-Y','À relancer':'pill-Y','Refusé':'pill-R'};
+  const sp={'Closé':'pill-G','Non closé':'pill-B','Closing en cours':'pill-Y','À relancer':'pill-Y','Refusé':'pill-R','Membre CC':'pill-V'};
   // Compter les membres par groupId pour les badges
   var groupCounts={};
   ST.clients.forEach(function(c){ if(c.groupId){ groupCounts[c.groupId]=(groupCounts[c.groupId]||0)+1; } });
@@ -3918,7 +3934,7 @@ var MODE_STAGE_DEFS = {
       {id:'feu_vert',lbl:'Feu Vert'},
       {id:'done',lbl:'Terminée ✅',isFinal:true}
     ]},
-    {id:'activ_reset', lbl:'ACTIV RESET', ico:'🔴', steps:[
+    {id:'activ_reset', lbl:'GO ACTIV', ico:'🔴', steps:[
       {id:'go',lbl:'GO !'},
       {id:'fondations',lbl:'Fondations'},
       {id:'optimisation',lbl:'Optimisation'},
@@ -3926,7 +3942,7 @@ var MODE_STAGE_DEFS = {
       {id:'liberte',lbl:'Liberté'},
       {id:'test_maj',lbl:'Test MAJ'},
       {id:'certification',lbl:'Certification'},
-      {id:'done',lbl:'GO ACTIV 🚀',isFinal:true}  // Fin ACTIV RESET → prêt pour ACTIV CONTINUE
+      {id:'done',lbl:'ACTIV RESET VALIDÉE ✅',isFinal:true}
     ]}
   ],
   // ACTIV PROGRAM ESSENTIEL — parcours spécifique 2 mois
@@ -4176,7 +4192,12 @@ function renderModeStages(clientId, c, container) {
       endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre',   function(){ openNewOffreForClient(clientId); }));
 
     } else if (mode === 'collectif') {
-      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">🏁 Parcours terminé !</div>';
+      var isMembreCC = (c && c.statut === 'Membre CC');
+      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:6px">🏁 Parcours collectif terminé !</div>'
+        + (isMembreCC ? '<div style="font-size:11px;color:var(--V);margin-bottom:8px">♾️ Statut : Membre CC</div>' : '');
+      if (!isMembreCC) {
+        endDiv.appendChild(mkBtn('btn btn-V', '♾️', 'Basculer → Membre CC', function(){ setMembreCC(clientId); }));
+      }
       endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
 
     } else {
@@ -4454,8 +4475,20 @@ async function genRapportLeger(clientId, stageIdx, stepIdx) {
   try {
     var pqCtx = c.pq_summary ? 'PRÉ-BILAN: '+c.pq_summary.resumeProfil+' | Profil: '+c.pq_summary.profilTypeCode+' | Potentiel closing: '+c.pq_summary.closingPotential+'%' : 'Pré-bilan non effectué';
     var bilanCtx = c.bilan_summary ? 'BILAN: '+c.bilan_summary.syntheseBilan+' | Leviers: '+(c.bilan_summary.facteursLeviers||'NC')+' | Objectif: '+(c.bilan_summary.objectifPrincipal||'NC') : 'Bilan non effectué';
-    var sys = 'Tu es Jonathan, coach BE ACTIV. Rédige un RAPPORT LÉGER (F1+F2) pour le client, sans tests physiques. Style : chaleureux, professionnel, orienté action. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
-    var usr = 'CLIENT: '+(c.prenom||'')+' '+(c.nom||'')+', '+(c.age||'?')+' ans, '+(c.ville||'NC')+'\n'+pqCtx+'\n'+bilanCtx+'\nOffre choisie: '+(c.offres||'NC')+'\n\nJSON strict:\n{"profilGlobal":"paragraphe synthèse","pointsForts":["pt1","pt2","pt3"],"freinsPrincipaux":["f1","f2"],"planAction30J":"actions concrètes 30 jours","conseilsCoach":"conseils personnalisés","messageMotivation":"message encourageant","prochainRDV":"suggestion prochaine étape"}';
+    // Détecter le mode pour adapter le rapport
+    var offreModeRpt = 'action';
+    if (c.sig_offre_id) { var _or = loadOffres().find(function(x){return x.id===c.sig_offre_id;}); if(_or) offreModeRpt = _or.modeOffre||'action'; }
+    var modeCtx = offreModeRpt === 'collectif'
+      ? 'MODE COLLECTIF — La personne suit des cours collectifs. Le rapport doit tout de même inclure des recommandations de coaching individuel (axes prioritaires si elle devait évoluer vers un coaching 1:1) et des conseils autonomes applicables hors cours collectifs.'
+      : offreModeRpt === 'action'
+      ? 'MODE ACTION — Coaching individuel mensuel. Plan 30 jours concret et renouvelable.'
+      : 'MODE TRANSFORMATION — Plan d\'action orienté transformation sur le long terme.';
+    var sys = 'Tu es Jonathan, coach BE ACTIV. Rédige un RAPPORT (F1+F2) personnalisé. Style : chaleureux, professionnel, orienté action. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
+    var usr = 'CLIENT: '+(c.prenom||'')+' '+(c.nom||'')+', '+(c.age||'?')+' ans, '+(c.ville||'NC')
+      +'\n'+pqCtx+'\n'+bilanCtx
+      +'\nOffre choisie: '+(c.offres||'NC')
+      +'\n'+modeCtx
+      +'\n\nJSON strict:\n{"profilGlobal":"paragraphe synthèse","pointsForts":["pt1","pt2","pt3"],"freinsPrincipaux":["f1","f2"],"planAction30J":"actions concrètes 30 jours","conseilsCoach":"conseils personnalisés"'+(offreModeRpt==='collectif'?',"axesCoachingIndividuel":"si coaching 1:1, axes prioritaires à travailler"':'')+' ,"messageMotivation":"message encourageant","prochainRDV":"suggestion prochaine étape"}';
     var r = await callAI(sys, usr, 'claude-sonnet-4-6', 1500);
     c.rapport_leger = r;
     // Valider le step
@@ -4470,6 +4503,7 @@ async function genRapportLeger(clientId, stageIdx, stepIdx) {
       + (r.profilGlobal?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--bx)">Profil</div><div class="ai-blk-c">'+r.profilGlobal+'</div></div>':'')
       + (r.planAction30J?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--G)">Plan 30 jours</div><div class="ai-blk-c">'+r.planAction30J+'</div></div>':'')
       + (r.conseilsCoach?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--B)">Conseils coach</div><div class="ai-blk-c">'+r.conseilsCoach+'</div></div>':'')
+      + (r.axesCoachingIndividuel?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--Y)">🎯 Si coaching 1:1</div><div class="ai-blk-c">'+r.axesCoachingIndividuel+'</div></div>':'')
       + (r.messageMotivation?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">Message</div><div class="ai-blk-c">'+r.messageMotivation+'</div></div>':'')
       + '</div>';
     document.getElementById('rpt-complet-actions').style.display = 'block';
@@ -4490,6 +4524,17 @@ function addActivContinue(clientId, key) {
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
   toast('ok', '⏺ ACTIV CONTINUE — ' + key.toUpperCase() + ' démarré');
+  renderClientModal(clientId);
+}
+
+function setMembreCC(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  c.statut = 'Membre CC';
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  toast('ok', '♾️ Basculé en Membre CC — visible dans Prospects');
   renderClientModal(clientId);
 }
 
