@@ -1186,6 +1186,31 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
     </div><!-- /scroller -->
 
+<!-- ══════ MODAL RÉACTIVATION PROSPECT ══════ -->
+<div id="mdl-reactivation" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.65);overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:16px 0 40px">
+    <div style="width:100%;max-width:420px;background:var(--bg);border-radius:var(--r);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.3)">
+      <div class="mdl-t">🔄 Réactiver le prospect <button class="mdl-x" onclick="document.getElementById('mdl-reactivation').style.display='none'">✕</button></div>
+      <div style="padding:16px 20px 24px">
+        <div id="reactiv-prospect-name" style="font-weight:700;font-size:15px;margin-bottom:12px;color:var(--bx)"></div>
+        <div style="font-size:12px;color:var(--tx3);background:var(--bg3);border-radius:8px;padding:9px 12px;margin-bottom:14px">
+          Le dossier existant (F1, F2, historique) est <strong>conservé</strong>. Cette réactivation ajoute une nouvelle relance sans créer de doublon.
+        </div>
+        <div class="f" style="margin-bottom:14px">
+          <label>Note / contexte de la réactivation</label>
+          <textarea id="reactiv-note" rows="2" placeholder="Ex : Recontact spontané, veut reprendre après 2 mois, situation financière améliorée…"></textarea>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Repartir vers…</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-bx btn-w" onclick="saveReactivation('rdv_bilan')">🗓 Nouveau RDV Bilan <span style="font-size:10px;opacity:.7;margin-left:4px">→ À relancer</span></button>
+          <button class="btn btn-Y btn-w" onclick="saveReactivation('choix_offre')">💼 Proposer une offre directement <span style="font-size:10px;opacity:.7;margin-left:4px">→ Closing en cours</span></button>
+          <button class="btn btn-dk btn-w" onclick="saveReactivation('manuel')">📝 Relance manuelle <span style="font-size:10px;opacity:.7;margin-left:4px">→ À relancer</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════ MODAL TESTS PARCOURS ══════ -->
 <div id="mdl-tests-parcours" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.65);overflow-y:auto;-webkit-overflow-scrolling:touch">
   <div style="min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:16px 0 40px">
@@ -1515,6 +1540,7 @@ function renderProspectModal(id, c, container) {
   if (c.rdvType || c.date) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">RDV Bilan</div><div style="font-weight:600">'+dateStr+(c.rdvType?' · '+c.rdvType:'')+'</div></div>';
   if (c.profession) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Profession</div><div style="font-weight:600">'+c.profession+'</div></div>';
   infoRows += '</div>';
+  if (c.last_interaction) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Dernière relance</div><div style="font-weight:600">'+new Date(c.last_interaction).toLocaleDateString('fr-FR')+'</div></div>';
   if(c.notes) infoRows+='<div style="font-size:12px;color:var(--tx3);margin-top:8px;font-style:italic;border-top:1px solid var(--rim3);padding-top:8px">'+c.notes+'</div>';
   infoCard.innerHTML = infoRows;
   container.appendChild(infoCard);
@@ -1575,12 +1601,43 @@ function renderProspectModal(id, c, container) {
   editBtn.onclick=function(){openEditClientModal(this.dataset.cid);};
   actionsDiv.appendChild(editBtn);
 
+  // ── Bouton Réactiver (statuts inactifs)
+  var inactifStatuts = ['Refusé','Non closé','À relancer','Membre CC',''];
+  if (!c.statut || inactifStatuts.indexOf(c.statut) > -1) {
+    var reactBtn = document.createElement('button');
+    reactBtn.className = 'btn btn-V btn-w btn-sm';
+    var nbRelances = (c.relances && c.relances.length) || 0;
+    reactBtn.innerHTML = '🔄 Réactiver le prospect' + (nbRelances > 0 ? ' <span style="font-size:10px;opacity:.7">('+nbRelances+' relance'+(nbRelances>1?'s':'')+')</span>' : '');
+    reactBtn.dataset.cid = id;
+    reactBtn.onclick = function(){ openReactivationModal(this.dataset.cid); };
+    actionsDiv.appendChild(reactBtn);
+  }
+
   var delBtn=document.createElement('button'); delBtn.className='btn btn-R btn-w btn-sm';
   delBtn.innerHTML='🗑 Supprimer ce dossier'; delBtn.dataset.cid=id;
   delBtn.onclick=function(){deleteClient(this.dataset.cid);};
   actionsDiv.appendChild(delBtn);
 
   container.appendChild(actionsDiv);
+
+  // ── Historique des relances
+  if (c.relances && c.relances.length > 0) {
+    var histDiv = document.createElement('div');
+    histDiv.style.cssText = 'margin-top:14px;border-top:1px solid var(--rim3);padding-top:12px';
+    var typeLabels = {rdv_bilan:'🗓 Nouveau RDV Bilan', choix_offre:'💼 Proposition offre', manuel:'📝 Relance manuelle'};
+    histDiv.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">🔄 Historique des relances</div>'
+      + c.relances.slice().reverse().map(function(r) {
+        var dt = r.date ? new Date(r.date).toLocaleDateString('fr-FR') : '—';
+        return '<div style="font-size:12px;background:var(--bg3);border-radius:7px;padding:8px 10px;margin-bottom:6px">'
+          + '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+          + '<span style="font-weight:600">'+(typeLabels[r.type]||r.type)+'</span>'
+          + '<span style="color:var(--tx4)">'+dt+'</span></div>'
+          + (r.from_statut ? '<span style="font-size:10px;color:var(--tx4)">Était : '+r.from_statut+' → '+r.new_statut+'</span><br>' : '')
+          + (r.note ? '<span style="color:var(--tx2);font-style:italic">'+r.note+'</span>' : '')
+          + '</div>';
+      }).join('');
+    container.appendChild(histDiv);
+  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -3749,6 +3806,7 @@ function renderClients(){
     var statPill = c.statut ? '<span class="pill '+(sp[c.statut]||'')+'" style="font-size:10px'+(isClosing?';animation:pulse-y 2s ease-in-out infinite':'')+'">'+(isNew?'🆕 ':'')+c.statut+'</span>' : '';
     var newBadge = isNew ? '<span class="badge-new">New</span>' : '';
     var closingBadge = isClosing ? '<span class="badge-closing">Closing</span>' : '';
+    var retourBadge = (c.relances && c.relances.length > 0) ? '<span style="font-size:9px;font-weight:700;background:rgba(130,80,200,.15);color:#8a50c8;border:1px solid rgba(130,80,200,.3);border-radius:50px;padding:1px 6px;margin-left:2px">🔄 Retour</span>' : '';
     // Badge groupe
     var groupBadge='';
     if(c.groupId && groupCounts[c.groupId]){
@@ -3769,7 +3827,7 @@ function renderClients(){
       +'<div class="cmeta">'+(c.ville||'—')+' · '+offreTxt+' · '+dt+'</div></div>'
       +'<div class="cbadges">'
         +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
-        + newBadge + closingBadge + groupBadge
+        + newBadge + closingBadge + groupBadge + retourBadge
         + ((!isNew&&!isClosing)?(c.statut?statPill:''):'')
         +(c.score_global!=null?'<span style="font-size:11px;color:var(--tx3)">★ '+c.score_global+'</span>':'')
       +'</div></div>';
@@ -4525,6 +4583,46 @@ function addActivContinue(clientId, key) {
   saveToSupabase(c);
   toast('ok', '⏺ ACTIV CONTINUE — ' + key.toUpperCase() + ' démarré');
   renderClientModal(clientId);
+}
+
+// ── Réactivation prospect ───────────────────────────
+var _reactivClientId = null;
+function openReactivationModal(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  _reactivClientId = clientId;
+  document.getElementById('reactiv-prospect-name').textContent = (c.prenom||'') + ' ' + (c.nom||'');
+  document.getElementById('reactiv-note').value = '';
+  document.getElementById('mdl-reactivation').style.display = 'block';
+}
+function saveReactivation(type) {
+  if (!_reactivClientId) return;
+  var c = ST.clients.find(function(x){ return x.id == _reactivClientId; });
+  if (!c) return;
+  var note = (document.getElementById('reactiv-note').value || '').trim();
+  var fromStatut = c.statut || 'Non closé';
+  var newStatut = (type === 'choix_offre') ? 'Closing en cours' : 'À relancer';
+  // Ajouter l'entrée d'historique
+  if (!c.relances) c.relances = [];
+  c.relances.push({
+    date: new Date().toISOString(),
+    type: type,
+    from_statut: fromStatut,
+    new_statut: newStatut,
+    note: note
+  });
+  c.statut = newStatut;
+  c.last_interaction = new Date().toISOString();
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  document.getElementById('mdl-reactivation').style.display = 'none';
+  renderClients();
+  var typeMsg = {rdv_bilan:'🗓 RDV Bilan à planifier', choix_offre:'💼 Passage en Closing en cours', manuel:'📝 Relance enregistrée'};
+  toast('ok', '🔄 Réactivé · ' + (typeMsg[type]||''));
+  // Rouvrir la fiche
+  setTimeout(function(){ openClient(_reactivClientId); }, 300);
+  _reactivClientId = null;
 }
 
 function setMembreCC(clientId) {
