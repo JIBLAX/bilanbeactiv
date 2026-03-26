@@ -1542,6 +1542,23 @@ function renderProspectModal(id, c, container) {
   infoCard.innerHTML = infoRows;
   container.appendChild(infoCard);
 
+  // Historique des RDVs (si reports)
+  if (c.rdv_history && c.rdv_history.length > 0) {
+    var histCard = document.createElement('div');
+    histCard.style.cssText = 'margin-bottom:12px;background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);overflow:hidden';
+    var histRows = c.rdv_history.slice().reverse().map(function(h) {
+      var dStr = h.date ? new Date(h.date).toLocaleDateString('fr-FR') : '—';
+      var sCls = h.statut === 'Présent' ? 'color:var(--V)' : h.statut === 'Absent' ? 'color:var(--R)' : 'color:var(--tx3)';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--rim3)">'
+        + '<div style="font-size:12px;font-weight:600">'+dStr+(h.type?' · <span style="color:var(--tx3);font-weight:400">'+h.type+'</span>':'')+'</div>'
+        + '<span style="font-size:11px;font-weight:600;'+sCls+'">'+(h.statut||'Reporté')+'</span>'
+        + '</div>';
+    }).join('');
+    histCard.innerHTML = '<div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.7px;padding:8px 12px 4px">🗓 Historique RDVs ('+c.rdv_history.length+')</div>'
+      + histRows;
+    container.appendChild(histCard);
+  }
+
   // Résumé pré-qualif si disponible et réel (analyse IA effectuée)
   if (c.pq_summary && (c.pq_summary.resumeProfil || c.pq_summary.closingPotential > 0)) {
     var pq = c.pq_summary;
@@ -1584,12 +1601,13 @@ function renderProspectModal(id, c, container) {
         + (bs.prioritesCoaching ? '<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">🎯 Priorités</div><div class="ai-blk-c">'+bs.prioritesCoaching+'</div></div>' : '')
         + (bs.offreRecommandee ? '<div style="font-size:12px;color:var(--tx3);margin-top:6px">💼 Offre recommandée : <strong style="color:var(--Y)">'+bs.offreRecommandee+'</strong></div>' : '')
         + '</div>'
-        + '<div style="background:var(--bg2);border:1.5px solid var(--rim);border-radius:var(--r2);padding:12px">'
+        + '<div style="background:var(--bg2);border:1.5px solid var(--rim);border-radius:var(--r2);padding:12px;margin-bottom:8px">'
         + '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">📋 Décision suite au Bilan</div>'
         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
         + '<button class="btn btn-R" onclick="setBilanDecision(\'refus\')">❌ REFUS</button>'
         + '<button class="btn btn-G" onclick="setBilanDecision(\'ok\')">✅ OK → Closing</button>'
-        + '</div></div>';
+        + '</div></div>'
+        + '<button class="btn btn-bx btn-w" style="width:100%" onclick="partagerBilanSummary(\''+id+'\')">📤 Partager la synthèse</button>';
     } else {
       bilanSection.innerHTML = '<button id="btn-synth-bilan-'+id+'" class="btn btn-bx btn-w" onclick="genSyntheseBilanFromClient(\''+id+'\')">🤖 Générer synthèse bilan</button>';
     }
@@ -1925,6 +1943,32 @@ async function genSyntheseBilanFromClient(clientId) {
   } catch(e) {
     toast('err', '❌ '+e.message);
     if (btn) { btn.disabled = false; btn.textContent = '🤖 Générer synthèse bilan'; }
+  }
+}
+
+function partagerBilanSummary(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c || !c.bilan_summary) return;
+  var bs = c.bilan_summary;
+  var nom = (c.prenom||'') + ' ' + (c.nom||'');
+  var lines = [
+    '🩺 SYNTHÈSE BILAN — ' + nom.trim(),
+    '─────────────────────────────',
+  ];
+  if (bs.profilTypeCodeUpdated) lines.push('Profil : ' + bs.profilTypeCodeUpdated + ' — ' + (bs.profilTypeLabelUpdated||''));
+  if (bs.closingPotentialUpdated) lines.push('Potentiel closing : ' + bs.closingPotentialUpdated + '%');
+  if (bs.recommandationSuiteRDV) lines.push('Recommandation : ' + bs.recommandationSuiteRDV);
+  if (bs.syntheseBilan) lines.push('\n' + bs.syntheseBilan);
+  if (bs.prioritesCoaching) lines.push('\n🎯 Priorités coaching :\n' + bs.prioritesCoaching);
+  if (bs.offreRecommandee) lines.push('\n💼 Offre recommandée : ' + bs.offreRecommandee);
+  lines.push('\n— BE ACTIV Coaching');
+  var txt = lines.join('\n');
+  if (navigator.share) {
+    navigator.share({ title: 'Synthèse Bilan ' + nom.trim(), text: txt }).catch(function(){});
+  } else {
+    var subj = encodeURIComponent('Synthèse Bilan ' + nom.trim());
+    var body = encodeURIComponent(txt);
+    window.location.href = 'mailto:?subject=' + subj + '&body=' + body;
   }
 }
 
@@ -3873,6 +3917,13 @@ function saveClient(){
   const b=collectBilan(),r=ST.finalReport;
   if(!b.prenom&&!b.nom){toast('err','⚠️ Prénom/nom requis');return;}
   const existingClient = ST.clientId ? ST.clients.find(function(c){return c.id==ST.clientId;}) : null;
+  // Historique des RDVs — si la date change, archiver l'ancienne entrée
+  var existingRdvDate = (existingClient||{}).date;
+  var newDate = b.date || '';
+  var rdv_history = [].concat((existingClient||{}).rdv_history || []);
+  if (existingRdvDate && newDate && existingRdvDate !== newDate) {
+    rdv_history.push({date:existingRdvDate, statut:(existingClient||{}).rdvStatut||'', type:(existingClient||{}).rdvType||'', savedAt:new Date().toISOString()});
+  }
   const client=Object.assign({}, existingClient||{}, {
     id:ST.clientId||Date.now().toString(),
     prenom:b.prenom||((existingClient||{}).prenom)||'',
@@ -3883,6 +3934,7 @@ function saveClient(){
     // Préserver source depuis F1 si non saisie en F2
     source:b.source||((existingClient||{}).source)||'',
     date:b.date,
+    rdv_history:rdv_history,
     profil_code:(r&&r.profilTypeCodeFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeCodeUpdated)||b.profilTypeCode||((existingClient||{}).profil_code)||'',
     profil_label:(r&&r.profilTypeLabelFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeLabelUpdated)||'',
     offres:b.offres||((existingClient||{}).offres)||'',
@@ -5033,9 +5085,9 @@ async function loadFromSupabase(){
     rows.forEach(row=>{
       // Ignorer les enregistrements sans nom (prospects vides/incomplets)
       if(!row.prenom && !row.nom) return;
-      let pq=null,bilan=null,final=null,bilanRaw=null;
-      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;}catch(e){}
-      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,ville:row.ville,profession:row.profession,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offres,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,bilan_raw:bilanRaw,updated_at:row.updated_at,groupId:row.group_id||null};
+      let pq=null,bilan=null,final=null,bilanRaw=null,rdvHistory=null;
+      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;rdvHistory=j.rdv_history||null;}catch(e){}
+      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,ville:row.ville,profession:row.profession,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,rdv_history:rdvHistory,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offres,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,bilan_raw:bilanRaw,updated_at:row.updated_at,groupId:row.group_id||null};
       const i=ST.clients.findIndex(c=>c.id===sc.id);if(i>=0)ST.clients[i]=sc;else ST.clients.unshift(sc);
     });
     localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
@@ -5048,7 +5100,7 @@ async function saveToSupabase(c){
   // Ne pas sauvegarder un prospect sans nom (évite les enregistrements vides)
   if(!c.prenom && !c.nom) return;
   try{
-    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,age:parseInt(c.age)||null,ville:c.ville,profession:c.profession,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offres:c.offres,montant:c.montant?parseFloat(c.montant):null,statut:c.statut,score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report,bilan_raw:c.bilan_raw||null}),updated_at:c.updated_at,group_id:c.groupId||null})});
+    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,age:parseInt(c.age)||null,ville:c.ville,profession:c.profession,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offres:c.offres,montant:c.montant?parseFloat(c.montant):null,statut:c.statut,score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report,bilan_raw:c.bilan_raw||null,rdv_history:c.rdv_history||null}),updated_at:c.updated_at,group_id:c.groupId||null})});
   }catch(e){}
 }
 
