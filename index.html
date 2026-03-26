@@ -3908,7 +3908,7 @@ var MODE_STAGE_DEFS = {
   transformation: [
     {id:'rapport', lbl:'1er RAPPORT', ico:'📊', steps:[
       {id:'tests',lbl:'Tests physiques'},
-      {id:'rapport_complet',lbl:'Rapport complet (Pré-qualif + Bilan + Tests)'},
+      {id:'rapport_complet',lbl:'Rapport Complet (F1+F2+F3) généré'},
       {id:'done',lbl:'Terminée ✅',isFinal:true}
     ]},
     {id:'onboarding', lbl:'ONBOARDING', ico:'🚀', steps:[
@@ -3926,7 +3926,26 @@ var MODE_STAGE_DEFS = {
       {id:'liberte',lbl:'Liberté'},
       {id:'test_maj',lbl:'Test MAJ'},
       {id:'certification',lbl:'Certification'},
-      {id:'done',lbl:'ACTIV RESET VALIDÉE ✅',isFinal:true}
+      {id:'done',lbl:'GO ACTIV 🚀',isFinal:true}  // Fin ACTIV RESET → prêt pour ACTIV CONTINUE
+    ]}
+  ],
+  // ACTIV PROGRAM ESSENTIEL — parcours spécifique 2 mois
+  essentiel: [
+    {id:'rapport', lbl:'1er RAPPORT', ico:'📊', steps:[
+      {id:'tests',lbl:'Tests physiques'},
+      {id:'rapport_complet',lbl:'Rapport Complet (F1+F2+F3) généré'},
+      {id:'done',lbl:'Terminée ✅',isFinal:true}
+    ]},
+    {id:'onboarding_essentiel', lbl:'ONBOARDING', ico:'🚀', steps:[
+      {id:'acces_programme',lbl:'Accès Programme délivré'},
+      {id:'seance_lancement',lbl:'Séance de lancement'},
+      {id:'done',lbl:'Terminée ✅',isFinal:true}
+    ]},
+    {id:'activ_essentiel', lbl:'ACTIV ESSENTIEL', ico:'🟠', steps:[
+      {id:'demarrage',lbl:'Démarrage (J0)'},
+      {id:'bilan_mi',lbl:'Bilan mi-parcours (sem. 4)'},
+      {id:'bilan_fin',lbl:'Bilan fin de parcours (sem. 8)'},
+      {id:'done',lbl:'Terminée ✅',isFinal:true}
     ]}
   ],
   collectif: [
@@ -3942,6 +3961,11 @@ var ACTIV_CONTINUE_STAGES = {
   sculpt: {id:'activ_continue_sculpt', lbl:'ACTIV CONTINUE — SCULPT', ico:'🟡♾️', steps:[{id:'test_maj',lbl:'Test (MAJ)'},{id:'go',lbl:'GO'},{id:'optimisation',lbl:'Optimisation'},{id:'done',lbl:'VALIDÉE ✅',isFinal:true}]},
   health: {id:'activ_continue_health', lbl:'ACTIV CONTINUE — HEALTH', ico:'🟢♾️', steps:[{id:'test_maj',lbl:'Test (MAJ)'},{id:'go',lbl:'GO'},{id:'optimisation',lbl:'Optimisation'},{id:'done',lbl:'VALIDÉE ✅',isFinal:true}]}
 };
+
+// ─── Config custom des stages (admin éditeur) ────────
+function loadCustomStageDefs(){try{var s=localStorage.getItem('ba_custom_stage_defs');if(s)return JSON.parse(s);}catch(e){}return{};}
+function saveCustomModeStages(modeKey,stages){var d=loadCustomStageDefs();d[modeKey]=stages;localStorage.setItem('ba_custom_stage_defs',JSON.stringify(d));saveSettingRemote('ba_custom_stage_defs',d);}
+function getStageDefsForMode(modeKey){var c=loadCustomStageDefs();return c[modeKey]||MODE_STAGE_DEFS[modeKey]||MODE_STAGE_DEFS['action'];}
 
 // ─── Labels personnalisés parcours ───────────────────
 function cleanEmail(e){ return e ? e.replace(/^mailto:/i,'').trim() : e; }
@@ -3960,19 +3984,21 @@ function initModeStages(c, stagesDef) {
 }
 
 function getActiveStageDefs(c) {
-  var mode = null;
+  var mode = null, offreName = '';
   if (c.sig_offre_id) {
     var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
-    if (o) mode = o.modeOffre;
+    if (o) { mode = o.modeOffre; offreName = (o.name||'').toUpperCase(); }
   }
-  // Fallback sur le premier phaseRun si pas de sig_offre_id
   if (!mode && c.phaseRuns && c.phaseRuns[0] && c.phaseRuns[0].offreId) {
     var o2 = loadOffres().find(function(x){return x.id===c.phaseRuns[0].offreId;});
-    if (o2) mode = o2.modeOffre;
+    if (o2) { mode = o2.modeOffre; offreName = (o2.name||'').toUpperCase(); }
   }
   var modeKey = mode || 'action';
-  var baseDefs = (MODE_STAGE_DEFS[modeKey] || MODE_STAGE_DEFS['action']).map(function(s){return Object.assign({},s,{_mode:modeKey});});
-  // Ajouter les ACTIV CONTINUE si présents
+  // ACTIV PROGRAM ESSENTIEL → parcours spécifique
+  if (modeKey === 'transformation' && (offreName.indexOf('ESSENTIEL') > -1 || offreName.indexOf("PROGRAM'") > -1 || offreName.indexOf('PROGRAM ') > -1)) {
+    modeKey = 'essentiel';
+  }
+  var baseDefs = getStageDefsForMode(modeKey).map(function(s){return Object.assign({},s,{_mode:modeKey});});
   var continueDefs = (c.activ_continue_stages || []).map(function(ck){var s=ACTIV_CONTINUE_STAGES[ck];return s?Object.assign({},s,{_mode:'continue_'+ck}):null;}).filter(Boolean);
   return baseDefs.concat(continueDefs);
 }
@@ -4086,8 +4112,23 @@ function renderModeStages(clientId, c, container) {
 
     var sid = lastCompletedStageDef.id;
 
-    if (sid === 'activ_reset') {
-      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">✅ ACTIV RESET VALIDÉE !</div>';
+    if (sid === 'activ_essentiel') {
+      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:6px">✅ ACTIV ESSENTIEL terminé !</div>';
+      var dStep = lastCompletedData.steps[0];
+      if (dStep && dStep.doneAt) {
+        var startE = new Date(dStep.doneAt);
+        var endE = new Date(startE.getTime() + 56*24*3600*1000);
+        var nowE = new Date();
+        var daysRemE = Math.ceil((endE - nowE) / (24*3600*1000));
+        if (daysRemE > 0) {
+          endDiv.innerHTML += '<div style="font-size:11px;color:var(--tx4);margin-bottom:8px">⏱ Fin prévue le '+endE.toLocaleDateString('fr-FR')+' (dans '+daysRemE+' j)</div>';
+        }
+      }
+      endDiv.appendChild(mkBtn('btn btn-dk', '🔂', 'Relancer ACTIV ESSENTIEL', function(){ relancerActivEssentiel(clientId); }));
+      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
+
+    } else if (sid === 'activ_reset') {
+      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">🚀 GO ACTIV !</div>';
       endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
       endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — RESET',  function(){ addActivContinue(clientId,'reset'); }));
       endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — SCULPT', function(){ addActivContinue(clientId,'sculpt'); }));
@@ -4449,6 +4490,22 @@ function addActivContinue(clientId, key) {
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
   toast('ok', '⏺ ACTIV CONTINUE — ' + key.toUpperCase() + ' démarré');
+  renderClientModal(clientId);
+}
+
+function relancerActivEssentiel(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  var stagesDef = getActiveStageDefs(c);
+  initModeStages(c, stagesDef);
+  var essIdx = stagesDef.findIndex ? stagesDef.findIndex(function(sd){ return sd.id === 'activ_essentiel'; }) : -1;
+  if (essIdx < 0) { for(var i=0;i<stagesDef.length;i++){if(stagesDef[i].id==='activ_essentiel'){essIdx=i;break;}} }
+  if (essIdx < 0) return;
+  c.mode_stages[essIdx].steps.forEach(function(s){ s.done = false; s.doneAt = null; });
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  toast('ok', '🔂 ACTIV ESSENTIEL relancé');
   renderClientModal(clientId);
 }
 
@@ -4843,12 +4900,101 @@ function _pInpSm(key, dflt) {
   return '<input type="text" value="'+val+'" style="font-size:11px;font-weight:700;flex:1;border:1px solid var(--rim2);border-radius:5px;padding:2px 7px;background:var(--bg3);color:var(--tx3);font-family:inherit;text-transform:uppercase;letter-spacing:.4px;width:100%;box-sizing:border-box" onchange="saveParcoursLabel(\''+key+'\',this.value)">';
 }
 
+// ── Parcours editor helpers ─────────────────────────
+function _pcInp(val, onchangeJs) {
+  val = (val||'').replace(/"/g,'&quot;');
+  return '<input type="text" value="'+val+'" style="font-size:12px;flex:1;min-width:0;border:1px solid var(--rim2);border-radius:5px;padding:3px 8px;background:var(--bg3);color:var(--tx);font-family:inherit;box-sizing:border-box" onchange="'+onchangeJs+'">';
+}
+function _pcInpBold(val, onchangeJs) {
+  val = (val||'').replace(/"/g,'&quot;');
+  return '<input type="text" value="'+val+'" style="font-size:11px;font-weight:700;flex:1;min-width:0;border:1px solid var(--rim2);border-radius:5px;padding:2px 7px;background:var(--bg3);color:var(--tx3);font-family:inherit;text-transform:uppercase;letter-spacing:.4px;box-sizing:border-box" onchange="'+onchangeJs+'">';
+}
+function _pcDelBtn(onclick) {
+  return '<button onclick="'+onclick+'" style="flex-shrink:0;background:none;border:none;color:var(--R);font-size:14px;cursor:pointer;padding:2px 4px;line-height:1" title="Supprimer">🗑</button>';
+}
+
+function _pcSaveStage(modeKey, stages) {
+  saveCustomModeStages(modeKey, stages);
+  renderParcoursEditor();
+  toast('ok', '✅ Parcours sauvegardé');
+}
+
+function pcDeleteStep(modeKey, stageId, stepIdx) {
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  var stage = stages.find(function(s){ return s.id === stageId; });
+  if (!stage) return;
+  stage.steps.splice(stepIdx, 1);
+  _pcSaveStage(modeKey, stages);
+}
+function pcMoveStep(modeKey, stageId, stepIdx, dir) {
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  var stage = stages.find(function(s){ return s.id === stageId; });
+  if (!stage) return;
+  var ni = stepIdx + dir;
+  if (ni < 0 || ni >= stage.steps.length) return;
+  var tmp = stage.steps[stepIdx]; stage.steps[stepIdx] = stage.steps[ni]; stage.steps[ni] = tmp;
+  _pcSaveStage(modeKey, stages);
+}
+function pcAddStep(modeKey, stageId) {
+  var lbl = prompt('Libellé de la nouvelle étape :');
+  if (!lbl || !lbl.trim()) return;
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  var stage = stages.find(function(s){ return s.id === stageId; });
+  if (!stage) return;
+  // Insérer avant le step final
+  var finalIdx = stage.steps.findIndex ? stage.steps.findIndex(function(s){ return s.isFinal; }) : -1;
+  if (finalIdx < 0) { for(var i=0;i<stage.steps.length;i++){if(stage.steps[i].isFinal){finalIdx=i;break;}} }
+  var newStep = {id:'custom_'+Date.now(), lbl: lbl.trim()};
+  if (finalIdx >= 0) { stage.steps.splice(finalIdx, 0, newStep); } else { stage.steps.push(newStep); }
+  _pcSaveStage(modeKey, stages);
+}
+function pcDeleteStage(modeKey, stageId) {
+  if (!confirm('Supprimer cette étape du parcours ?')) return;
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  var idx = stages.findIndex ? stages.findIndex(function(s){ return s.id === stageId; }) : -1;
+  if (idx < 0) { for(var i=0;i<stages.length;i++){if(stages[i].id===stageId){idx=i;break;}} }
+  if (idx < 0) return;
+  stages.splice(idx, 1);
+  _pcSaveStage(modeKey, stages);
+}
+function pcAddStage(modeKey) {
+  var lbl = prompt('Nom du nouvel étape / bloc :');
+  if (!lbl || !lbl.trim()) return;
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  stages.push({id:'custom_stage_'+Date.now(), lbl:lbl.trim(), ico:'📌', steps:[{id:'done',lbl:'Terminée ✅',isFinal:true}]});
+  _pcSaveStage(modeKey, stages);
+}
+function pcEditStepLbl(modeKey, stageId, stepIdx, val) {
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  var stage = stages.find(function(s){ return s.id === stageId; });
+  if (!stage || !stage.steps[stepIdx]) return;
+  stage.steps[stepIdx].lbl = val;
+  saveCustomModeStages(modeKey, stages);
+}
+function pcEditStageLbl(modeKey, stageId, val) {
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  var stage = stages.find(function(s){ return s.id === stageId; });
+  if (!stage) return;
+  stage.lbl = val;
+  saveCustomModeStages(modeKey, stages);
+}
+function pcResetMode(modeKey) {
+  if (!confirm('Réinitialiser le mode '+modeKey+' aux valeurs par défaut ?')) return;
+  var d = loadCustomStageDefs();
+  delete d[modeKey];
+  localStorage.setItem('ba_custom_stage_defs', JSON.stringify(d));
+  saveSettingRemote('ba_custom_stage_defs', d);
+  renderParcoursEditor();
+  toast('ok', '↩ Mode réinitialisé');
+}
+
 function renderParcoursEditor() {
   var el = document.getElementById('parcours-modes-view');
   if (!el) return;
   var modes = [
     { key:'action',         ico:'⚡', label:'MODE ACTION',         color:'var(--Y)' },
-    { key:'transformation', ico:'🔄', label:'MODE TRANSFORMATION', color:'var(--V)' },
+    { key:'transformation', ico:'🔄', label:'MODE TRANSFORMATION (ACTIV RESET HYBRIDE / ONLINE)', color:'var(--V)' },
+    { key:'essentiel',      ico:'🟠', label:'MODE ESSENTIEL (ACTIV PROGRAM ESSENTIEL)', color:'#e86a00' },
     { key:'collectif',      ico:'🔥', label:'MODE COLLECTIF',      color:'var(--B)' }
   ];
   var html = '';
@@ -4867,47 +5013,42 @@ function renderParcoursEditor() {
 
   // ── Modes
   modes.forEach(function(m) {
-    var stages = MODE_STAGE_DEFS[m.key] || [];
+    var stages = getStageDefsForMode(m.key);
+    var isCustom = !!loadCustomStageDefs()[m.key];
     html += '<div style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:12px 14px;margin-bottom:10px">'
-      + '<div style="font-weight:700;font-size:12px;color:'+m.color+';text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">'+m.ico+' '+m.label+'</div>';
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+      + '<div style="font-weight:700;font-size:11px;color:'+m.color+';text-transform:uppercase;letter-spacing:.7px">'+m.ico+' '+m.label+'</div>'
+      + '<div style="display:flex;gap:4px">'
+      + (isCustom ? '<button onclick="pcResetMode(\''+m.key+'\')" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--rim2);background:var(--bg3);color:var(--tx3);cursor:pointer">↩ Défaut</button>' : '')
+      + '<button onclick="pcAddStage(\''+m.key+'\')" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--bx);background:none;color:var(--bx);cursor:pointer">+ Bloc</button>'
+      + '</div></div>';
+
     stages.forEach(function(stage) {
-      var stageKey = 'stage_'+m.key+'_'+stage.id;
-      html += '<div style="margin-bottom:10px">'
-        + '<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">'
-        + '<span style="font-size:13px;flex-shrink:0">'+stage.ico+'</span>'
-        + _pInpSm(stageKey, stage.lbl)
+      html += '<div style="margin-bottom:10px;border:1px solid var(--rim3);border-radius:8px;padding:8px 10px">'
+        + '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">'
+        + '<span style="font-size:13px;flex-shrink:0">'+(stage.ico||'📌')+'</span>'
+        + _pcInpBold(stage.lbl, 'pcEditStageLbl("'+m.key+'","'+stage.id+'",this.value)')
+        + _pcDelBtn('pcDeleteStage("'+m.key+'","'+stage.id+'")')
         + '</div>'
-        + '<div style="display:flex;flex-direction:column;gap:4px;padding-left:12px">';
+        + '<div style="display:flex;flex-direction:column;gap:3px;padding-left:10px">';
+
       stage.steps.forEach(function(s, si) {
-        var stepKey = 'step_'+m.key+'_'+stage.id+'_'+s.id+'_'+si;
-        html += '<div style="display:flex;align-items:center;gap:5px">'
-          + '<span style="font-size:10px;color:var(--tx4);flex-shrink:0">'+(s.isFinal?'✅':'→')+'</span>'
-          + _pInp(stepKey, s.lbl)
+        var canDel = !s.isFinal && stage.steps.length > 1;
+        html += '<div style="display:flex;align-items:center;gap:4px">'
+          + '<span style="font-size:10px;color:var(--tx4);flex-shrink:0;width:14px">'+(s.isFinal?'✅':'→')+'</span>'
+          + _pcInp(s.lbl, 'pcEditStepLbl("'+m.key+'","'+stage.id+'",'+si+',this.value)')
+          + (si > 0 && !s.isFinal ? '<button onclick="pcMoveStep(\''+m.key+'\',\''+stage.id+'\','+si+',-1)" style="flex-shrink:0;background:none;border:none;color:var(--tx4);font-size:12px;cursor:pointer;padding:2px 3px" title="Monter">↑</button>' : '<span style="width:18px;flex-shrink:0"></span>')
+          + (canDel ? _pcDelBtn('pcDeleteStep("'+m.key+'","'+stage.id+'",'+si+')') : '<span style="width:22px;flex-shrink:0"></span>')
           + '</div>';
       });
-      html += '</div></div>';
+      html += '</div>'
+        + '<button onclick="pcAddStep(\''+m.key+'\',\''+stage.id+'\')" style="margin-top:6px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px dashed var(--bx);background:none;color:var(--bx);cursor:pointer;width:100%">+ Ajouter une étape</button>'
+        + '</div>';
     });
-    // ACTIV CONTINUE sous transformation
+
+    // ACTIV CONTINUE (transformation seulement, lecture seule pour l'instant)
     if (m.key === 'transformation') {
-      ['reset','sculpt','health'].forEach(function(ck) {
-        var stage = ACTIV_CONTINUE_STAGES[ck];
-        if (!stage) return;
-        var stageKey = 'stage_continue_'+ck+'_'+stage.id;
-        html += '<div style="margin-bottom:10px">'
-          + '<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">'
-          + '<span style="font-size:13px;flex-shrink:0">'+stage.ico+'</span>'
-          + _pInpSm(stageKey, stage.lbl)
-          + '</div>'
-          + '<div style="display:flex;flex-direction:column;gap:4px;padding-left:12px">';
-        stage.steps.forEach(function(s, si) {
-          var stepKey = 'step_continue_'+ck+'_'+stage.id+'_'+s.id+'_'+si;
-          html += '<div style="display:flex;align-items:center;gap:5px">'
-            + '<span style="font-size:10px;color:var(--tx4);flex-shrink:0">'+(s.isFinal?'✅':'→')+'</span>'
-            + _pInp(stepKey, s.lbl)
-            + '</div>';
-        });
-        html += '</div></div>';
-      });
+      html += '<div style="margin-top:4px;font-size:11px;color:var(--tx4);padding:6px 4px">♾️ ACTIV CONTINUE (RESET / SCULPT / HEALTH) — configurable via les étiquettes ci-dessus</div>';
     }
     html += '</div>';
   });
