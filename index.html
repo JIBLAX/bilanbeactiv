@@ -1296,8 +1296,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="f" style="margin-bottom:14px"><label>Service Role Key BILAN CRM</label><input type="password" id="cfg-srole" placeholder="eyJ… — pour écrire be_activ_clients"></div>
 
     <div style="font-size:10px;font-weight:700;color:var(--B);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🏢 BE ACTIV BUSINESS — Supabase externe</div>
-    <div class="f" style="margin-bottom:8px"><label>URL Supabase BUSINESS</label><input type="text" id="cfg-biz-url" placeholder="https://weecciwwbqsvmnaiahpw
-.supabase.co"></div>
+    <div class="f" style="margin-bottom:8px"><label>URL Supabase BUSINESS</label><input type="text" id="cfg-biz-url" placeholder="https://xxx.supabase.co"></div></div>
     <div class="f" style="margin-bottom:8px">
       <label>Service Role Key BUSINESS <span style="font-size:9px;color:var(--tx3);font-weight:400">(Dashboard Business → Settings → API)</span></label>
       <input type="password" id="cfg-biz-srkey" placeholder="eyJ… — obligatoire pour sync bidirectionnelle">
@@ -1702,6 +1701,18 @@ function startBilanForProspect(clientId) {
     if (document.getElementById('b-age')) document.getElementById('b-age').value = c.age || '';
     if (document.getElementById('b-ville')) document.getElementById('b-ville').value = c.ville || '';
     if (document.getElementById('b-prof')) document.getElementById('b-prof').value = c.profession || '';
+    // Pré-remplir les checkboxes du bilan depuis bilan_raw si client déjà vu
+    if (c.bilan_raw) {
+      var br = c.bilan_raw;
+      ['b-relation-train','b-faille-train','b-relation-neat','b-relation-alim','b-intol','b-relation-vie','b-faille-vie'].forEach(function(fid){
+        var vals = br[fid] || [];
+        vals.forEach(function(v){
+          var el = document.querySelector('input[type=checkbox][data-fid="'+fid+'"][value="'+CSS.escape(v)+'"]');
+          if (el) el.checked = true;
+        });
+      });
+      if (br.materiel && document.getElementById('b-materiel')) document.getElementById('b-materiel').value = br.materiel;
+    }
     // Masquer les champs déjà connus (nom, prénom, âge, ville) — les infos de base sont prises au prospect
     ['b-pn','b-nn','b-age','b-ville'].forEach(function(fid){
       var el = document.getElementById(fid);
@@ -1971,9 +1982,17 @@ async function genSyntheseBilanFromClient(clientId) {
       + (br.blocages   ? '\nBlocages : '+br.blocages.slice(0,150)         : '')
       + (br.pointA     ? '\nPoint A : '+br.pointA.slice(0,150)            : '')
       + (br.notesTrain ? '\nEntraînement : '+br.notesTrain.slice(0,150)   : '')
+      + (br['b-relation-train'] && br['b-relation-train'].length ? '\nRelation entraînement : '+br['b-relation-train'].join(', ') : '')
+      + (br['b-faille-train'] && br['b-faille-train'].length ? '\nFaille entraînement : '+br['b-faille-train'].join(', ') : '')
+      + (br.materiel ? '\nMatériel : '+br.materiel : '')
       + (br.pas        ? '\nNEAT : '+br.pas+' pas/jour'                   : '')
+      + (br['b-relation-neat'] && br['b-relation-neat'].length ? '\nRelation NEAT : '+br['b-relation-neat'].join(', ') : '')
       + (br.notesAlim  ? '\nAlimentation : '+br.notesAlim.slice(0,150)    : '')
+      + (br['b-relation-alim'] && br['b-relation-alim'].length ? '\nRelation alimentation : '+br['b-relation-alim'].join(', ') : '')
+      + (br['b-intol'] && br['b-intol'].length ? '\nIntolérances : '+br['b-intol'].join(', ') : '')
       + (br.notesVie   ? '\nMode de vie : '+br.notesVie.slice(0,150)      : '')
+      + (br['b-relation-vie'] && br['b-relation-vie'].length ? '\nRelation mode de vie : '+br['b-relation-vie'].join(', ') : '')
+      + (br['b-faille-vie'] && br['b-faille-vie'].length ? '\nFaille mode de vie : '+br['b-faille-vie'].join(', ') : '')
       + (br.attenteCoach ? '\nAttente coaching : '+br.attenteCoach.slice(0,100) : '')
       + '\n\nJSON strict :\n{"syntheseBilan":"3-4 phrases","hypotheseCoach":"texte","facteursLimitants":"texte","facteursLeviers":"texte","incoherencesOuVigilances":"texte ou null","prioritesCoaching":"3 priorités","profilTypeCodeUpdated":"P1..P11","profilTypeLabelUpdated":"libellé","closingPotentialUpdated":0,"recommandationSuiteRDV":"Démarrer maintenant|Envoyer offre|Relancer dans 1 semaine|Ne pas continuer","offreRecommandee":"texte"}';
     var r = await callAI(sys, usr, 'claude-haiku-4-5-20251001', 1400);
@@ -2582,7 +2601,7 @@ function renderField(f) {
       }).join('') + '</div>';
     case 'checkboxes':
       return '<div class="f">' + lbl + (f.options||[]).map(o =>
-        '<label class="chk-item" style="cursor:pointer"><input type="checkbox" value="' + o + '"><div class="chk-box"></div><span class="chk-lbl">' + o + '</span></label>'
+        '<label class="chk-item" style="cursor:pointer"><input type="checkbox" data-fid="' + f.id + '" value="' + o + '"><div class="chk-box"></div><span class="chk-lbl">' + o + '</span></label>'
       ).join('') + '</div>';
     case 'days':
       return '<div class="f">' + lbl + '<div class="days-grid" style="margin-bottom:0">' +
@@ -3078,6 +3097,7 @@ function renderNextRDV() {
   const months=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
   // Combiner les RDVs manuels + les RDV Bilan des prospects (date définie, pas encore passé)
+  if (!ST.rdvs) ST.rdvs = [];
   var allRdvs = ST.rdvs.filter(r=>r.date>=today).map(function(r){
     return {date:r.date, name:r.name, time:r.time, type:r.type||'RDV', badge:''};
   });
@@ -3102,6 +3122,7 @@ function renderNextRDV() {
   if(!allRdvs.length){el.innerHTML='<div class="rdv-empty">Aucun RDV — ajoutez en via le bouton ci-dessous</div>';return;}
   const next=allRdvs[0];
   const d=new Date(next.date+'T12:00:00');
+  if(isNaN(d.getTime())){el.innerHTML='<div class="rdv-empty">Prochain RDV : '+next.name+' — '+next.date+'</div>';return;}
   el.innerHTML='<div class="rdv-card"><div class="rdv-date"><div class="rdv-day">'+d.getDate()+'</div><div class="rdv-month">'+months[d.getMonth()]+'</div></div><div class="rdv-info"><div class="rdv-name">'+(next.badge?next.badge+' ':'')+next.name+'</div><div class="rdv-meta">'+days[d.getDay()]+(next.time?' · '+next.time:'')+'</div><div class="rdv-badge">'+next.type+'</div></div></div>';
 }
 
@@ -3375,12 +3396,25 @@ function setupChips() {
 // ═══════════════════════════════════════════════════
 function getRadioVal(name){const el=document.querySelector('input[name="'+name+'"]:checked');return el?el.value:'';}
 function getCheckedIn(sel){return Array.from(document.querySelectorAll(sel+' input[type=checkbox]:checked')).map(i=>i.value);}
+function getCheckedByFid(fid){
+  return Array.from(document.querySelectorAll('input[type=checkbox][data-fid="'+fid+'"]:checked')).map(function(i){return i.value;});
+}
 function collectBilan(){
   return{
     prenom:gv('b-pn'),nom:gv('b-nn'),age:gv('b-age'),ville:gv('b-ville'),profession:gv('b-prof'),
     source:getRadioVal('source'),rdvStatut:gv('b-rdv-statut'),date:gv('b-date'),
     notesTrain:gv('b-notes-train'),dispoJours:Array.from(document.querySelectorAll('input[name="dispo"]:checked')).map(i=>i.value).join(', '),
-    notesNeat:gv('b-notes-neat'),pas:gv('b-pas'),notesAlim:gv('b-notes-alim'),notesVie:gv('b-notes-vie'),
+    'b-relation-train':getCheckedByFid('b-relation-train'),
+    'b-faille-train':getCheckedByFid('b-faille-train'),
+    materiel:gv('b-materiel'),
+    notesNeat:gv('b-notes-neat'),pas:gv('b-pas'),
+    'b-relation-neat':getCheckedByFid('b-relation-neat'),
+    notesAlim:gv('b-notes-alim'),
+    'b-relation-alim':getCheckedByFid('b-relation-alim'),
+    'b-intol':getCheckedByFid('b-intol'),
+    notesVie:gv('b-notes-vie'),
+    'b-relation-vie':getCheckedByFid('b-relation-vie'),
+    'b-faille-vie':getCheckedByFid('b-faille-vie'),
     profilTypeCode:getRadioVal('profil'),
     vision6m:gv('b-vision6m'),pointA:gv('b-pointA'),blocages:gv('b-blocages'),echec6m:gv('b-echec6m'),attenteCoach:gv('b-attente-coach'),
     offres:getCheckedIn('#bilan-offres-list').join(', '),
@@ -3626,7 +3660,7 @@ function analyzePQForNewProspect() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ raw: raw, apiKey: ST.apiKey })
-  }).then(function(r){ return r.json(); }).then(function(data) {
+  }).then(function(r){ if(!r.ok) return r.text().then(function(t){throw new Error('Erreur serveur: '+t.slice(0,80));}); return r.json(); }).then(function(data) {
     _pqNewSummary = data;
     if (ldg) ldg.style.display = 'none';
     if (btn) btn.disabled = false;
@@ -4020,7 +4054,16 @@ function saveClient(){
       notesAlim:b.notesAlim||'', notesVie:b.notesVie||'',
       vision6m:b.vision6m||'', pointA:b.pointA||'',
       blocages:b.blocages||'', echec6m:b.echec6m||'',
-      attenteCoach:b.attenteCoach||''
+      attenteCoach:b.attenteCoach||'',
+      materiel:b.materiel||'',
+      profilTypeCode:b.profilTypeCode||'',
+      'b-relation-train':b['b-relation-train']||[],
+      'b-faille-train':b['b-faille-train']||[],
+      'b-relation-neat':b['b-relation-neat']||[],
+      'b-relation-alim':b['b-relation-alim']||[],
+      'b-intol':b['b-intol']||[],
+      'b-relation-vie':b['b-relation-vie']||[],
+      'b-faille-vie':b['b-faille-vie']||[]
     },
     updated_at:new Date().toISOString()
   });
@@ -4724,14 +4767,17 @@ async function genReportComplet(clientId, stageIdx, stepIdx) {
     var pqCtx = c.pq_summary ? (c.pq_summary.resumeProfil||'NC')+' | Profil: '+(c.pq_summary.profilTypeCode||'NC') : 'Non effectué';
     var bilanCtx = c.bilan_summary ? (c.bilan_summary.syntheseBilan||'NC')+' | Leviers: '+(c.bilan_summary.facteursLeviers||'NC') : 'Non effectué';
     var douleurs = Array.isArray(t.douleurs) ? t.douleurs.join(', ') : (t.douleurs||'NC');
-    var mobZones = Array.isArray(t.mobZones) ? t.mobZones.join(', ') : (t.mobZones||'NC');
+    var squatObs = Array.isArray(t['mob-squat']) ? t['mob-squat'].join(', ') : (Array.isArray(t.squatObs) ? t.squatObs.join(', ') : (t['mob-squat']||t.squatObs||'NC'));
+    var mobScore = t['mob-global']||t.mobGlobal||'NC';
+    var mobZones = [t['mob-post']?'Post:'+t['mob-post']:'',t['mob-sh']?'Épaules:'+t['mob-sh']:'',t['mob-hi']?'Hanches:'+t['mob-hi']:'',t['mob-an']?'Chevilles:'+t['mob-an']:''].filter(Boolean).join(' | ')||(t.mobZones||'NC');
     var sys = 'Tu es Jonathan, coach BE ACTIV. Génère un rapport complet F1+F2+F3 en JSON strict sans backticks. Sois concret, personnalisé, bienveillant. Français uniquement.';
     var usr = 'CLIENT: '+(c.prenom||'NC')+' '+(c.nom||'')+', '+(c.age||'?')+' ans, '+(c.ville||'NC')
       +'\nIMC: '+imc+' | Poids: '+(t.poids||'NC')+'kg | Taille: '+(t.taille||'NC')+'cm'
       +'\nMesures: nombril='+(t.tn||'NC')+' taille='+(t.tt||'NC')+' hanche='+(t.th||'NC')+' cuisses='+(t.tc||'NC')+' bras='+(t.tb||'NC')
       +'\nCardio: P1='+(t.p1||'NC')+' P2='+(t.p2||'NC')+' P3='+(t.p3||'NC')+' IRD='+(t.ird||'NC')+' FCmax='+(t.fcmax||'NC')
-      +'\nMobilité: '+(t.mobGlobal||'NC')+'/100 | Zones: '+mobZones
-      +'\nForce: Planche='+(t.planche||'NC')+'s'
+      +'\nMobilité: '+mobScore+'/100 | Zones: '+mobZones+(t['mob-asy']?' | Asymétries: '+t['mob-asy']:'')
+      +'\nSquat: '+squatObs
+      +'\nForce: Planche='+(t.planche||t['planche']||'NC')+'s'
       +'\nDouleurs: '+douleurs
       +'\nPré-bilan: '+pqCtx
       +'\nBilan: '+bilanCtx
