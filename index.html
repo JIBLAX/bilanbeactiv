@@ -4586,67 +4586,43 @@ function openTestsParcours(clientId, stageIdx, stepIdx) {
   var offresLabel = (c && c.offres) ? c.offres : 'Non renseigné';
   var nom = c ? ((c.prenom||'')+' '+(c.nom||'')) : '';
   var age = (c && c.age) ? c.age+' ans' : '';
+  // SOURCE DE VÉRITÉ : loadFormDef('tests') — configuration des éditeurs
+  var formDef = loadFormDef('tests');
 
-  function chk(id, opts) {
-    return opts.map(function(o){
-      var checked = td[id] && td[id].indexOf(o) > -1 ? ' checked' : '';
-      return '<label class="chk-item" style="cursor:pointer"><input type="checkbox" data-f3="'+id+'" value="'+o+'"'+checked+'><div class="chk-box"></div><span class="chk-lbl">'+o+'</span></label>';
-    }).join('');
-  }
-  function num(id, ph, stored) {
-    var val = stored !== undefined ? stored : (td[id] || '');
-    return '<input id="f3-'+id+'" type="number" placeholder="'+ph+'" value="'+val+'" style="width:100%">';
-  }
+  var html = '<div style="background:var(--bg3);border-radius:8px;padding:9px 14px;margin-bottom:14px;font-size:13px">'
+    + '<strong>'+(nom.trim()||'Client')+'</strong>'+(age?' · '+age:'')+' · <span style="color:var(--bx)">'+offresLabel+'</span></div>';
 
-  var html = ''
-    // Client recap
-    + '<div style="background:var(--bg3);border-radius:8px;padding:9px 14px;margin-bottom:14px;font-size:13px">'
-    + '<strong>'+(nom.trim()||'Client')+'</strong>'+(age?' · '+age:'')+' · <span style="color:var(--bx)">'+offresLabel+'</span></div>'
-    // Programme
-    + '<div class="sh sh-B">📋 Programme</div><div class="card">'
-    + '<div class="f"><label>Programme</label><select id="f3-programme"><option'+(td.programme==="TEST ACTIV' 360°"?' selected':'')+">TEST ACTIV' 360°</option><option"+(td.programme==="TEST ACTIV' 90°"?' selected':'')+">TEST ACTIV' 90°</option><option"+(td.programme==='À la Carte'?' selected':'')+">À la Carte</option></select></div>"
-    + '</div>'
-    // Métriques 2-col
-    + '<div class="sh sh-Y">📏 Métriques corporelles</div><div class="card">'
-    + '<div class="g2" style="gap:10px">'
-    + '<div class="f"><label>Taille (cm)</label>'+num('taille','170')+'</div>'
-    + '<div class="f"><label>Poids (kg)</label>'+num('poids','70')+'</div>'
-    + '<div class="f"><label>Tour nombril (cm)</label>'+num('tn','85')+'</div>'
-    + '<div class="f"><label>Tour taille (cm)</label>'+num('tt','78')+'</div>'
-    + '<div class="f"><label>Tour hanche (cm)</label>'+num('th','95')+'</div>'
-    + '<div class="f"><label>Tour cuisses (cm)</label>'+num('tc','55')+'</div>'
-    + '</div>'
-    + '<div class="f"><label>Tour bras (cm)</label>'+num('tb','30')+'</div>'
-    + '</div>'
-    // Cardio 2-col
-    + '<div class="sh sh-V">❤️ Ruffier-Dickson</div><div class="card">'
-    + '<div class="g2" style="gap:10px">'
-    + '<div class="f"><label>P1 repos (bpm)</label>'+num('p1','65')+'</div>'
-    + '<div class="f"><label>P2 effort (bpm)</label>'+num('p2','120')+'</div>'
-    + '<div class="f"><label>P3 récup (bpm)</label>'+num('p3','90')+'</div>'
-    + '<div class="f"><label>FC Max (bpm)</label>'+num('fcmax','190')+'</div>'
-    + '</div></div>'
-    // Mobilité
-    + '<div class="sh sh-G">🤸 Mobilité GOWOD</div><div class="card">'
-    + '<div class="f"><label>Score global (/100)</label>'+num('mobGlobal','62')+'</div>'
-    + '<div class="f"><label>Zones limitantes</label>'
-    + chk('mobZones',['Chaîne postérieure','Épaules','Hanches','Chevilles'])
-    + '</div></div>'
-    // Force
-    + '<div class="sh sh-B">🦵 Force & Gainage</div><div class="card">'
-    + '<div class="f"><label>Planche (secondes)</label>'+num('planche','60')+'</div>'
-    + '<div class="f"><label>Squat</label>'
-    + chk('squatObs',['Talons qui décollent','Genoux valgus','Buste en avant','Validé R.A.S'])
-    + '</div></div>'
-    // Douleurs
-    + '<div class="sh">🩺 Douleurs / Blessures</div><div class="card">'
-    + '<div class="f"><label>Zones</label>'
-    + chk('douleurs',['Genoux','Lombaires','Hanches','Épaules','Cervicales','Chevilles','Poignets','R.A.S'])
-    + '</div></div>'
-    // Notes
-    + '<div class="card"><div class="f"><label>Notes libres</label>'
-    + '<textarea id="f3-notes" rows="2" placeholder="Observations complémentaires…">'+(td.notes||'')+'</textarea>'
-    + '</div></div>';
+  formDef.forEach(function(section) {
+    if (section.type !== 'group' || !section.fields) return;
+    html += '<div class="sh">' + (section.section||'') + '</div><div class="card">';
+    section.fields.forEach(function(f) {
+      var key = f.id.replace(/^t-/, '');
+      var stored = td[key] !== undefined ? td[key] : (td[f.id] !== undefined ? td[f.id] : '');
+      if (f.type === 'checkboxes') {
+        var arr = Array.isArray(stored) ? stored : [];
+        html += '<div class="f"><label>'+(f.label||f.id)+'</label>';
+        (f.options||[]).forEach(function(o) {
+          html += '<label class="chk-item" style="cursor:pointer"><input type="checkbox" data-tf="'+key+'" value="'+o+'"'+(arr.indexOf(o)>-1?' checked':'')+'><div class="chk-box"></div><span class="chk-lbl">'+o+'</span></label>';
+        });
+        html += '</div>';
+      } else if (f.type === 'radio') {
+        html += '<div class="f"><label>'+(f.label||f.id)+'</label>';
+        (f.options||[]).forEach(function(o) {
+          html += '<label class="chk-item" style="cursor:pointer"><input type="radio" name="tf-'+key+'" data-tf="'+key+'" value="'+o+'"'+(stored===o?' checked':'')+'><div class="radio-box"></div><span class="chk-lbl">'+o+'</span></label>';
+        });
+        html += '</div>';
+      } else if (f.type === 'select') {
+        html += '<div class="f"><label>'+(f.label||f.id)+'</label><select id="f3-'+key+'">'
+          + (f.options||[]).map(function(o){ return '<option'+(stored===o?' selected':'')+'>'+o+'</option>'; }).join('')
+          + '</select></div>';
+      } else if (f.type === 'textarea') {
+        html += '<div class="f"><label>'+(f.label||f.id)+'</label><textarea id="f3-'+key+'" rows="2" placeholder="'+(f.placeholder||'')+'">'+stored+'</textarea></div>';
+      } else {
+        html += '<div class="f"><label>'+(f.label||f.id)+'</label><input id="f3-'+key+'" type="'+(f.type||'text')+'" placeholder="'+(f.placeholder||'')+'" value="'+stored+'"></div>';
+      }
+    });
+    html += '</div>';
+  });
 
   document.getElementById('tests-parcours-form').innerHTML = html;
   document.getElementById('mdl-tests-parcours').style.display = 'block';
@@ -4662,25 +4638,34 @@ function saveTestsParcours() {
   var ctx = _testsParcoursCtx;
   var c = ST.clients.find(function(x){ return x.id == ctx.clientId; });
   if (!c) return;
-  // Collecter les champs f3-* (inputs numériques + select + textarea)
+  // Collecter depuis la définition éditeurs (source de vérité)
   var testsData = {};
-  document.querySelectorAll('#tests-parcours-form input[id^="f3-"], #tests-parcours-form select[id^="f3-"], #tests-parcours-form textarea[id^="f3-"]').forEach(function(el) {
-    var key = el.id.replace('f3-', '');
-    testsData[key] = el.value;
+  var formDef = loadFormDef('tests');
+  formDef.forEach(function(section) {
+    if (section.type !== 'group' || !section.fields) return;
+    section.fields.forEach(function(f) {
+      var key = f.id.replace(/^t-/, '');
+      if (f.type === 'checkboxes') {
+        var vals = [];
+        document.querySelectorAll('#tests-parcours-form input[type=checkbox][data-tf="'+key+'"]').forEach(function(el) {
+          if (el.checked) vals.push(el.value);
+        });
+        testsData[key] = vals;
+      } else if (f.type === 'radio') {
+        var chkd = document.querySelector('#tests-parcours-form input[type=radio][data-tf="'+key+'"]:checked');
+        testsData[key] = chkd ? chkd.value : '';
+      } else {
+        var el = document.getElementById('f3-'+key);
+        if (el) testsData[key] = el.value;
+      }
+    });
   });
-  // Collecter les checkboxes groupées (data-f3)
-  var cbGroups = {};
-  document.querySelectorAll('#tests-parcours-form input[type=checkbox][data-f3]').forEach(function(el) {
-    var k = el.getAttribute('data-f3');
-    if (!cbGroups[k]) cbGroups[k] = [];
-    if (el.checked) cbGroups[k].push(el.value);
-  });
-  Object.assign(testsData, cbGroups);
   // Calculer IRD automatiquement si P1/P2/P3 présents
   if (testsData.p1 && testsData.p2 && testsData.p3) {
-    var ird = ((parseFloat(testsData.p1)+parseFloat(testsData.p2)+parseFloat(testsData.p3)-200)/10).toFixed(1);
-    testsData.ird = ird;
+    testsData.ird = ((parseFloat(testsData.p1)+parseFloat(testsData.p2)+parseFloat(testsData.p3)-200)/10).toFixed(1);
   }
+  // Alias pour compatibilité avec genReportComplet (lit t.mobGlobal)
+  if (testsData['mob-global']) testsData.mobGlobal = testsData['mob-global'];
   c.tests_data = testsData;
   // Valider le step Tests
   c.mode_stages[ctx.stageIdx].steps[ctx.stepIdx].done = true;
