@@ -4583,21 +4583,42 @@ function openTestsParcours(clientId, stageIdx, stepIdx) {
   _testsParcoursCtx = {clientId:clientId, stageIdx:stageIdx, stepIdx:stepIdx};
   var c = ST.clients.find(function(x){ return x.id == clientId; });
   var td = (c && c.tests_data) || {};
-  var offresLabel = (c && c.offres) ? c.offres : 'Non renseigné';
   var nom = c ? ((c.prenom||'')+' '+(c.nom||'')) : '';
   var age = (c && c.age) ? c.age+' ans' : '';
-  // SOURCE DE VÉRITÉ : loadFormDef('tests') — configuration des éditeurs
-  var formDef = loadFormDef('tests');
 
+  // Type de test : détecté automatiquement depuis l'offre (o.test = '360'|'90'|'none')
+  var testType = 'none', offreName = '';
+  var allOffres = loadOffres();
+  if (c && c.sig_offre_id) {
+    var _of = allOffres.find(function(x){ return x.id === c.sig_offre_id; });
+    if (_of) { testType = _of.test || 'none'; offreName = _of.name; }
+  }
+  if (testType === 'none' && c && c.offres) {
+    var _names = c.offres.split(',').map(function(s){return s.trim();});
+    var _of2 = allOffres.find(function(x){ return _names.indexOf(x.name) > -1 && x.test && x.test !== 'none'; });
+    if (_of2) { testType = _of2.test; offreName = _of2.name; }
+  }
+  var testLabel = testType === '360' ? "TEST ACTIV' 360° (Hybride)" : testType === '90' ? "TEST ACTIV' 90° Essentiel" : 'À la Carte / JM Pass';
+  var testBadgeCls = testType === '360' ? 'pill-B' : 'pill-G';
+  _testsParcoursCtx.testType = testType;
+  _testsParcoursCtx.testLabel = testLabel;
+
+  // SOURCE DE VÉRITÉ : loadFormDef('tests') + filtrage via isSectionActiveForProgramme
+  var formDef = loadFormDef('tests');
   var html = '<div style="background:var(--bg3);border-radius:8px;padding:9px 14px;margin-bottom:14px;font-size:13px">'
-    + '<strong>'+(nom.trim()||'Client')+'</strong>'+(age?' · '+age:'')+' · <span style="color:var(--bx)">'+offresLabel+'</span></div>';
+    + '<strong>'+(nom.trim()||'Client')+'</strong>'+(age?' · '+age:'')+' · <span style="color:var(--bx)">'+(offreName||(c&&c.offres)||'Non renseigné')+'</span>'
+    + (testType !== 'none' ? ' <span class="pill '+testBadgeCls+'" style="font-size:10px">'+testLabel+'</span>' : '')
+    + '</div>';
 
   formDef.forEach(function(section) {
     if (section.type !== 'group' || !section.fields) return;
+    // Filtrer les sections selon le type de test de l'offre (flags éditeurs : only360/only90)
+    if (!isSectionActiveForProgramme(section, testType)) return;
     html += '<div class="sh">' + (section.section||'') + '</div><div class="card">';
     section.fields.forEach(function(f) {
       var key = f.id.replace(/^t-/, '');
       var stored = td[key] !== undefined ? td[key] : (td[f.id] !== undefined ? td[f.id] : '');
+      if (f.id === 't-programme') stored = testLabel; // auto-rempli depuis l'offre
       if (f.type === 'checkboxes') {
         var arr = Array.isArray(stored) ? stored : [];
         html += '<div class="f"><label>'+(f.label||f.id)+'</label>';
@@ -4611,6 +4632,12 @@ function openTestsParcours(clientId, stageIdx, stepIdx) {
           html += '<label class="chk-item" style="cursor:pointer"><input type="radio" name="tf-'+key+'" data-tf="'+key+'" value="'+o+'"'+(stored===o?' checked':'')+'><div class="radio-box"></div><span class="chk-lbl">'+o+'</span></label>';
         });
         html += '</div>';
+      } else if (f.id === 't-programme') {
+        // Programme : affiché en lecture seule, automatique selon l'offre
+        html += '<div class="f"><label>'+(f.label||f.id)+'</label>'
+          + '<div style="padding:8px 10px;background:var(--bg3);border-radius:var(--r3);border:1.5px solid var(--rim)">'
+          + '<span class="pill '+testBadgeCls+'" style="font-size:11px">'+testLabel+'</span>'
+          + ' <span style="font-size:11px;color:var(--tx4)">automatique</span></div></div>';
       } else if (f.type === 'select') {
         html += '<div class="f"><label>'+(f.label||f.id)+'</label><select id="f3-'+key+'">'
           + (f.options||[]).map(function(o){ return '<option'+(stored===o?' selected':'')+'>'+o+'</option>'; }).join('')
@@ -4638,11 +4665,15 @@ function saveTestsParcours() {
   var ctx = _testsParcoursCtx;
   var c = ST.clients.find(function(x){ return x.id == ctx.clientId; });
   if (!c) return;
-  // Collecter depuis la définition éditeurs (source de vérité)
+  // Collecter depuis la définition éditeurs (source de vérité), sections filtrées par testType
   var testsData = {};
+  var testType = ctx.testType || 'none';
+  var testLabel = ctx.testLabel || '';
+  testsData.programme = testLabel; // sauvegarde automatique du type de test
   var formDef = loadFormDef('tests');
   formDef.forEach(function(section) {
     if (section.type !== 'group' || !section.fields) return;
+    if (!isSectionActiveForProgramme(section, testType)) return; // cohérence avec le rendu
     section.fields.forEach(function(f) {
       var key = f.id.replace(/^t-/, '');
       if (f.type === 'checkboxes') {
