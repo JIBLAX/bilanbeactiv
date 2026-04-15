@@ -1828,6 +1828,28 @@ function renderSignatureAccordion(clientId, c, container) {
         amtWrap.appendChild(amtHint);
         amtWrap.appendChild(amtInp);
         body.appendChild(amtWrap);
+
+        // Moyen de paiement
+        var moyenWrap = document.createElement('div');
+        moyenWrap.style.marginBottom = '12px';
+        var moyenLbl = document.createElement('div');
+        moyenLbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px';
+        moyenLbl.textContent = 'Moyen de paiement';
+        var moyenSel = document.createElement('select');
+        moyenSel.style.width = '100%';
+        [['','— Choisir —'],['cb','Carte bancaire (CB)'],['virement','Virement bancaire'],['especes','Espèces / Cash'],['plateforme','Plateforme (Stripe, PayPal…)'],['autre','Autre']].forEach(function(pair){
+          var opt = document.createElement('option');
+          opt.value = pair[0]; opt.textContent = pair[1];
+          if ((c.moyen_paiement || '') === pair[0]) opt.selected = true;
+          moyenSel.appendChild(opt);
+        });
+        moyenSel.onchange = (function(cid){ return function(){
+          var cl = ST.clients.find(function(x){return x.id==cid;});
+          if (cl) { cl.moyen_paiement = this.value || null; localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); }
+        }; })(clientId);
+        moyenWrap.appendChild(moyenLbl);
+        moyenWrap.appendChild(moyenSel);
+        body.appendChild(moyenWrap);
       }
     }
   } else if (c.sig_offre_id) {
@@ -1940,6 +1962,7 @@ function validateSigStep(clientId, stepIdx) {
       c.business_offer_id      = o.id;
       c.business_offer_name    = o.name;
       c.catalog_price_snapshot = o.price;
+      c.offer_type             = o.offer_type || null; // 'session' | 'programme'
       var nPay = parseInt(o.paiement) || 1;
       c.installments_planned   = nPay;
       c.payment_mode           = nPay;
@@ -2464,20 +2487,20 @@ P11 "Cas médical / clinique" — TCA actifs, dépression sévère, troubles anx
 // ═══════════════════════════════════════════════════
 const OFFRES_DEFAULT = [
   // ── TRANSFORMATION ──
-  {id:'o1', name:'ACTIV RESET ONLINE',     price:1350,durVal:12,durUnit:'semaines',paiement:3,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation'},
-  {id:'o2', name:'ACTIV RESET HYBRIDE',    price:525, durVal:12,durUnit:'semaines',paiement:2,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation'},
-  {id:'o3', name:"ACTIV PROGRAM'",         price:160, durVal:8, durUnit:'semaines',paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'transformation'},
-  {id:'o_ac',name:'ACTIV CONTINUE',        price:150, durVal:1, durUnit:'mois',    paiement:1,test:'none',parcours:true,alaCarte:false,isAbonnement:true,modeOffre:'transformation'},
+  {id:'o1', name:'ACTIV RESET ONLINE',     price:1350,durVal:12,durUnit:'semaines',paiement:3,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation',offer_type:'programme'},
+  {id:'o2', name:'ACTIV RESET HYBRIDE',    price:525, durVal:12,durUnit:'semaines',paiement:2,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation',offer_type:'programme'},
+  {id:'o3', name:"ACTIV PROGRAM'",         price:160, durVal:8, durUnit:'semaines',paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'transformation',offer_type:'programme'},
+  {id:'o_ac',name:'ACTIV CONTINUE',        price:150, durVal:1, durUnit:'mois',    paiement:1,test:'none',parcours:true,alaCarte:false,isAbonnement:true,modeOffre:'transformation',offer_type:'programme'},
   // ── ACTION ──
-  {id:'o4', name:'JM PASS',               price:240, durVal:1, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action'},
-  {id:'o5', name:'JM PASS COACHING',      price:250, durVal:1, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action'},
-  {id:'o6', name:'JM PASS COACHING+',     price:240, durVal:3, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action'},
-  {id:'o9', name:'COACHING À LA CARTE',   price:65,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'action'},
+  {id:'o4', name:'JM PASS',               price:240, durVal:1, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action',offer_type:'session'},
+  {id:'o5', name:'JM PASS COACHING',      price:250, durVal:1, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action',offer_type:'session'},
+  {id:'o6', name:'JM PASS COACHING+',     price:240, durVal:3, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action',offer_type:'session'},
+  {id:'o9', name:'COACHING À LA CARTE',   price:65,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'action',offer_type:'session'},
   // ── COURS COLLECTIFS ──
-  {id:'o7', name:'CARDIO MOUV PASS 4',    price:45,  durVal:4, durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'collectif'},
-  {id:'o8', name:'CARDIO MOUV PACK 10',   price:130, durVal:10,durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'collectif'},
-  {id:'o10',name:'CARDIO MOUV ONE SHOT',  price:15,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'collectif'},
-  {id:'o11',name:'ACTIV TRAINING',        price:10,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'collectif'}
+  {id:'o7', name:'CARDIO MOUV PASS 4',    price:45,  durVal:4, durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'collectif',offer_type:'session'},
+  {id:'o8', name:'CARDIO MOUV PACK 10',   price:130, durVal:10,durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'collectif',offer_type:'session'},
+  {id:'o10',name:'CARDIO MOUV ONE SHOT',  price:15,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'collectif',offer_type:'session'},
+  {id:'o11',name:'ACTIV TRAINING',        price:10,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'collectif',offer_type:'session'}
 ];
 function loadOffres() {
   try { const s=localStorage.getItem('ba_offres_v8'); if(s) return JSON.parse(s); } catch(e){}
@@ -2766,6 +2789,8 @@ function renderOffresPage() {
 
     // Badge tags
     var tags = '';
+    if (o.offer_type === 'programme') tags += '<span class="pill" style="font-size:9px;background:#6c3483;color:#fff">Programme</span> ';
+    else if (o.offer_type === 'session') tags += '<span class="pill" style="font-size:9px;background:#1a5276;color:#fff">Séances</span> ';
     if (o.modeOffre === 'action')          tags += '<span class="pill pill-Y" style="font-size:9px">⚡ Action</span> ';
     else if (o.modeOffre === 'transformation') tags += '<span class="pill pill-V" style="font-size:9px">🔄 Transformation</span> ';
     else if (o.modeOffre === 'collectif') tags += '<span class="pill pill-B" style="font-size:9px">🔥 Collectif</span> ';
@@ -2789,6 +2814,11 @@ function renderOffresPage() {
         '</div>' +
       '</div>' +
       '<div class="occ-edit" id="oedit_'+o.id+'" style="display:none;padding-top:12px;border-top:1px solid var(--rim3);margin-top:12px">' +
+        '<div class="f"><label>📦 Type d\'offre</label><select id="oe_type_'+o.id+'" onchange="saveOffreTypeS2(\''+o.id+'\',this.value)">' +
+          '<option value="">— Choisir —</option>' +
+          '<option value="programme"'+(o.offer_type==='programme'?' selected':'')+'>Programme fixe</option>' +
+          '<option value="session"'+(o.offer_type==='session'?' selected':'')+'>Séances</option>' +
+        '</select></div>' +
         '<div class="f"><label>🏷️ Mode BE ACTIV</label><select id="oe_mode_'+o.id+'" onchange="saveOffreModeField(\''+o.id+'\',this.value)">' +
           '<option value="">— Choisir le mode —</option>' +
           '<option value="action"'+(o.modeOffre==='action'?' selected':'')+'>⚡ ACTION</option>' +
@@ -2834,6 +2864,13 @@ function saveOffreModeField(id, modeVal) {
   var o = offres.find(function(x){return x.id===id;});
   if (!o) return;
   o.modeOffre = modeVal;
+  saveOffres(offres);
+}
+function saveOffreTypeS2(id, typeVal) {
+  var offres = loadOffres();
+  var o = offres.find(function(x){return x.id===id;});
+  if (!o) return;
+  o.offer_type = typeVal; // 'session' | 'programme'
   saveOffres(offres);
 }
 
@@ -6079,6 +6116,12 @@ async function syncClientToFinances(c) {
   var installPlanned  = c.installments_planned || paiementMode;
   var versementsRecus = c.versements ? c.versements.filter(function(v){return v.done;}).length : (isClosedClient ? paiementMode : 0);
 
+  // Moyen de paiement → canal Finance JM
+  var moyenPaiement = c.moyen_paiement || null;
+  var canalFinance = moyenPaiement === 'cb' || moyenPaiement === 'virement' ? 'banque'
+                   : moyenPaiement === 'especes' ? 'especes'
+                   : moyenPaiement ? 'autre' : null;
+
   var prospect = {
     id:                      'bcrm_' + c.id,
     user_id:                 FINANCES_USER_ID,
@@ -6091,12 +6134,15 @@ async function syncClientToFinances(c) {
     objectif:                c.objectif || '',
     closing:                 closingBiz,
     offre:                   offreName,
+    offer_type:              c.offer_type || null,          // 'session' | 'programme'
     notes:                   c.notes || '',
     profile:                 c.profil_code || '',
     age:                     parseInt(c.age) || null,
     catalog_price_snapshot:  catalogSnap,
     actual_amount:           actualAmt,
-    montant:                 actualAmt,   // compat Business legacy
+    montant:                 actualAmt,                     // compat Business legacy
+    moyen_paiement:          moyenPaiement,                 // cb | virement | especes | plateforme | autre
+    canal_finance:           canalFinance,                  // banque | especes | autre (pour Finance JM)
     paiement_mode:           paiementMode,
     installments_planned:    installPlanned,
     versements_recus:        versementsRecus,
