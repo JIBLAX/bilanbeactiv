@@ -23,23 +23,33 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Champs obligatoires manquants : name, user_id' });
   }
 
-  // Champs autorisés à pousser (identité + origine uniquement)
-  // Business gère en autonomie : prix_reel, sap_enabled, réductions, TVA, finance_entries
+  // Champs autorisés à pousser depuis BILAN CRM → Business
+  // Règle : ne jamais écraser les champs financiers gérés en autonomie par Business
   const payload = {
-    id: prospect.id,
-    user_id: prospect.user_id,
-    name: prospect.name,
-    sex: prospect.sex || null,
-    age: prospect.age || null,
-    contact: prospect.contact || null,
-    source: prospect.source || null,
-    statut: prospect.statut || 'CLIENT',
-    closing: 'OUI',
-    offre: prospect.offre || null,
-    date: prospect.date || new Date().toISOString().split('T')[0],
-    objectif: prospect.objectif || null,
-    notes: prospect.notes || null,
-    profile: prospect.profile || null,
+    id:                     prospect.id,
+    user_id:                prospect.user_id,
+    name:                   prospect.name,
+    sex:                    prospect.sex            || null,
+    age:                    prospect.age            || null,
+    contact:                prospect.contact        || null,
+    source:                 prospect.source         || null,
+    statut:                 prospect.statut         || 'CLIENT',
+    closing:                prospect.closing        || 'OUI',
+    offre:                  prospect.offre          || null,
+    offer_type:             prospect.offer_type     || null,  // 'session' | 'programme'
+    date:                   prospect.date           || new Date().toISOString().split('T')[0],
+    objectif:               prospect.objectif       || null,
+    notes:                  prospect.notes          || null,
+    profile:                prospect.profile        || null,
+    // Champs commerciaux (snapshot closing)
+    catalog_price_snapshot: prospect.catalog_price_snapshot ?? null,
+    actual_amount:          prospect.actual_amount          ?? null,
+    montant:                prospect.montant                ?? null,
+    moyen_paiement:         prospect.moyen_paiement         || null,  // cb|virement|especes|plateforme|autre
+    canal_finance:          prospect.canal_finance          || null,  // banque|especes|autre
+    paiement_mode:          prospect.paiement_mode          ?? null,
+    installments_planned:   prospect.installments_planned   ?? null,
+    versements_recus:       prospect.versements_recus       ?? null,
   };
 
   try {
@@ -72,10 +82,19 @@ module.exports = async function handler(req, res) {
                 Prefer: 'return=minimal',
               },
               body: JSON.stringify({
-                closing: 'OUI',
-                offre: payload.offre,
-                profile: payload.profile,
-                statut: payload.statut,
+                closing:                payload.closing,
+                offre:                  payload.offre,
+                offer_type:             payload.offer_type,
+                profile:                payload.profile,
+                statut:                 payload.statut,
+                catalog_price_snapshot: payload.catalog_price_snapshot,
+                actual_amount:          payload.actual_amount,
+                montant:                payload.montant,
+                moyen_paiement:         payload.moyen_paiement,
+                canal_finance:          payload.canal_finance,
+                paiement_mode:          payload.paiement_mode,
+                installments_planned:   payload.installments_planned,
+                versements_recus:       payload.versements_recus,
               }),
             }
           );

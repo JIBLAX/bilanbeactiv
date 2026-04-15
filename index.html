@@ -5974,7 +5974,7 @@ async function pullOffresFromFinances() {
     console.warn('pullOffresFromFinances: bizSrKey non configurée, tentative avec anon key (peut échouer si RLS actif)');
   }
   try {
-    var res = await fetch(url + '/rest/v1/offres?select=id,name,price,active,is_ala_carte,duration,max_installments,theme&order=name.asc', {
+    var res = await fetch(url + '/rest/v1/offres?select=id,name,price,active,is_ala_carte,duration,max_installments,theme,offer_type&order=name.asc', {
       headers: { 'apikey': useKey, 'Authorization': 'Bearer ' + useKey }
     });
     if (!res.ok) {
@@ -6017,6 +6017,7 @@ async function pullOffresFromFinances() {
         test:        'none',
         theme:       r.theme || 'PROGRAMMES',
         modeOffre:   modeOffre,
+        offer_type:  r.offer_type || null,  // 'session' | 'programme' — source de vérité Business
         readOnly:    true   // offres Business → non modifiable dans BILAN CRM
       };
     });
