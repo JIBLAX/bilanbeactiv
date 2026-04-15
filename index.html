@@ -1798,14 +1798,36 @@ function renderSignatureAccordion(clientId, c, container) {
       if(cl){ cl.sig_offre_id = this.value; localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); }
     }; })(clientId);
     body.appendChild(ofSel);
-    // Afficher le mode de l'offre choisie
+    // Afficher le mode de l'offre choisie + champ montant réel
     if (c.sig_offre_id) {
       var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
-      if (o && o.modeOffre) {
-        var modeBadge = document.createElement('div');
-        modeBadge.style.cssText = 'margin-bottom:10px';
-        modeBadge.innerHTML = '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(o.modeOffre)+'</span>';
-        body.appendChild(modeBadge);
+      if (o) {
+        if (o.modeOffre) {
+          var modeBadge = document.createElement('div');
+          modeBadge.style.cssText = 'margin-bottom:10px';
+          modeBadge.innerHTML = '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(o.modeOffre)+'</span>';
+          body.appendChild(modeBadge);
+        }
+        // Montant réel encaissé (peut différer du prix catalogue)
+        var amtWrap = document.createElement('div');
+        amtWrap.style.marginBottom = '10px';
+        var amtLblEl = document.createElement('div');
+        amtLblEl.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px';
+        amtLblEl.textContent = 'Montant réel encaissé (€)';
+        var amtHint = document.createElement('div');
+        amtHint.style.cssText = 'font-size:10px;color:var(--tx4);margin-bottom:4px';
+        amtHint.textContent = 'Prix catalogue : ' + o.price + '€' + (o.paiement > 1 ? ' · ' + o.paiement + 'x' : '');
+        var amtInp = document.createElement('input');
+        amtInp.type = 'number'; amtInp.step = '0.01'; amtInp.style.width = '100%';
+        amtInp.value = c.actual_amount || c.montant || o.price;
+        amtInp.onchange = (function(cid){ return function(){
+          var cl = ST.clients.find(function(x){return x.id==cid;});
+          if (cl) { var v = parseFloat(this.value)||null; cl.actual_amount = v; cl.montant = v; localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); }
+        }; })(clientId);
+        amtWrap.appendChild(amtLblEl);
+        amtWrap.appendChild(amtHint);
+        amtWrap.appendChild(amtInp);
+        body.appendChild(amtWrap);
       }
     }
   } else if (c.sig_offre_id) {
@@ -1908,12 +1930,21 @@ function validateSigStep(clientId, stepIdx) {
   }
   c.sig_steps[stepIdx].done = true;
   c.sig_steps[stepIdx].doneAt = new Date().toISOString();
-  // Copier l'offre dans le champ offres + initialiser les versements
+  // Snapshot offre + initialiser les versements
   if (stepIdx === 0 && c.sig_offre_id) {
     var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
     if (o) {
+      // Champs legacy (compatibilité)
       c.offres = o.name;
+      // Snapshot closing S2
+      c.business_offer_id      = o.id;
+      c.business_offer_name    = o.name;
+      c.catalog_price_snapshot = o.price;
       var nPay = parseInt(o.paiement) || 1;
+      c.installments_planned   = nPay;
+      c.payment_mode           = nPay;
+      // Si aucun montant réel saisi, pré-remplir avec le prix catalogue
+      if (!c.actual_amount && !c.montant) { c.actual_amount = o.price; c.montant = o.price; }
       var payAmt = nPay > 1 ? Math.round(o.price / nPay * 100) / 100 : o.price;
       c.versements = [];
       for (var vi = 0; vi < nPay; vi++) {
@@ -6010,52 +6041,65 @@ async function syncClientToFinances(c) {
   if (c.isPro) fullName = c.structureName || fullName;
   if (!fullName) return;
 
-  // Résoudre le nom de l'offre depuis sig_offre_id (nouveau système) ou c.offres (legacy)
-  var offreName = '-';
-  if (c.sig_offre_id) {
-    var _sigO = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
-    if (_sigO) offreName = _sigO.name;
+  // Résoudre le nom de l'offre : snapshot closing > sig_offre_id live > legacy c.offres
+  var offreName = c.business_offer_name || '-';
+  var _offreObj = null;
+  if (offreName === '-') {
+    if (c.sig_offre_id) {
+      _offreObj = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
+      if (_offreObj) offreName = _offreObj.name;
+    }
+    if (offreName === '-' && c.offres) offreName = c.offres.split(',')[0].trim() || '-';
+  } else if (c.sig_offre_id) {
+    _offreObj = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
   }
-  if (offreName === '-' && c.offres) offreName = c.offres.split(',')[0].trim() || '-';
 
   // Normaliser le sexe → "F" ou "H"
   var sexBiz = 'F';
   var rawSex = c.sexe || c.sex || '';
   if (rawSex === 'Homme' || rawSex === 'H' || rawSex === 'M') sexBiz = 'H';
 
-  // Statut Business : CLIENT (actif) ou ARCHIVÉ (programme terminé)
+  // Statut Business : CLIENT | ARCHIVÉ | PROSPECT
   var allStagesDone = false;
   if (c.mode_stages && c.mode_stages.length > 0) {
     allStagesDone = c.mode_stages.every(function(s) {
       return s.steps && s.steps.length > 0 && s.steps.every(function(st){ return st.done; });
     });
   }
-  var statutBiz = allStagesDone ? 'ARCHIVÉ' : 'CLIENT';
+  var isClosedClient = (c.statut === 'Closé');
+  var statutBiz = allStagesDone ? 'ARCHIVÉ' : (isClosedClient ? 'CLIENT' : 'PROSPECT');
+  var closingBiz = isClosedClient ? 'OUI' : 'NON';
 
-  // Montant réel (depuis montant saisi ou prix de l'offre)
-  var _offreObj = c.sig_offre_id ? loadOffres().find(function(x){return x.id===c.sig_offre_id;}) : null;
-  var montantReel = c.montant ? parseFloat(c.montant) : (_offreObj ? _offreObj.price : null);
-  var paiementMode = (c.versements && c.versements.length > 0) ? c.versements.length : ((_offreObj && _offreObj.paiement) ? _offreObj.paiement : 1);
-  var versementsRecus = c.versements ? c.versements.filter(function(v){return v.done;}).length : (c.statut === 'Closé' ? paiementMode : 0);
+  // Montant : actual_amount > montant saisi > catalog_price_snapshot > prix offre live
+  var catalogSnap = c.catalog_price_snapshot || (_offreObj ? _offreObj.price : null);
+  var actualAmt   = c.actual_amount ? parseFloat(c.actual_amount)
+                  : (c.montant     ? parseFloat(c.montant)
+                  : catalogSnap);
+  var paiementMode    = c.payment_mode || (c.versements && c.versements.length > 0 ? c.versements.length : ((_offreObj && _offreObj.paiement) ? _offreObj.paiement : 1));
+  var installPlanned  = c.installments_planned || paiementMode;
+  var versementsRecus = c.versements ? c.versements.filter(function(v){return v.done;}).length : (isClosedClient ? paiementMode : 0);
 
   var prospect = {
-    id:               'bcrm_' + c.id,
-    user_id:          FINANCES_USER_ID,
-    sex:              sexBiz,
-    name:             fullName,
-    contact:          c.tel || '',
-    source:           c.source || '',
-    statut:           statutBiz,
-    date:             (c.closedAt ? c.closedAt.split('T')[0] : '') || c.date || '',
-    objectif:         c.objectif || '',
-    closing:          'OUI',
-    offre:            offreName,
-    notes:            c.notes || '',
-    profile:          c.profil_code || '',
-    age:              parseInt(c.age) || null,
-    montant:          montantReel,
-    paiement_mode:    paiementMode,
-    versements_recus: versementsRecus,
+    id:                      'bcrm_' + c.id,
+    user_id:                 FINANCES_USER_ID,
+    sex:                     sexBiz,
+    name:                    fullName,
+    contact:                 c.tel || '',
+    source:                  c.source || '',
+    statut:                  statutBiz,
+    date:                    (c.closedAt ? c.closedAt.split('T')[0] : '') || c.date || '',
+    objectif:                c.objectif || '',
+    closing:                 closingBiz,
+    offre:                   offreName,
+    notes:                   c.notes || '',
+    profile:                 c.profil_code || '',
+    age:                     parseInt(c.age) || null,
+    catalog_price_snapshot:  catalogSnap,
+    actual_amount:           actualAmt,
+    montant:                 actualAmt,   // compat Business legacy
+    paiement_mode:           paiementMode,
+    installments_planned:    installPlanned,
+    versements_recus:        versementsRecus,
   };
 
   try {
@@ -6087,8 +6131,11 @@ function updateStatutParcours(clientId, newStatut) {
   c.updated_at = new Date().toISOString();
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
-  // Sync vers App Finances uniquement au moment du closing (pas à chaque changement)
+  // Sync vers Business au closing ET quand un client redevient prospect
   if (newStatut === 'Closé' && !wasAlreadyClosed) {
+    syncClientToFinances(c);
+  } else if (wasAlreadyClosed && newStatut !== 'Closé') {
+    // Client redevenu prospect → màj Business (statut PROSPECT, closing NON)
     syncClientToFinances(c);
   }
   renderClients();
