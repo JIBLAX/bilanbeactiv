@@ -5268,6 +5268,7 @@ async function saveToSupabase(c){
   if(!ST.sbUrl||!ST.sbKey)return;
   // Ne pas sauvegarder un prospect sans nom (évite les enregistrements vides)
   if(!c.prenom && !c.nom) return;
+  // Champs lus par Finance JM (useBAClients) : id, nom, prenom, name, offre, montant, profil_code, date_rdv
   try{
     await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,name:(c.prenom+' '+c.nom).trim(),age:parseInt(c.age)||null,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offre:c.offres,montant:c.montant?parseFloat(c.montant):null,score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report,bilan_raw:c.bilan_raw||null,rdv_history:c.rdv_history||null}),updated_at:c.updated_at,group_id:c.groupId||null})});
   }catch(e){}
