@@ -1614,7 +1614,12 @@ function renderProspectModal(id, c, container) {
         + '</div></div>'
         + '<button class="btn btn-bx btn-w" style="width:100%" onclick="partagerBilanSummary(\''+id+'\')">📤 Partager la synthèse</button>';
     } else {
-      bilanSection.innerHTML = '<button id="btn-synth-bilan-'+id+'" class="btn btn-bx btn-w" onclick="genSyntheseBilanFromClient(\''+id+'\')">🤖 Générer synthèse bilan</button>';
+      // Bilan formulaire rempli mais synthèse pas encore générée
+      var hasBilanData = c.bilan_raw && (c.bilan_raw.notesTrain || c.bilan_raw.vision6m || c.bilan_raw.pointA || c.bilan_raw.blocages || c.bilan_raw.attenteCoach || c.bilan_raw.notesAlim);
+      if (hasBilanData) {
+        bilanSection.innerHTML = '<button id="btn-synth-bilan-'+id+'" class="btn btn-bx btn-w" onclick="genSyntheseBilanFromClient(\''+id+'\')">🤖 Générer synthèse bilan</button>';
+      }
+      // Sinon : bilan pas encore rempli → rien (bouton RDV Bilan gère la suite)
     }
     container.appendChild(bilanSection);
   }
