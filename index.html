@@ -1101,6 +1101,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <button type="button" class="btn btn-dk btn-w btn-sm" onclick="toggleGroupeSection()" id="btn-add-groupe">👥 + Ajouter une amie / ami (groupe)</button>
   </div>
   <div id="groupe-section" style="display:none">
+    <div class="f" style="margin-bottom:10px">
+      <label>🏷️ Nom du groupe</label>
+      <input type="text" id="np-group-name" placeholder="Ex : Les Folles, Duo Smith…">
+    </div>
     <div id="groupe-persons"></div>
     <button type="button" class="btn btn-dk btn-sm" onclick="addGroupePerson()" id="btn-add-person" style="margin-bottom:14px">➕ Ajouter une autre personne</button>
   </div>
@@ -1516,7 +1520,9 @@ function renderProspectModal(id, c, container) {
   var isClosingEnCours = (c.statut === 'Closing en cours');
   pills.innerHTML='<span class="pill '+(sp[c.statut]||'pill-B')+'">'+statutLabel+'</span>'
     +(c.source?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.source+'</span>':'')
-    +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'');
+    +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
+    +(c.sap_enabled?'<span class="pill" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">🏠 SAP</span>':'')
+    +(c.group_name?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">👥 '+c.group_name+(c.is_group_leader?' ★':'')+'</span>':'');
   // Badge "Closing en cours" animé
   if (isClosingEnCours) {
     pills.innerHTML += '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(200,130,10,.12);color:var(--Y);border:1.5px solid rgba(200,130,10,.35);animation:pulse-y 1.5s ease-in-out infinite">🔶 Closing en cours</span>';
@@ -3841,6 +3847,17 @@ function saveNewProspect() {
       (document.getElementById('gp'+i+'-tel').value||'').trim(), ville));
   }
 
+  // Groupe : assigner groupId + group_name + is_group_leader
+  if (allProspects.length > 1) {
+    var groupId = 'g_' + Date.now();
+    var groupName = (document.getElementById('np-group-name').value || '').trim() || null;
+    allProspects.forEach(function(p, idx) {
+      p.groupId         = groupId;
+      p.group_name      = groupName;
+      p.is_group_leader = (idx === 0);
+    });
+  }
+
   allProspects.forEach(function(p){ ST.clients.unshift(p); saveToSupabase(p); });
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
 
@@ -3852,6 +3869,7 @@ function saveNewProspect() {
   document.getElementById('groupe-section').style.display = 'none';
   document.getElementById('groupe-persons').innerHTML = '';
   document.getElementById('btn-add-groupe').textContent = '👥 + Ajouter une amie / ami (groupe)';
+  var gnEl = document.getElementById('np-group-name'); if (gnEl) gnEl.value = '';
   _groupeCount = 0; _pqNewSummary = null;
 
   renderClients();
@@ -4203,8 +4221,11 @@ function renderClients(){
     if(c.groupId && groupCounts[c.groupId]){
       var n=groupCounts[c.groupId];
       var lbl=n===2?'DUO':n===3?'TRIO':'GROUPE';
-      groupBadge='<span class="badge-group">'+lbl+'</span>';
+      var leaderMark=c.is_group_leader?' ★':'';
+      groupBadge='<span class="badge-group">'+(c.group_name?c.group_name+' · ':'')+lbl+leaderMark+'</span>';
     }
+    // Badge SAP
+    var sapBadge=c.sap_enabled?'<span style="font-size:9px;font-weight:700;background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3);border-radius:50px;padding:1px 6px">🏠 SAP</span>':'';
     // Mode sélection
     var isSelected=ST.selectMode&&ST.selectedIds.indexOf(c.id)>-1;
     var selCheck=ST.selectMode?'<div class="sel-check'+(isSelected?' on':'')+'>'+(isSelected?'✓':'')+'</div>':'';
@@ -4218,7 +4239,7 @@ function renderClients(){
       +'<div class="cmeta">'+(c.ville||'—')+' · '+offreTxt+' · '+dt+'</div></div>'
       +'<div class="cbadges">'
         +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
-        + newBadge + closingBadge + groupBadge + retourBadge
+        + newBadge + closingBadge + groupBadge + sapBadge + retourBadge
         + ((!isNew&&!isClosing)?(c.statut?statPill:''):'')
         +(c.score_global!=null?'<span style="font-size:11px;color:var(--tx3)">★ '+c.score_global+'</span>':'')
       +'</div></div>';
@@ -5256,7 +5277,7 @@ async function loadFromSupabase(){
       if(!row.prenom && !row.nom) return;
       let pq=null,bilan=null,final=null,bilanRaw=null,rdvHistory=null;
       try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;rdvHistory=j.rdv_history||null;}catch(e){}
-      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,rdv_history:rdvHistory,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offre,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,bilan_raw:bilanRaw,updated_at:row.updated_at,groupId:row.group_id||null};
+      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,rdv_history:rdvHistory,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offre,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,bilan_raw:bilanRaw,updated_at:row.updated_at,groupId:row.group_id||null,group_name:row.group_name||null,is_group_leader:row.is_group_leader||false,sap_enabled:row.sap_enabled||false};
       const i=ST.clients.findIndex(c=>c.id===sc.id);if(i>=0)ST.clients[i]=sc;else ST.clients.unshift(sc);
     });
     localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
@@ -5270,7 +5291,7 @@ async function saveToSupabase(c){
   if(!c.prenom && !c.nom) return;
   // Champs lus par Finance JM (useBAClients) : id, nom, prenom, name, offre, montant, profil_code, date_rdv, is_client
   try{
-    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,name:(c.prenom+' '+c.nom).trim(),age:parseInt(c.age)||null,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offre:c.offres,montant:c.montant?parseFloat(c.montant):null,is_client:c.statut==='Closé',score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report,bilan_raw:c.bilan_raw||null,rdv_history:c.rdv_history||null}),updated_at:c.updated_at,group_id:c.groupId||null})});
+    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,name:(c.prenom+' '+c.nom).trim(),age:parseInt(c.age)||null,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offre:c.offres,montant:c.montant?parseFloat(c.montant):null,is_client:c.statut==='Closé',score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report,bilan_raw:c.bilan_raw||null,rdv_history:c.rdv_history||null}),updated_at:c.updated_at,group_id:c.groupId||null,group_name:c.group_name||null,is_group_leader:c.is_group_leader||false})});
   }catch(e){}
 }
 
