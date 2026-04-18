@@ -4169,7 +4169,7 @@ function renderClients(){
   // Prospects = tout sauf 'Closé'
   var prospectStatuts=['Non closé','En cours','Closing en cours','À relancer','Refusé','','Membre CC'];
   var list=ST.clients.filter(function(c){
-    var ms=!srch||((c.prenom||'')+' '+(c.nom||'')+' '+(c.ville||'')+' '+(c.structureName||'')).toLowerCase().includes(srch);
+    var ms=!srch||((c.prenom||'')+' '+(c.nom||'')+' '+(c.source||'')+' '+(c.ville||'')+' '+(c.structureName||'')).toLowerCase().includes(srch);
     var mv=ST.filterStatut==='all'||c.statut===ST.filterStatut;
     // Clients tab = Closé (pas Membre CC — ils restent dans Prospects)
     var tabMatch=isProspectTab?(!c.statut||prospectStatuts.includes(c.statut)):(c.statut==='Closé');
@@ -4213,7 +4213,7 @@ function renderClients(){
       +selCheck
       +'<div class="cav" style="'+(isClosing?'background:var(--Y)':isNew?'background:var(--G)':'')+'">'+init+'</div>'
       +'<div class="cinfo"><div class="cname">'+(c.prenom||'')+' '+(c.nom||'')+'</div>'
-      +'<div class="cmeta">'+(c.ville||'—')+' · '+offreTxt+' · '+dt+'</div></div>'
+      +'<div class="cmeta">'+(c.source||c.ville||'—')+' · '+offreTxt+' · '+dt+'</div></div>'
       +'<div class="cbadges">'
         +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
         + newBadge + closingBadge + groupBadge + sapBadge + retourBadge
