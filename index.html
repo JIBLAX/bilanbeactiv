@@ -249,11 +249,13 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
    BUTTONS
 ═══════════════════════════════════════════════════ */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:50px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .16s;text-decoration:none;white-space:nowrap}
+.btn:active{transform:scale(.97)}
 .btn-bx{background:var(--bx);color:#fff;box-shadow:0 2px 12px rgba(139,21,32,.25)}
 .btn-bx:hover{background:var(--bx3);box-shadow:0 4px 18px rgba(139,21,32,.35)}
-.btn-bx:disabled{opacity:.45;cursor:not-allowed}
+.btn-bx:disabled{opacity:.45;cursor:not-allowed;transform:none}
 .btn-dk{background:var(--bg3);color:var(--tx);border:1.5px solid var(--rim3)}
 .btn-dk:hover{background:var(--bg4);border-color:var(--rim)}
+.btn-dk:disabled{opacity:.45;cursor:not-allowed;transform:none}
 .btn-G{background:var(--G-l);color:var(--G);border:1.5px solid rgba(0,163,98,.25)}
 .btn-B{background:var(--B-l);color:var(--B);border:1.5px solid rgba(26,110,219,.25)}
 .btn-R{background:var(--R-l);color:var(--R);border:1.5px solid rgba(214,48,49,.25)}
@@ -261,6 +263,9 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .btn-sm{padding:7px 14px;font-size:13px}
 .brow{display:flex;gap:9px;margin-top:13px;flex-wrap:wrap}
 .brow .btn{flex:1;min-width:100px}
+.ctab{flex:1;padding:9px 12px;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:var(--tx3);transition:all .2s}
+.ctab.ctab-on{background:var(--bx);color:#fff}
+.ldwrap-sm{display:flex;align-items:center;gap:12px;padding:12px 0}
 
 /* ═══════════════════════════════════════════════════
    IMC / IRD / SBAR
@@ -820,8 +825,8 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <!-- ══════ PAGE CONTACTS ══════ -->
 <div class="pg" id="pg-clients">
   <div style="display:flex;gap:0;margin-bottom:16px;background:var(--bg3);border-radius:10px;padding:3px">
-    <button id="tab-prospects" onclick="switchClientTab('prospects')" style="flex:1;padding:9px 12px;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:var(--bx);color:#fff;transition:all .2s">👤 Prospects</button>
-    <button id="tab-clients" onclick="switchClientTab('clients')" style="flex:1;padding:9px 12px;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:var(--tx3);transition:all .2s">✅ Clients</button>
+    <button id="tab-prospects" class="ctab ctab-on" onclick="switchClientTab('prospects')">👤 Prospects</button>
+    <button id="tab-clients" class="ctab" onclick="switchClientTab('clients')">✅ Clients</button>
   </div>
   <div class="srch">
     <input class="srch-i" type="search" placeholder="🔍  Rechercher…" id="srch-i" oninput="renderClients()">
@@ -1035,7 +1040,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
       <textarea id="pq-new-raw" rows="5" placeholder="Collez ici les réponses du formulaire pré-bilan Tally…&#10;Ou laissez vide pour créer la fiche manuellement."></textarea>
     </div>
     <button class="btn btn-bx btn-w btn-sm" id="btn-pq-new" onclick="analyzePQForNewProspect()">✨ Analyser & remplir le profil</button>
-    <div id="pq-new-loading" style="display:none" class="ldwrap" style="padding:16px"><div class="ldring"></div><div class="ldmsg"><strong>Analyse IA…</strong></div></div>
+    <div id="pq-new-loading" style="display:none" class="ldwrap-sm"><div class="ldring"></div><div class="ldmsg"><strong>Analyse IA…</strong></div></div>
     <div id="pq-new-result" style="display:none;margin-top:10px"></div>
   </div>
 
@@ -1363,15 +1368,9 @@ function switchClientTab(tab) {
   var btnC = document.getElementById('tab-clients');
   var chips = document.getElementById('chips-statut');
   if (!btnP || !btnC) return;
-  if (tab === 'prospects') {
-    btnP.style.background='var(--bx)'; btnP.style.color='#fff';
-    btnC.style.background='transparent'; btnC.style.color='var(--tx3)';
-    if(chips) chips.style.display='flex';
-  } else {
-    btnC.style.background='var(--bx)'; btnC.style.color='#fff';
-    btnP.style.background='transparent'; btnP.style.color='var(--tx3)';
-    if(chips) chips.style.display='none';
-  }
+  btnP.classList.toggle('ctab-on', tab === 'prospects');
+  btnC.classList.toggle('ctab-on', tab === 'clients');
+  if(chips) chips.style.display = tab === 'prospects' ? 'flex' : 'none';
   ST.filterStatut='all';
   document.querySelectorAll('#chips-statut .chip').forEach(function(c){c.classList.toggle('on',c.dataset.v==='all');});
   renderClients();
