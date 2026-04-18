@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 /* ═══ LAYOUT GLOBAL ═══ */
 *, *::before, *::after { box-sizing: border-box; }
@@ -682,6 +683,28 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   .pg-bilan .card,.pg-tests .card,.pg-pq .card{margin-bottom:10px}
   .g2{grid-template-columns:1fr 1fr}
 }
+/* ═══ PRINT / PDF ══════════════════════════════════════ */
+@media print {
+  body > *:not(#print-zone) { display:none !important; }
+  #print-zone {
+    display:block !important;
+    position:static !important;
+    width:100% !important;
+    background:#fff !important;
+    color:#111 !important;
+    font-family:Georgia,serif;
+    padding:24px;
+  }
+  #print-zone h1 { font-size:22px; margin-bottom:4px; color:#c0002a; }
+  #print-zone h2 { font-size:15px; color:#555; font-weight:normal; margin-bottom:20px; border-bottom:1px solid #ddd; padding-bottom:8px; }
+  #print-zone .rpt-section { margin-bottom:18px; }
+  #print-zone .rpt-section-title { font-size:13px; font-weight:bold; color:#c0002a; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+  #print-zone .rpt-section-body { font-size:13px; line-height:1.6; color:#222; }
+  #print-zone .rpt-list { padding-left:18px; margin:4px 0; }
+  #print-zone .rpt-list li { margin-bottom:3px; }
+  #print-zone .rpt-footer { margin-top:30px; font-size:11px; color:#888; border-top:1px solid #ddd; padding-top:10px; }
+  #print-zone .rpt-score { display:inline-block; background:#f5f5f5; border-radius:6px; padding:4px 12px; font-size:13px; font-weight:bold; margin-right:8px; }
+}
 </style>
 </head>
 <body>
@@ -779,7 +802,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
   <div class="sh sh-B">📅 Prochain RDV Bilan</div>
   <div id="home-rdv"><div class="rdv-empty">Aucun RDV — ajoutez en via le bouton ci-dessous</div></div>
-  <button class="btn btn-dk btn-sm" onclick="openModal('rdv')" style="margin-bottom:14px">📅 + Ajouter un RDV</button>
+  <button class="btn btn-dk btn-sm" onclick="openRDVModal()" style="margin-bottom:14px">📅 + Ajouter un RDV</button>
 </div>
 
 <!-- ══════ PAGE STATS ══════ -->
@@ -863,9 +886,9 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="step" id="s4"><div class="step-c">3</div><div class="step-l">Rapport</div></div>
   </div>
   <div class="card">
-    <div style="font-weight:700;font-size:15px;margin-bottom:12px">📋 Réponses formulaire Tally</div>
-    <div class="highlight">Collez ici le contenu brut reçu par le prospect via votre formulaire Tally pré-bilan.</div>
-    <div class="f"><label>Réponses Tally</label><textarea id="pq-raw" rows="10" placeholder="Collez ici les réponses complètes du prospect…"></textarea></div>
+    <div style="font-weight:700;font-size:15px;margin-bottom:12px">📋 Réponses questionnaire Calendly</div>
+    <div class="highlight">Collez ici les réponses reçues via Calendly (questionnaire pré-RDV 10 questions).</div>
+    <div class="f"><label>Réponses Calendly</label><textarea id="pq-raw" rows="10" placeholder="Collez ici les réponses complètes du prospect…"></textarea></div>
     <button class="btn btn-bx btn-w" id="btn-pq" onclick="analyzePQ()">✨ Analyser le profil</button>
     <button class="btn btn-dk btn-w" style="margin-top:8px" onclick="skipPQ()">⏭ Passer directement au Bilan</button>
   </div>
@@ -886,7 +909,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div id="bilan-form-container"><!-- rempli par renderBilanForm() --></div>
   <div class="brow" style="margin-bottom:18px">
     <button class="btn btn-dk" onclick="showPg('pq')">← Retour</button>
-    <button class="btn btn-bx" id="btn-bilan" onclick="analyzeBilan()">💡 Générer synthèse</button>
+    <button class="btn btn-bx" onclick="saveBilanAndReturn()">💾 Enregistrer le Bilan</button>
   </div>
   <div id="bilan-result" style="display:none"></div>
   <div id="bilan-cta" style="display:none;margin:10px 0 18px">
@@ -931,6 +954,9 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div id="rpt-actions" style="display:none;margin-bottom:28px">
     <div class="g2" style="gap:9px;margin-top:12px">
       <button class="btn btn-dk btn-w" id="btn-pdf" onclick="dlPDF()">📄 PDF</button>
+      <button class="btn btn-dk btn-w" id="btn-png" onclick="dlPNG()">🖼 PNG</button>
+    </div>
+    <div class="g2" style="gap:9px;margin-top:8px">
       <button class="btn btn-B btn-w" id="btn-mail" onclick="openEmailModal()">📧 Email</button>
     </div>
     <button class="btn btn-dk btn-w" style="margin-top:8px" onclick="saveClient()">💾 Sauvegarder client</button>
@@ -1010,16 +1036,8 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div id="suites-editor-list"></div>
   </div>
   <div id="editor-parcours" style="display:none">
-    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-      <button class="btn btn-bx btn-sm" onclick="addPhase('c1')">＋ Étape Cycle 1</button>
-      <button class="btn btn-bx btn-sm" onclick="addPhase('c2')">＋ Étape Cycle 2</button>
-      <button class="btn btn-dk btn-sm" onclick="resetParcours()">↩ Réinitialiser</button>
-    </div>
-    <p style="font-size:12px;color:var(--tx3);margin-bottom:12px">Modifiez l'emoji, le nom et la durée de chaque étape. Vos modifications sont sauvegardées immédiatement.</p>
-    <div class="sh no-mt">🔵 Cycle 1 — 13 étapes</div>
-    <div id="parcours-c1-editor"></div>
-    <div class="sh">🟠 Cycle 2 — 5 étapes</div>
-    <div id="parcours-c2-editor"></div>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Les étapes sont automatiquement choisies selon le mode de l'offre du client (Action / Transformation / Collectif). Toutes les étapes démarrent après la <strong>Signature</strong>.</p>
+    <div id="parcours-modes-view"></div>
   </div>
 </div>
 
@@ -1033,11 +1051,11 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
       <span style="font-size:20px">📋</span>
       <div>
         <div style="font-weight:700;font-size:14px;color:var(--tx)">FORMULAIRE PRÉ-QUALIF (optionnel)</div>
-        <div style="font-size:12px;color:var(--tx3);margin-top:2px">Collez les réponses Tally pour une analyse IA du profil</div>
+        <div style="font-size:12px;color:var(--tx3);margin-top:2px">Collez les réponses Calendly pour une analyse IA du profil</div>
       </div>
     </div>
-    <div class="f"><label>Réponses formulaire Tally</label>
-      <textarea id="pq-new-raw" rows="5" placeholder="Collez ici les réponses du formulaire pré-bilan Tally…&#10;Ou laissez vide pour créer la fiche manuellement."></textarea>
+    <div class="f"><label>Réponses questionnaire Calendly</label>
+      <textarea id="pq-new-raw" rows="5" placeholder="Collez ici les réponses du questionnaire Calendly (pré-RDV)…&#10;Ou laissez vide pour créer la fiche manuellement."></textarea>
     </div>
     <button class="btn btn-bx btn-w btn-sm" id="btn-pq-new" onclick="analyzePQForNewProspect()">✨ Analyser & remplir le profil</button>
     <div id="pq-new-loading" style="display:none" class="ldwrap-sm"><div class="ldring"></div><div class="ldmsg"><strong>Analyse IA…</strong></div></div>
@@ -1064,13 +1082,36 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     </div>
     <div class="f"><label>Téléphone</label><input id="np-tel" type="tel" placeholder="06 xx xx xx xx"></div>
     <div class="f"><label>Email</label><input id="np-email" type="email" placeholder="email@exemple.fr"></div>
-    <div class="f"><label>Adresse</label><input id="np-adresse" type="text" placeholder="123 rue de la Paix"></div>
     <div class="f"><label>Ville</label><input id="np-ville" type="text" placeholder="Grenoble"></div>
+    <div class="g2">
+      <div class="f"><label>Format RDV Bilan</label>
+        <select id="np-rdv-type">
+          <option value="">— Format —</option>
+          <option value="Physique">Physique</option>
+          <option value="Visio">Visio</option>
+          <option value="Appel">Appel</option>
+        </select>
+      </div>
+      <div class="f"><label>Date RDV Bilan</label><input id="np-rdv-date" type="date"></div>
+    </div>
   </div>
 
   <div id="pq-new-summary-card" style="display:none" class="ai-card">
     <div class="ai-title">✨ Analyse Pré-qualif IA</div>
     <div id="pq-new-summary-body"></div>
+  </div>
+
+  <!-- Section Groupe / Amies -->
+  <div style="margin-bottom:14px">
+    <button type="button" class="btn btn-dk btn-w btn-sm" onclick="toggleGroupeSection()" id="btn-add-groupe">👥 + Ajouter une amie / ami (groupe)</button>
+  </div>
+  <div id="groupe-section" style="display:none">
+    <div class="f" style="margin-bottom:10px">
+      <label>🏷️ Nom du groupe</label>
+      <input type="text" id="np-group-name" placeholder="Ex : Les Folles, Duo Smith…">
+    </div>
+    <div id="groupe-persons"></div>
+    <button type="button" class="btn btn-dk btn-sm" onclick="addGroupePerson()" id="btn-add-person" style="margin-bottom:14px">➕ Ajouter une autre personne</button>
   </div>
 
   <div class="brow" style="margin-bottom:20px">
@@ -1152,6 +1193,30 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
     </div><!-- /scroller -->
 
+<!-- ══════ MODAL RÉACTIVATION PROSPECT ══════ -->
+<div id="mdl-reactivation" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.65);overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:16px 0 40px">
+    <div style="width:100%;max-width:420px;background:var(--bg);border-radius:var(--r);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.3)">
+      <div class="mdl-t">🔄 Réactiver le prospect <button class="mdl-x" onclick="document.getElementById('mdl-reactivation').style.display='none'">✕</button></div>
+      <div style="padding:16px 20px 24px">
+        <div id="reactiv-prospect-name" style="font-weight:700;font-size:15px;margin-bottom:12px;color:var(--bx)"></div>
+        <div style="font-size:12px;color:var(--tx3);background:var(--bg3);border-radius:8px;padding:9px 12px;margin-bottom:14px">
+          Le dossier existant (F1, F2, historique) est <strong>conservé</strong>. Cette réactivation ajoute une nouvelle relance sans créer de doublon.
+        </div>
+        <div class="f" style="margin-bottom:14px">
+          <label>Note / contexte de la réactivation</label>
+          <textarea id="reactiv-note" rows="2" placeholder="Ex : Recontact spontané, veut reprendre après 2 mois, situation financière améliorée…"></textarea>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Repartir vers…</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-bx btn-w" onclick="saveReactivation('rdv_bilan')">🗓 Nouveau RDV Bilan <span style="font-size:10px;opacity:.7;margin-left:4px">→ À relancer</span></button>
+          <button class="btn btn-Y btn-w" onclick="saveReactivation('choix_offre')">💼 Proposer une offre directement <span style="font-size:10px;opacity:.7;margin-left:4px">→ Closing en cours</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════ MODAL TESTS PARCOURS ══════ -->
 <div id="mdl-tests-parcours" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.65);overflow-y:auto;-webkit-overflow-scrolling:touch">
   <div style="min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:16px 0 40px">
@@ -1222,7 +1287,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
         
         <button class="btn btn-dk btn-w btn-sm" onclick="closeMore();openModal('cfg')">⚙️ Configuration</button>
       </div>
-      <button class="btn btn-bx btn-w btn-sm" onclick="closeMore()">Fermer</button>
+<button class="btn btn-bx btn-w btn-sm" onclick="closeMore()">Fermer</button>
     </div>
 
   </div><!-- /main -->
@@ -1240,8 +1305,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="f" style="margin-bottom:14px"><label>Service Role Key BILAN CRM</label><input type="password" id="cfg-srole" placeholder="eyJ… — pour écrire be_activ_clients"></div>
 
     <div style="font-size:10px;font-weight:700;color:var(--B);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🏢 BE ACTIV BUSINESS — Supabase externe</div>
-    <div class="f" style="margin-bottom:8px"><label>URL Supabase BUSINESS</label><input type="text" id="cfg-biz-url" placeholder="https://weecciwwbqsvmnaiahpw
-.supabase.co"></div>
+    <div class="f" style="margin-bottom:8px"><label>URL Supabase BUSINESS</label><input type="text" id="cfg-biz-url" placeholder="https://xxx.supabase.co"></div>
     <div class="f" style="margin-bottom:8px">
       <label>Service Role Key BUSINESS <span style="font-size:9px;color:var(--tx3);font-weight:400">(Dashboard Business → Settings → API)</span></label>
       <input type="password" id="cfg-biz-srkey" placeholder="eyJ… — obligatoire pour sync bidirectionnelle">
@@ -1270,7 +1334,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <div class="mbg" id="m-rdv">
   <div class="mdl">
     <div class="mdl-t">📅 Ajouter un RDV Bilan <button class="mdl-x" onclick="closeModal('rdv')">✕</button></div>
-    <div class="f"><label>Nom du prospect</label><input type="text" id="rdv-name" placeholder="Prénom Nom"></div>
+    <div class="f"><label>Prospect</label><select id="rdv-prospect-id" style="font-size:14px"><option value="">— Choisir un prospect —</option></select></div>
     <div class="g2">
       <div class="f"><label>Date</label><input type="date" id="rdv-date"></div>
       <div class="f"><label>Heure</label><input type="time" id="rdv-time"></div>
@@ -1278,7 +1342,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="f"><label>Type</label><select id="rdv-type"><option>Physique</option><option>Visio</option><option>Appel</option></select></div>
     <div class="brow" style="margin-top:16px">
       <button class="btn btn-dk" onclick="closeModal('rdv')">Annuler</button>
-      <button class="btn btn-bx" onclick="saveRDV()">Ajouter</button>
+      <button class="btn btn-bx" onclick="saveRDV()">Ajouter ✅</button>
     </div>
   </div>
 </div>
@@ -1372,6 +1436,8 @@ function switchClientTab(tab) {
   btnC.classList.toggle('ctab-on', tab === 'clients');
   if(chips) chips.style.display = tab === 'prospects' ? 'flex' : 'none';
   ST.filterStatut='all';
+  // Reset sélection au changement d'onglet
+  if(ST.selectMode){ ST.selectMode=false; ST.selectedIds=[]; var bsm=document.getElementById('btn-select-mode'); if(bsm){bsm.style.background='';bsm.style.color='';} }
   document.querySelectorAll('#chips-statut .chip').forEach(function(c){c.classList.toggle('on',c.dataset.v==='all');});
   renderClients();
 }
@@ -1424,8 +1490,10 @@ function renderSelectBar(){
 function deleteSelected(){
   var n=ST.selectedIds.length;
   if(!n) return;
+  var bar=document.getElementById('sel-bar');
+  if(bar) bar.style.display='none';
   dlgConfirm('Supprimer définitivement '+n+' dossier'+(n>1?'s':'')+' ?','Supprimer').then(function(r){
-    if(!r.confirmed) return;
+    if(!r.confirmed){ if(bar) bar.style.display='flex'; return; }
     var ids=ST.selectedIds.slice();
     ST.clients=ST.clients.filter(function(c){ return ids.indexOf(c.id)===-1; });
     localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
@@ -1451,7 +1519,9 @@ function renderProspectModal(id, c, container) {
   var isClosingEnCours = (c.statut === 'Closing en cours');
   pills.innerHTML='<span class="pill '+(sp[c.statut]||'pill-B')+'">'+statutLabel+'</span>'
     +(c.source?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.source+'</span>':'')
-    +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'');
+    +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
+    +(c.sap_enabled?'<span class="pill" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">🏠 SAP</span>':'')
+    +(c.group_name?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">👥 '+c.group_name+(c.is_group_leader?' ★':'')+'</span>':'');
   // Badge "Closing en cours" animé
   if (isClosingEnCours) {
     pills.innerHTML += '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(200,130,10,.12);color:var(--Y);border:1.5px solid rgba(200,130,10,.35);animation:pulse-y 1.5s ease-in-out infinite">🔶 Closing en cours</span>';
@@ -1467,25 +1537,90 @@ function renderProspectModal(id, c, container) {
   var _sexeDisplay = c.sexe || (c.sex==='F'?'Femme':c.sex==='M'?'Homme':'');
   if (_sexeDisplay) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Sexe</div><div style="font-weight:600">'+_sexeDisplay+'</div></div>';
   if (c.tel)   infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Téléphone</div><div style="font-weight:600">'+c.tel+'</div></div>';
-  if (c.email) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+c.email+'</div></div>';
+  if (c.email) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+cleanEmail(c.email)+'</div></div>';
   if (c.rdvType || c.date) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">RDV Bilan</div><div style="font-weight:600">'+dateStr+(c.rdvType?' · '+c.rdvType:'')+'</div></div>';
   if (c.profession) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Profession</div><div style="font-weight:600">'+c.profession+'</div></div>';
   infoRows += '</div>';
+  if (c.last_interaction) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Dernière relance</div><div style="font-weight:600">'+new Date(c.last_interaction).toLocaleDateString('fr-FR')+'</div></div>';
   if(c.notes) infoRows+='<div style="font-size:12px;color:var(--tx3);margin-top:8px;font-style:italic;border-top:1px solid var(--rim3);padding-top:8px">'+c.notes+'</div>';
   infoCard.innerHTML = infoRows;
   container.appendChild(infoCard);
 
-  // Résumé pré-qualif si disponible
-  if (c.pq_summary && c.pq_summary.resumeProfil) {
+  // Historique des RDVs (si reports)
+  if (c.rdv_history && c.rdv_history.length > 0) {
+    var histCard = document.createElement('div');
+    histCard.style.cssText = 'margin-bottom:12px;background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);overflow:hidden';
+    var histRows = c.rdv_history.slice().reverse().map(function(h) {
+      var dStr = h.date ? new Date(h.date).toLocaleDateString('fr-FR') : '—';
+      var sCls = h.statut === 'Présent' ? 'color:var(--V)' : h.statut === 'Absent' ? 'color:var(--R)' : 'color:var(--tx3)';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--rim3)">'
+        + '<div style="font-size:12px;font-weight:600">'+dStr+(h.type?' · <span style="color:var(--tx3);font-weight:400">'+h.type+'</span>':'')+'</div>'
+        + '<span style="font-size:11px;font-weight:600;'+sCls+'">'+(h.statut||'Reporté')+'</span>'
+        + '</div>';
+    }).join('');
+    histCard.innerHTML = '<div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.7px;padding:8px 12px 4px">🗓 Historique RDVs ('+c.rdv_history.length+')</div>'
+      + histRows;
+    container.appendChild(histCard);
+  }
+
+  // Résumé pré-qualif si disponible et réel (analyse IA effectuée)
+  if (c.pq_summary && (c.pq_summary.resumeProfil || c.pq_summary.closingPotential > 0)) {
+    var pq = c.pq_summary;
+    var ucCls = {Critique:'pill-R',Élevé:'pill-Y',Moyen:'pill-B',Faible:'pill-G'}[pq.niveauUrgence]||'';
+    var ccCls = {Chaud:'pill-R',Tiède:'pill-Y',Froid:'pill-B','À qualifier':'pill-V'}[pq.closingStatusSuggestion]||'';
     var pqCard = document.createElement('div'); pqCard.className='ai-card'; pqCard.style.marginBottom='12px';
-    pqCard.innerHTML = '<div class="ai-title">📋 Analyse Pré-qualif</div>'
-      + '<div class="ai-blk"><div class="ai-blk-c">'+c.pq_summary.resumeProfil+'</div></div>';
+    pqCard.innerHTML = '<div class="ai-title">🧬 Analyse Pré-qualif IA</div>'
+      + (pq.profilTypeCode ? '<div class="pbadge"><span class="pcode">'+pq.profilTypeCode+'</span><span class="plabel">'+(pq.profilTypeLabel||'')+'</span></div>' : '')
+      + '<div class="crow" style="margin-bottom:10px"><div><div class="cscore">'+(pq.closingPotential||0)+'%</div><div class="clbl">Potentiel closing</div></div>'
+      + '<div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px">'
+      + (pq.niveauUrgence ? '<span class="pill '+ucCls+'">'+pq.niveauUrgence+'</span>' : '')
+      + (pq.closingStatusSuggestion ? '<span class="pill '+ccCls+'">'+pq.closingStatusSuggestion+'</span>' : '')
+      + '</div></div>'
+      + (pq.resumeProfil ? '<div class="ai-blk"><div class="ai-blk-c">'+pq.resumeProfil+'</div></div>' : '')
+      + (pq.objectifPrincipal ? '<div class="ai-blk"><div class="ai-blk-t" style="color:var(--B)">🎯 Objectif</div><div class="ai-blk-c">'+pq.objectifPrincipal+'</div></div>' : '')
+      + (pq.approcheCoachingRecommandee ? '<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">🧠 Approche</div><div class="ai-blk-c">'+pq.approcheCoachingRecommandee+'</div></div>' : '');
     container.appendChild(pqCard);
   }
 
   // Si "Closing en cours" → afficher l'accordéon SIGNATURE
   if (isClosingEnCours) {
     renderSignatureAccordion(id, c, container);
+  }
+
+  // ── Section bilan post-RDV
+  var today2 = new Date().toISOString().split('T')[0];
+  var bilanDone = c.rdvStatut === 'Présent' || c.rdvStatut === 'Absent' || (c.date && c.date <= today2);
+  if (!c.isPro && bilanDone && !isClosingEnCours) {
+    var bilanSection = document.createElement('div');
+    bilanSection.style.cssText = 'margin-bottom:12px';
+    if (c.bilan_summary) {
+      var bs = c.bilan_summary;
+      var rcCls = {'Démarrer maintenant':'pill-G','Envoyer offre':'pill-Y','Relancer dans 1 semaine':'pill-B','Ne pas continuer':'pill-R'}[bs.recommandationSuiteRDV]||'';
+      bilanSection.innerHTML = '<div class="ai-card" style="border-color:rgba(26,110,219,.2);margin-bottom:10px">'
+        + '<div class="ai-title" style="color:var(--B)">🩺 Synthèse Bilan</div>'
+        + (bs.profilTypeCodeUpdated ? '<div class="pbadge"><span class="pcode" style="color:var(--B)">'+bs.profilTypeCodeUpdated+'</span><span class="plabel">'+(bs.profilTypeLabelUpdated||'')+'</span></div>' : '')
+        + '<div class="crow" style="margin-bottom:8px"><div><div class="cscore" style="color:var(--B)">'+(bs.closingPotentialUpdated||0)+'%</div><div class="clbl">Closing</div></div>'
+        + '<div style="margin-left:auto"><span class="pill '+rcCls+'">'+(bs.recommandationSuiteRDV||'')+'</span></div></div>'
+        + (bs.syntheseBilan ? '<div class="ai-blk"><div class="ai-blk-c">'+bs.syntheseBilan+'</div></div>' : '')
+        + (bs.prioritesCoaching ? '<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">🎯 Priorités</div><div class="ai-blk-c">'+bs.prioritesCoaching+'</div></div>' : '')
+        + (bs.offreRecommandee ? '<div style="font-size:12px;color:var(--tx3);margin-top:6px">💼 Offre recommandée : <strong style="color:var(--Y)">'+bs.offreRecommandee+'</strong></div>' : '')
+        + '</div>'
+        + '<div style="background:var(--bg2);border:1.5px solid var(--rim);border-radius:var(--r2);padding:12px;margin-bottom:8px">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">📋 Décision suite au Bilan</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+        + '<button class="btn btn-R" onclick="setBilanDecision(\'refus\')">❌ REFUS</button>'
+        + '<button class="btn btn-G" onclick="setBilanDecision(\'ok\')">✅ OK → Closing</button>'
+        + '</div></div>'
+        + '<button class="btn btn-bx btn-w" style="width:100%" onclick="partagerBilanSummary(\''+id+'\')">📤 Partager la synthèse</button>';
+    } else {
+      // Bilan formulaire rempli mais synthèse pas encore générée
+      var hasBilanData = c.bilan_raw && (c.bilan_raw.notesTrain || c.bilan_raw.vision6m || c.bilan_raw.pointA || c.bilan_raw.blocages || c.bilan_raw.attenteCoach || c.bilan_raw.notesAlim);
+      if (hasBilanData) {
+        bilanSection.innerHTML = '<button id="btn-synth-bilan-'+id+'" class="btn btn-bx btn-w" onclick="genSyntheseBilanFromClient(\''+id+'\')">🤖 Générer synthèse bilan</button>';
+      }
+      // Sinon : bilan pas encore rempli → rien (bouton RDV Bilan gère la suite)
+    }
+    container.appendChild(bilanSection);
   }
 
   // ── 3 BOUTONS D'ACTION
@@ -1520,12 +1655,43 @@ function renderProspectModal(id, c, container) {
   editBtn.onclick=function(){openEditClientModal(this.dataset.cid);};
   actionsDiv.appendChild(editBtn);
 
+  // ── Bouton Réactiver (statuts inactifs)
+  var inactifStatuts = ['Refusé','Non closé','À relancer','Membre CC',''];
+  if (!c.statut || inactifStatuts.indexOf(c.statut) > -1) {
+    var reactBtn = document.createElement('button');
+    reactBtn.className = 'btn btn-V btn-w btn-sm';
+    var nbRelances = (c.relances && c.relances.length) || 0;
+    reactBtn.innerHTML = '🔄 Réactiver le prospect' + (nbRelances > 0 ? ' <span style="font-size:10px;opacity:.7">('+nbRelances+' relance'+(nbRelances>1?'s':'')+')</span>' : '');
+    reactBtn.dataset.cid = id;
+    reactBtn.onclick = function(){ openReactivationModal(this.dataset.cid); };
+    actionsDiv.appendChild(reactBtn);
+  }
+
   var delBtn=document.createElement('button'); delBtn.className='btn btn-R btn-w btn-sm';
   delBtn.innerHTML='🗑 Supprimer ce dossier'; delBtn.dataset.cid=id;
   delBtn.onclick=function(){deleteClient(this.dataset.cid);};
   actionsDiv.appendChild(delBtn);
 
   container.appendChild(actionsDiv);
+
+  // ── Historique des relances
+  if (c.relances && c.relances.length > 0) {
+    var histDiv = document.createElement('div');
+    histDiv.style.cssText = 'margin-top:14px;border-top:1px solid var(--rim3);padding-top:12px';
+    var typeLabels = {rdv_bilan:'🗓 Nouveau RDV Bilan', choix_offre:'💼 Proposition offre'};
+    histDiv.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">🔄 Historique des relances</div>'
+      + c.relances.slice().reverse().map(function(r) {
+        var dt = r.date ? new Date(r.date).toLocaleDateString('fr-FR') : '—';
+        return '<div style="font-size:12px;background:var(--bg3);border-radius:7px;padding:8px 10px;margin-bottom:6px">'
+          + '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+          + '<span style="font-weight:600">'+(typeLabels[r.type]||r.type)+'</span>'
+          + '<span style="color:var(--tx4)">'+dt+'</span></div>'
+          + (r.from_statut ? '<span style="font-size:10px;color:var(--tx4)">Était : '+r.from_statut+' → '+r.new_statut+'</span><br>' : '')
+          + (r.note ? '<span style="color:var(--tx2);font-style:italic">'+r.note+'</span>' : '')
+          + '</div>';
+      }).join('');
+    container.appendChild(histDiv);
+  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -1545,6 +1711,18 @@ function startBilanForProspect(clientId) {
     if (document.getElementById('b-age')) document.getElementById('b-age').value = c.age || '';
     if (document.getElementById('b-ville')) document.getElementById('b-ville').value = c.ville || '';
     if (document.getElementById('b-prof')) document.getElementById('b-prof').value = c.profession || '';
+    // Pré-remplir les checkboxes du bilan depuis bilan_raw si client déjà vu
+    if (c.bilan_raw) {
+      var br = c.bilan_raw;
+      ['b-relation-train','b-faille-train','b-relation-neat','b-relation-alim','b-intol','b-relation-vie','b-faille-vie'].forEach(function(fid){
+        var vals = br[fid] || [];
+        vals.forEach(function(v){
+          var el = document.querySelector('input[type=checkbox][data-fid="'+fid+'"][value="'+CSS.escape(v)+'"]');
+          if (el) el.checked = true;
+        });
+      });
+      if (br.materiel && document.getElementById('b-materiel')) document.getElementById('b-materiel').value = br.materiel;
+    }
     // Masquer les champs déjà connus (nom, prénom, âge, ville) — les infos de base sont prises au prospect
     ['b-pn','b-nn','b-age','b-ville'].forEach(function(fid){
       var el = document.getElementById(fid);
@@ -1630,14 +1808,58 @@ function renderSignatureAccordion(clientId, c, container) {
       if(cl){ cl.sig_offre_id = this.value; localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); }
     }; })(clientId);
     body.appendChild(ofSel);
-    // Afficher le mode de l'offre choisie
+    // Afficher le mode de l'offre choisie + champ montant réel
     if (c.sig_offre_id) {
       var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
-      if (o && o.modeOffre) {
-        var modeBadge = document.createElement('div');
-        modeBadge.style.cssText = 'margin-bottom:10px';
-        modeBadge.innerHTML = '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(o.modeOffre)+'</span>';
-        body.appendChild(modeBadge);
+      if (o) {
+        if (o.modeOffre) {
+          var modeBadge = document.createElement('div');
+          modeBadge.style.cssText = 'margin-bottom:10px';
+          modeBadge.innerHTML = '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(o.modeOffre)+'</span>';
+          body.appendChild(modeBadge);
+        }
+        // Montant réel encaissé (peut différer du prix catalogue)
+        var amtWrap = document.createElement('div');
+        amtWrap.style.marginBottom = '10px';
+        var amtLblEl = document.createElement('div');
+        amtLblEl.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px';
+        amtLblEl.textContent = 'Montant réel encaissé (€)';
+        var amtHint = document.createElement('div');
+        amtHint.style.cssText = 'font-size:10px;color:var(--tx4);margin-bottom:4px';
+        amtHint.textContent = 'Prix catalogue : ' + o.price + '€' + (o.paiement > 1 ? ' · ' + o.paiement + 'x' : '');
+        var amtInp = document.createElement('input');
+        amtInp.type = 'number'; amtInp.step = '0.01'; amtInp.style.width = '100%';
+        amtInp.value = c.actual_amount || c.montant || o.price;
+        amtInp.onchange = (function(cid){ return function(){
+          var cl = ST.clients.find(function(x){return x.id==cid;});
+          if (cl) { var v = parseFloat(this.value)||null; cl.actual_amount = v; cl.montant = v; localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); }
+        }; })(clientId);
+        amtWrap.appendChild(amtLblEl);
+        amtWrap.appendChild(amtHint);
+        amtWrap.appendChild(amtInp);
+        body.appendChild(amtWrap);
+
+        // Moyen de paiement
+        var moyenWrap = document.createElement('div');
+        moyenWrap.style.marginBottom = '12px';
+        var moyenLbl = document.createElement('div');
+        moyenLbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px';
+        moyenLbl.textContent = 'Moyen de paiement';
+        var moyenSel = document.createElement('select');
+        moyenSel.style.width = '100%';
+        [['','— Choisir —'],['cb','Carte bancaire (CB)'],['virement','Virement bancaire'],['especes','Espèces / Cash'],['plateforme','Plateforme (Stripe, PayPal…)'],['autre','Autre']].forEach(function(pair){
+          var opt = document.createElement('option');
+          opt.value = pair[0]; opt.textContent = pair[1];
+          if ((c.moyen_paiement || '') === pair[0]) opt.selected = true;
+          moyenSel.appendChild(opt);
+        });
+        moyenSel.onchange = (function(cid){ return function(){
+          var cl = ST.clients.find(function(x){return x.id==cid;});
+          if (cl) { cl.moyen_paiement = this.value || null; localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); }
+        }; })(clientId);
+        moyenWrap.appendChild(moyenLbl);
+        moyenWrap.appendChild(moyenSel);
+        body.appendChild(moyenWrap);
       }
     }
   } else if (c.sig_offre_id) {
@@ -1659,8 +1881,13 @@ function renderSignatureAccordion(clientId, c, container) {
     chk.className = 'sig-check' + (st.done ? ' done' : isLocked ? ' locked' : '');
     var lbl = document.createElement('div');
     lbl.className = 'sig-lbl' + (st.done ? ' done' : isLocked ? ' locked' : '');
-    lbl.innerHTML = '<span style="margin-right:5px">'+step.ico+'</span>' + step.lbl;
-    if (!st.done && !isLocked) {
+    var isMultiPay = step.id === 'paiement_valide' && c.versements && c.versements.length > 1;
+    var paidCnt = isMultiPay ? c.versements.filter(function(v){return v.done;}).length : 0;
+    var lblTxt = isMultiPay
+      ? '<span style="margin-right:5px">'+step.ico+'</span>'+getPLbl('sig_'+step.id, step.lbl)+' <span style="font-size:10px;color:var(--tx3)">('+paidCnt+'/'+c.versements.length+')</span>'
+      : '<span style="margin-right:5px">'+step.ico+'</span>' + getPLbl('sig_'+step.id, step.lbl);
+    lbl.innerHTML = lblTxt;
+    if (!st.done && !isLocked && !isMultiPay) {
       chk.style.cursor = 'pointer';
       chk.title = 'Valider cette étape';
       chk.onclick = (function(cid, idx){ return function(){
@@ -1676,6 +1903,31 @@ function renderSignatureAccordion(clientId, c, container) {
       row.appendChild(ts);
     }
     body.appendChild(row);
+    // Sous-versements pour paiement en plusieurs fois
+    if (isMultiPay && !isLocked) {
+      var vBlock = document.createElement('div');
+      vBlock.style.cssText = 'margin:4px 0 8px 28px;background:var(--bg3);border-radius:var(--r3);overflow:hidden;border:1px solid var(--rim3)';
+      c.versements.forEach(function(v) {
+        var vRow = document.createElement('div');
+        vRow.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--rim3)';
+        var vChk = document.createElement('div');
+        vChk.style.cssText = 'width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px solid '+(v.done?'var(--G)':'var(--rim)');
+        vChk.style.background = v.done ? 'var(--G)' : 'transparent';
+        vChk.innerHTML = v.done ? '<span style="color:#fff;font-size:11px;font-weight:700">✓</span>' : '';
+        if (!v.done) {
+          vChk.style.cursor = 'pointer';
+          vChk.onclick = (function(cid, vn){ return function(){ validateVersement(cid, vn); }; })(clientId, v.num);
+        }
+        var vLbl = document.createElement('div');
+        vLbl.style.cssText = 'flex:1;font-size:12px;color:'+(v.done?'var(--tx3)':'var(--tx)');
+        vLbl.innerHTML = 'Versement '+v.num+' — <strong>'+v.montant+'€</strong>'
+          + (v.doneAt ? ' <span style="color:var(--tx4);font-size:10px">· '+new Date(v.doneAt).toLocaleDateString('fr-FR')+'</span>' : '');
+        vRow.appendChild(vChk);
+        vRow.appendChild(vLbl);
+        vBlock.appendChild(vRow);
+      });
+      body.appendChild(vBlock);
+    }
   });
 
   acc.appendChild(body);
@@ -1710,10 +1962,37 @@ function validateSigStep(clientId, stepIdx) {
   }
   c.sig_steps[stepIdx].done = true;
   c.sig_steps[stepIdx].doneAt = new Date().toISOString();
-  // Copier l'offre dans le champ offres
+  // Snapshot offre + initialiser les versements
   if (stepIdx === 0 && c.sig_offre_id) {
     var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
-    if (o) c.offres = o.name;
+    if (o) {
+      // Champs legacy (compatibilité)
+      c.offres = o.name;
+      // Snapshot closing S2
+      c.business_offer_id      = o.id;
+      c.business_offer_name    = o.name;
+      c.catalog_price_snapshot = o.price;
+      c.offer_type             = o.offer_type || null; // 'session' | 'programme'
+      var nPay = parseInt(o.paiement) || 1;
+      c.installments_planned   = nPay;
+      c.payment_mode           = nPay;
+      // Si aucun montant réel saisi, pré-remplir avec le prix catalogue
+      if (!c.actual_amount && !c.montant) { c.actual_amount = o.price; c.montant = o.price; }
+      var payAmt = nPay > 1 ? Math.round(o.price / nPay * 100) / 100 : o.price;
+      c.versements = [];
+      for (var vi = 0; vi < nPay; vi++) {
+        c.versements.push({num: vi+1, montant: payAmt, done: false, doneAt: null});
+      }
+    }
+  }
+  // Pour paiement en plusieurs fois : bloquer la validation directe, passer par validateVersement
+  if (SIG_STEPS[stepIdx] && SIG_STEPS[stepIdx].id === 'paiement_valide' && c.versements && c.versements.length > 1) {
+    c.sig_steps[stepIdx].done = false; c.sig_steps[stepIdx].doneAt = null;
+    toast('info', '💳 Validez chaque versement individuellement');
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    renderClientModal(clientId);
+    return;
   }
   c.updated_at = new Date().toISOString();
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
@@ -1741,13 +2020,111 @@ function finalizeClosing(clientId) {
 }
 
 function getModeOffreLabel(mode) {
-  var labels = {action:'Action',transformation:'Transformation',cours_collectifs:'Cours Collectifs'};
+  var labels = {action:'Action',transformation:'Transformation',collectif:'Collectif'};
   return labels[mode] || mode || '—';
 }
 
 // ═══════════════════════════════════════════════════
 // DÉCISION BILAN : REFUS ou OK → Closing en cours
 // ═══════════════════════════════════════════════════
+// Génère la synthèse bilan depuis les données sauvegardées (appel post-RDV depuis la fiche)
+async function genSyntheseBilanFromClient(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) { toast('err', 'Client introuvable'); return; }
+  var btn = document.getElementById('btn-synth-bilan-'+clientId);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Analyse…'; }
+  try {
+    var br = c.bilan_raw || {};
+    var pqCtx = c.pq_summary
+      ? 'Pré-bilan : '+c.pq_summary.profilTypeCode+' — '+c.pq_summary.profilTypeLabel+'. Closing: '+c.pq_summary.closingPotential+'%. Vigilances: '+(c.pq_summary.pointsDeVigilance||'aucune')+'.'
+      : '';
+    var sys = 'Tu es l\'assistant IA du coach Jonathan (BE ACTIV, Grenoble/Lyon). Analyse les données du bilan coach et produis une synthèse interne professionnelle. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. 4 LEVIERS : BOUGER | MANGER | RÉCUPÉRER | RÉGULER. 3 PHASES : RESET | SCULPT | HEALTH. Jamais de restriction sévère.\n\n'+BA_PROFILS_SYS+'\n\nConfirme ou affine le profil BE ACTIV. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
+    var usr = pqCtx
+      + '\nProspect : '+c.prenom+' '+c.nom+', '+(c.age||'?')+' ans, '+(c.ville||'NC')
+      + '\nOffre souhaitée : '+(c.offres||'NC')+' | Montant : '+(c.montant||'NC')+'€'
+      + (br.vision6m   ? '\nVision 6 mois : '+br.vision6m.slice(0,200)   : '')
+      + (br.blocages   ? '\nBlocages : '+br.blocages.slice(0,150)         : '')
+      + (br.pointA     ? '\nPoint A : '+br.pointA.slice(0,150)            : '')
+      + (br.notesTrain ? '\nEntraînement : '+br.notesTrain.slice(0,150)   : '')
+      + (br['b-relation-train'] && br['b-relation-train'].length ? '\nRelation entraînement : '+br['b-relation-train'].join(', ') : '')
+      + (br['b-faille-train'] && br['b-faille-train'].length ? '\nFaille entraînement : '+br['b-faille-train'].join(', ') : '')
+      + (br.materiel ? '\nMatériel : '+br.materiel : '')
+      + (br.pas        ? '\nNEAT : '+br.pas+' pas/jour'                   : '')
+      + (br['b-relation-neat'] && br['b-relation-neat'].length ? '\nRelation NEAT : '+br['b-relation-neat'].join(', ') : '')
+      + (br.notesAlim  ? '\nAlimentation : '+br.notesAlim.slice(0,150)    : '')
+      + (br['b-relation-alim'] && br['b-relation-alim'].length ? '\nRelation alimentation : '+br['b-relation-alim'].join(', ') : '')
+      + (br['b-intol'] && br['b-intol'].length ? '\nIntolérances : '+br['b-intol'].join(', ') : '')
+      + (br.notesVie   ? '\nMode de vie : '+br.notesVie.slice(0,150)      : '')
+      + (br['b-relation-vie'] && br['b-relation-vie'].length ? '\nRelation mode de vie : '+br['b-relation-vie'].join(', ') : '')
+      + (br['b-faille-vie'] && br['b-faille-vie'].length ? '\nFaille mode de vie : '+br['b-faille-vie'].join(', ') : '')
+      + (br.attenteCoach ? '\nAttente coaching : '+br.attenteCoach.slice(0,100) : '')
+      + '\n\nJSON strict :\n{"syntheseBilan":"3-4 phrases","hypotheseCoach":"texte","facteursLimitants":"texte","facteursLeviers":"texte","incoherencesOuVigilances":"texte ou null","prioritesCoaching":"3 priorités","profilTypeCodeUpdated":"P1..P11","profilTypeLabelUpdated":"libellé","closingPotentialUpdated":0,"recommandationSuiteRDV":"Démarrer maintenant|Envoyer offre|Relancer dans 1 semaine|Ne pas continuer","offreRecommandee":"texte"}';
+    var r = await callAI(sys, usr, 'claude-haiku-4-5-20251001', 1400);
+    c.bilan_summary = r;
+    c.profil_code = r.profilTypeCodeUpdated || c.profil_code;
+    c.profil_label = r.profilTypeLabelUpdated || c.profil_label;
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    ST.bilanSummary = r;
+    toast('ok', '✅ Synthèse bilan générée !');
+    closeModal('client');
+    setTimeout(function(){ openClient(clientId); }, 200);
+  } catch(e) {
+    toast('err', '❌ '+e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '🤖 Générer synthèse bilan'; }
+  }
+}
+
+function partagerBilanSummary(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c || !c.bilan_summary) return;
+  var bs = c.bilan_summary;
+  var nom = (c.prenom||'') + ' ' + (c.nom||'');
+  var lines = [
+    '🩺 SYNTHÈSE BILAN — ' + nom.trim(),
+    '─────────────────────────────',
+  ];
+  if (bs.profilTypeCodeUpdated) lines.push('Profil : ' + bs.profilTypeCodeUpdated + ' — ' + (bs.profilTypeLabelUpdated||''));
+  if (bs.closingPotentialUpdated) lines.push('Potentiel closing : ' + bs.closingPotentialUpdated + '%');
+  if (bs.recommandationSuiteRDV) lines.push('Recommandation : ' + bs.recommandationSuiteRDV);
+  if (bs.syntheseBilan) lines.push('\n' + bs.syntheseBilan);
+  if (bs.prioritesCoaching) lines.push('\n🎯 Priorités coaching :\n' + bs.prioritesCoaching);
+  if (bs.offreRecommandee) lines.push('\n💼 Offre recommandée : ' + bs.offreRecommandee);
+  lines.push('\n— BE ACTIV Coaching');
+  var txt = lines.join('\n');
+  if (navigator.share) {
+    navigator.share({ title: 'Synthèse Bilan ' + nom.trim(), text: txt }).catch(function(){});
+  } else {
+    var subj = encodeURIComponent('Synthèse Bilan ' + nom.trim());
+    var body = encodeURIComponent(txt);
+    window.location.href = 'mailto:?subject=' + subj + '&body=' + body;
+  }
+}
+
+function validateVersement(clientId, versNum) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c || !c.versements) return;
+  var v = c.versements.find(function(x){ return x.num == versNum; });
+  if (!v || v.done) return;
+  v.done = true;
+  v.doneAt = new Date().toISOString();
+  var allPaid = c.versements.every(function(x){ return x.done; });
+  if (allPaid) {
+    initSigSteps(c);
+    var payStepIdx = SIG_STEPS.findIndex(function(s){ return s.id === 'paiement_valide'; });
+    if (payStepIdx >= 0) {
+      c.sig_steps[payStepIdx].done = true;
+      c.sig_steps[payStepIdx].doneAt = new Date().toISOString();
+    }
+  }
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  toast('ok', '💳 Versement '+versNum+' reçu'+(allPaid?' — Paiement complet 🎉':''));
+  renderClientModal(clientId);
+}
+
 function setBilanDecision(decision) {
   var clientId = ST.clientId;
   if (!clientId) return;
@@ -2058,33 +2435,59 @@ const ST = {
   selectMode:false, selectedIds:[]
 };
 
-const PROFILS = {P1:'Je sais mais je n\'y arrive pas',P2:'Besoin d\'être guidé(e)',P3:'Motivé(e) mais instable',P4:'Déconnecté(e) de son corps',P5:'Mental fort / corps bloqué',P6:'Multi-problèmes / désorganisé(e)',P7:'Corps en résistance',P8:'Hyper-actif(ve)',P9:'Image corporelle abîmée',P10:'Performant(e) pro / chaos perso',P11:'Non compatible BE ACTIV',P12:'Cas médical / clinique'};
+const PROFILS = {
+  P1:'Sait mais n\'y arrive pas',
+  P2:'Motivé(e) mais instable',
+  P3:'Déconnecté(e) de son corps',
+  P4:'Mental fort / corps bloqué',
+  P5:'Multi-problèmes / désorganisé(e)',
+  P6:'Corps en résistance',
+  P7:'Hyper-actif(ve)',
+  P8:'Image corporelle abîmée',
+  P9:'Performant(e) pro / chaos perso',
+  P10:'Non compatible BE ACTIV',
+  P11:'Cas médical / clinique'
+};
+
+// Référence détaillée des profils pour les prompts IA
+const BA_PROFILS_SYS = `PROFILS BE ACTIV (assigne P1..P11 — 1 principal obligatoire, 1 secondaire optionnel) :
+P1 "Sait mais n'y arrive pas" — sur-contrôle, culpabilité, burnout. Posture : sécuriser avant d'optimiser, enlever la pression.
+P2 "Motivé mais instable" — dopamine > structure, yo-yo, adore commencer. Posture : constance > intensité, cadre simple et long terme.
+P3 "Déconnecté du corps" — mécanique, peu de sensations, tout dans la tête. Posture : réécoute corporelle, lenteur, mouvement sans objectif esthétique.
+P4 "Mental fort / corps bloqué" — discipliné mais SNS saturé, stagnation physique. Posture : réconcilier mental et corps, le corps protège il ne trahit pas.
+P5 "Multi-problèmes / désorganisé" — tout mélangé (poids/stress/sommeil/émotions), surcharge mentale. Posture : structurer, simplifier, 1 seule priorité à la fois.
+P6 "Corps en résistance" — fait tout bien mais rien ne bouge, sentiment d'injustice. Posture : sécuriser, expliquer le pourquoi, retirer la pression du résultat.
+P7 "Hyper-actif" — jamais au repos, travail/sport/obligations sans arrêt, fuite intérieure. Posture : légitimer le repos, cadrer le rythme, bouger sans s'épuiser.
+P8 "Image corporelle abîmée" — auto-jugement fort, comparaison constante, insatisfaction malgré les progrès, risque TCA. Posture : sortir l'objectif du miroir, reconstruire l'identité.
+P9 "Performant pro / chaos perso" — réussite professionnelle, discipline au travail, mais corps et vie perso négligés. Posture : corps comme levier de performance, vision long terme.
+P10 "Non compatible BE ACTIV" — cherche solution rapide, teste le cadre, négocie, refuse la remise en question. Posture : cadre ferme, refus ou réorientation assumée, zéro compromis.
+P11 "Cas médical / clinique" — TCA actifs, dépression sévère, troubles anxieux lourds, pathologies lourdes. Posture : sécurité avant tout, réorientation ou co-accompagnement, suivi médical obligatoire.`;
 
 // ═══════════════════════════════════════════════════
 // OFFRES
 // ═══════════════════════════════════════════════════
 const OFFRES_DEFAULT = [
   // ── TRANSFORMATION ──
-  {id:'o1', name:'ACTIV RESET ONLINE',     price:1350,durVal:12,durUnit:'semaines',paiement:3,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation'},
-  {id:'o2', name:'ACTIV RESET HYBRIDE',    price:525, durVal:12,durUnit:'semaines',paiement:2,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation'},
-  {id:'o3', name:"ACTIV PROGRAM'",         price:160, durVal:8, durUnit:'semaines',paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'transformation'},
-  {id:'o_ac',name:'ACTIV CONTINUE',        price:150, durVal:1, durUnit:'mois',    paiement:1,test:'none',parcours:true,alaCarte:false,isAbonnement:true,modeOffre:'transformation'},
+  {id:'o1', name:'ACTIV RESET ONLINE',     price:1350,durVal:12,durUnit:'semaines',paiement:3,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation',offer_type:'programme'},
+  {id:'o2', name:'ACTIV RESET HYBRIDE',    price:525, durVal:12,durUnit:'semaines',paiement:2,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation',offer_type:'programme'},
+  {id:'o3', name:"ACTIV PROGRAM'",         price:160, durVal:8, durUnit:'semaines',paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'transformation',offer_type:'programme'},
+  {id:'o_ac',name:'ACTIV CONTINUE',        price:150, durVal:1, durUnit:'mois',    paiement:1,test:'none',parcours:true,alaCarte:false,isAbonnement:true,modeOffre:'transformation',offer_type:'programme'},
   // ── ACTION ──
-  {id:'o4', name:'JM PASS',               price:240, durVal:1, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action'},
-  {id:'o5', name:'JM PASS COACHING',      price:250, durVal:1, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action'},
-  {id:'o6', name:'JM PASS COACHING+',     price:240, durVal:3, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action'},
-  {id:'o9', name:'COACHING À LA CARTE',   price:65,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'action'},
+  {id:'o4', name:'JM PASS',               price:240, durVal:1, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action',offer_type:'session'},
+  {id:'o5', name:'JM PASS COACHING',      price:250, durVal:1, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action',offer_type:'session'},
+  {id:'o6', name:'JM PASS COACHING+',     price:240, durVal:3, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action',offer_type:'session'},
+  {id:'o9', name:'COACHING À LA CARTE',   price:65,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'action',offer_type:'session'},
   // ── COURS COLLECTIFS ──
-  {id:'o7', name:'CARDIO MOUV PASS 4',    price:45,  durVal:4, durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'cours_collectifs'},
-  {id:'o8', name:'CARDIO MOUV PACK 10',   price:130, durVal:10,durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'cours_collectifs'},
-  {id:'o10',name:'CARDIO MOUV ONE SHOT',  price:15,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'cours_collectifs'},
-  {id:'o11',name:'ACTIV TRAINING',        price:10,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'cours_collectifs'}
+  {id:'o7', name:'CARDIO MOUV PASS 4',    price:45,  durVal:4, durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'collectif',offer_type:'session'},
+  {id:'o8', name:'CARDIO MOUV PACK 10',   price:130, durVal:10,durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'collectif',offer_type:'session'},
+  {id:'o10',name:'CARDIO MOUV ONE SHOT',  price:15,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'collectif',offer_type:'session'},
+  {id:'o11',name:'ACTIV TRAINING',        price:10,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'collectif',offer_type:'session'}
 ];
 function loadOffres() {
   try { const s=localStorage.getItem('ba_offres_v8'); if(s) return JSON.parse(s); } catch(e){}
   return OFFRES_DEFAULT.map(function(o){return Object.assign({},o);});
 }
-function saveOffres(arr) { localStorage.setItem('ba_offres_v8', JSON.stringify(arr)); }
+function saveOffres(arr) { localStorage.setItem('ba_offres_v8', JSON.stringify(arr)); saveSettingRemote('ba_offres_v8', arr); }
 function getOffreCA(o, paiementsEffectues) {
   // CA collecté = (price / paiement) * paiementsEffectues — default: tout payé
   return o.price;
@@ -2101,8 +2504,7 @@ const BILAN_FORM_DEFAULT = [
     {id:'b-ville',label:'Ville',type:'text',placeholder:'Grenoble'},
     {id:'b-prof',label:'Profession',type:'text',placeholder:'Infirmière, étudiant…'}
   ]},
-  {id:'bf2',section:'📡 Source & RDV',type:'group',fields:[
-    {id:'b-source',label:'Source',type:'radio',name:'source',options:['Fitness Park','TikTok','Instagram','Facebook','Bouche à Oreille','Cours Collectifs']},
+  {id:'bf2',section:'📡 RDV',type:'group',fields:[
     {id:'b-rdv-statut',label:'Statut RDV',type:'select',options:['','Présent','Absent']},
     {id:'b-date',label:'Date',type:'date'}
   ]},
@@ -2127,9 +2529,6 @@ const BILAN_FORM_DEFAULT = [
     {id:'b-notes-vie',label:'Notes mode de vie',type:'textarea',placeholder:'Sommeil, organisation, charge mentale…'},
     {id:'b-relation-vie',label:'Relation au mode de vie',type:'checkboxes',options:['Subi','Réactif urgences','Désorganisé','Trop exigeant envers moi-même','Non aligné']},
     {id:'b-faille-vie',label:'Faille mode de vie',type:'checkboxes',options:['Manque sommeil','Manque organisation','Excès charge mentale','Manque soutien','R.A.S Vie']}
-  ]},
-  {id:'bf7',section:'🧬 Profil Type',type:'group',fields:[
-    {id:'b-profil',label:'Profil identifié',type:'radio',name:'profil',options:['P1|Je sais mais je n\'y arrive pas','P2|Besoin d\'être guidé(e)','P3|Motivé(e) mais instable','P4|Déconnecté(e) de son corps','P5|Mental fort / corps bloqué','P6|Multi-problèmes / désorganisé(e)','P7|Corps en résistance','P8|Hyper-actif(ve)','P9|Image corporelle abîmée','P10|Performant(e) pro / chaos perso','P11|Non compatible BE ACTIV','P12|Cas médical / clinique']}
   ]},
   {id:'bf8',section:'🎯 Point B — Objectifs',type:'group',fields:[
     {id:'b-vision6m',label:'Dans 6 mois, comment tu veux être ?',type:'textarea',placeholder:'Physiquement, mentalement…'},
@@ -2190,11 +2589,29 @@ const TESTS_FORM_DEFAULT = [
   ]}
 ];
 
+var BILAN_FORM_VERSION = 4; // Incrémenter à chaque suppression/ajout de champ obligatoire
 function loadFormDef(key) {
-  try { const s=localStorage.getItem('ba_form_'+key); if(s) return JSON.parse(s); } catch(e){}
+  try {
+    const s = localStorage.getItem('ba_form_'+key);
+    if (s) {
+      const parsed = JSON.parse(s);
+      // Vérification de version pour forcer la mise à jour si les champs ont changé
+      if (key === 'bilan') {
+        const storedVer = parseInt(localStorage.getItem('ba_form_bilan_ver') || '0');
+        if (storedVer < BILAN_FORM_VERSION) {
+          // Réinitialiser aux valeurs par défaut et mettre à jour la version
+          localStorage.removeItem('ba_form_bilan');
+          localStorage.setItem('ba_form_bilan_ver', String(BILAN_FORM_VERSION));
+          return BILAN_FORM_DEFAULT;
+        }
+      }
+      return parsed;
+    }
+  } catch(e){}
+  if (key === 'bilan') localStorage.setItem('ba_form_bilan_ver', String(BILAN_FORM_VERSION));
   return key==='bilan' ? BILAN_FORM_DEFAULT : TESTS_FORM_DEFAULT;
 }
-function saveFormDef(key, def) { localStorage.setItem('ba_form_'+key, JSON.stringify(def)); }
+function saveFormDef(key, def) { localStorage.setItem('ba_form_'+key, JSON.stringify(def)); saveSettingRemote('ba_form_'+key, def); }
 
 // ═══════════════════════════════════════════════════
 // FORM RENDERER
@@ -2219,7 +2636,7 @@ function renderField(f) {
       }).join('') + '</div>';
     case 'checkboxes':
       return '<div class="f">' + lbl + (f.options||[]).map(o =>
-        '<label class="chk-item" style="cursor:pointer"><input type="checkbox" value="' + o + '"><div class="chk-box"></div><span class="chk-lbl">' + o + '</span></label>'
+        '<label class="chk-item" style="cursor:pointer"><input type="checkbox" data-fid="' + f.id + '" value="' + o + '"><div class="chk-box"></div><span class="chk-lbl">' + o + '</span></label>'
       ).join('') + '</div>';
     case 'days':
       return '<div class="f">' + lbl + '<div class="days-grid" style="margin-bottom:0">' +
@@ -2355,9 +2772,11 @@ function renderOffresPage() {
 
     // Badge tags
     var tags = '';
+    if (o.offer_type === 'programme') tags += '<span class="pill" style="font-size:9px;background:#6c3483;color:#fff">Programme</span> ';
+    else if (o.offer_type === 'session') tags += '<span class="pill" style="font-size:9px;background:#1a5276;color:#fff">Séances</span> ';
     if (o.modeOffre === 'action')          tags += '<span class="pill pill-Y" style="font-size:9px">⚡ Action</span> ';
     else if (o.modeOffre === 'transformation') tags += '<span class="pill pill-V" style="font-size:9px">🔄 Transformation</span> ';
-    else if (o.modeOffre === 'cours_collectifs') tags += '<span class="pill pill-B" style="font-size:9px">🎵 Cours Collectifs</span> ';
+    else if (o.modeOffre === 'collectif') tags += '<span class="pill pill-B" style="font-size:9px">🔥 Collectif</span> ';
     if (o.parcours && !o.alaCarte) tags += '<span class="pill pill-G" style="font-size:9px">Parcours</span> ';
     if (o.alaCarte) tags += '<span class="pill" style="font-size:9px;background:var(--bg3);color:var(--tx3)">À la carte</span> ';
     if (o.isAbonnement) tags += '<span class="pill pill-B" style="font-size:9px">Abonnement</span> ';
@@ -2378,11 +2797,16 @@ function renderOffresPage() {
         '</div>' +
       '</div>' +
       '<div class="occ-edit" id="oedit_'+o.id+'" style="display:none;padding-top:12px;border-top:1px solid var(--rim3);margin-top:12px">' +
+        '<div class="f"><label>📦 Type d\'offre</label><select id="oe_type_'+o.id+'" onchange="saveOffreTypeS2(\''+o.id+'\',this.value)">' +
+          '<option value="">— Choisir —</option>' +
+          '<option value="programme"'+(o.offer_type==='programme'?' selected':'')+'>Programme fixe</option>' +
+          '<option value="session"'+(o.offer_type==='session'?' selected':'')+'>Séances</option>' +
+        '</select></div>' +
         '<div class="f"><label>🏷️ Mode BE ACTIV</label><select id="oe_mode_'+o.id+'" onchange="saveOffreModeField(\''+o.id+'\',this.value)">' +
           '<option value="">— Choisir le mode —</option>' +
-          '<option value="action"'+(o.modeOffre==='action'?' selected':'')+'>⚡ Action (JM Pass, Coaching à la carte…)</option>' +
-          '<option value="transformation"'+(o.modeOffre==='transformation'?' selected':'')+'>🔄 Transformation (ACTIV Program, ACTIV RESET…)</option>' +
-          '<option value="cours_collectifs"'+(o.modeOffre==='cours_collectifs'?' selected':'')+'>🎵 Cours Collectifs (Cardio Mouv, Activ Training…)</option>' +
+          '<option value="action"'+(o.modeOffre==='action'?' selected':'')+'>⚡ ACTION</option>' +
+          '<option value="transformation"'+(o.modeOffre==='transformation'?' selected':'')+'>🔄 TRANSFORMATION</option>' +
+          '<option value="collectif"'+(o.modeOffre==='collectif'?' selected':'')+'>🔥 COLLECTIF</option>' +
         '</select></div>' +
         '<button class="btn btn-bx btn-sm" onclick="toggleOffreEdit(\''+o.id+'\')" style="margin-top:10px;width:100%">✓ Fermer</button>' +
       '</div>';
@@ -2423,6 +2847,13 @@ function saveOffreModeField(id, modeVal) {
   var o = offres.find(function(x){return x.id===id;});
   if (!o) return;
   o.modeOffre = modeVal;
+  saveOffres(offres);
+}
+function saveOffreTypeS2(id, typeVal) {
+  var offres = loadOffres();
+  var o = offres.find(function(x){return x.id===id;});
+  if (!o) return;
+  o.offer_type = typeVal; // 'session' | 'programme'
   saveOffres(offres);
 }
 
@@ -2558,6 +2989,7 @@ window.onload = function() {
   // Activer auto-save brouillon bilan dès le chargement
   setupBilanDraftAutosave();
   loadFromSupabase();
+  loadSettingsFromSupabase();
   // Charger les offres depuis BE ACTIV BUSINESS au démarrage si configuré
   if (ST.bizUrl) {
     pullOffresFromFinances().catch(function(){});
@@ -2600,6 +3032,7 @@ function saveConfig() {
   closeModal('cfg');
   document.getElementById('cfg-banner').style.display = ST.apiKey ? 'none' : 'flex';
   loadFromSupabase();
+  loadSettingsFromSupabase();
   toast('ok','✅ Configuration enregistrée');
 }
 
@@ -2612,7 +3045,7 @@ function showPg(name) {
   const pg=document.getElementById('pg-'+name); if(pg) pg.classList.add('on');
   document.querySelectorAll('[data-pg="'+name+'"]').forEach(n=>n.classList.add('on'));
   document.getElementById('scroller').scrollTop=0;
-  if(name==='clients') renderClients();
+  if(name==='clients') { renderClients(); loadFromSupabase(); }
   if(name==='stats'){renderStats();setTimeout(renderGraph,80);}
   if(name==='home'){updateKPIs();renderNextRDV();}
   if(name==='offres') renderOffresPage();
@@ -2674,24 +3107,74 @@ function updateKPIs() {
 // ═══════════════════════════════════════════════════
 // RDV
 // ═══════════════════════════════════════════════════
+function openRDVModal() {
+  var sel = document.getElementById('rdv-prospect-id');
+  sel.innerHTML = '<option value="">— Choisir un prospect —</option>';
+  var prospects = ST.clients.filter(function(c){ return c.statut !== 'Closé' && !c.isPro && (c.prenom||c.nom); });
+  prospects.forEach(function(c){
+    var opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = (c.prenom||'') + ' ' + (c.nom||'');
+    sel.appendChild(opt);
+  });
+  document.getElementById('rdv-date').value = new Date().toISOString().split('T')[0];
+  openModal('rdv');
+}
+
 function saveRDV() {
-  const name=gv('rdv-name'); if(!name){toast('err','⚠️ Nom requis');return;}
-  const rdv={id:Date.now().toString(),name,date:gv('rdv-date'),time:gv('rdv-time'),type:gv('rdv-type')};
-  ST.rdvs.push(rdv); ST.rdvs.sort((a,b)=>a.date.localeCompare(b.date));
-  localStorage.setItem('ba_rdvs_v8',JSON.stringify(ST.rdvs));
-  closeModal('rdv'); renderNextRDV(); toast('ok','✅ RDV ajouté');
-  document.getElementById('rdv-name').value='';
+  var prospectId = document.getElementById('rdv-prospect-id').value;
+  if (!prospectId) { toast('err','⚠️ Choisis un prospect'); return; }
+  var c = ST.clients.find(function(x){ return x.id === prospectId; });
+  if (!c) { toast('err','⚠️ Prospect introuvable'); return; }
+  var name = (c.prenom||'') + ' ' + (c.nom||'');
+  var rdv = {id:Date.now().toString(), clientId:prospectId, name:name, date:gv('rdv-date'), time:gv('rdv-time'), type:gv('rdv-type')};
+  ST.rdvs.push(rdv); ST.rdvs.sort(function(a,b){return a.date.localeCompare(b.date);});
+  localStorage.setItem('ba_rdvs_v8', JSON.stringify(ST.rdvs));
+  // Passer automatiquement le prospect en "Closing en cours"
+  if (c.statut === 'Non closé' || !c.statut) {
+    c.statut = 'Closing en cours';
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    renderClients();
+  }
+  closeModal('rdv'); renderNextRDV();
+  toast('ok', '✅ RDV ajouté — ' + name + ' → Closing en cours');
 }
 function renderNextRDV() {
   const el=document.getElementById('home-rdv'); if(!el)return;
   const today=new Date().toISOString().split('T')[0];
-  const upcoming=ST.rdvs.filter(r=>r.date>=today);
-  if(!upcoming.length){el.innerHTML='<div class="rdv-empty">Aucun RDV — ajoutez en via le bouton ci-dessous</div>';return;}
-  const next=upcoming[0];
-  const d=new Date(next.date+'T12:00:00');
   const days=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
   const months=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-  el.innerHTML='<div class="rdv-card"><div class="rdv-date"><div class="rdv-day">'+d.getDate()+'</div><div class="rdv-month">'+months[d.getMonth()]+'</div></div><div class="rdv-info"><div class="rdv-name">'+next.name+'</div><div class="rdv-meta">'+days[d.getDay()]+(next.time?' · '+next.time:'')+'</div><div class="rdv-badge">'+(next.type||'RDV')+'</div></div></div>';
+
+  // Combiner les RDVs manuels + les RDV Bilan des prospects (date définie, pas encore passé)
+  if (!ST.rdvs) ST.rdvs = [];
+  var allRdvs = ST.rdvs.filter(r=>r.date>=today).map(function(r){
+    return {date:r.date, name:r.name, time:r.time, type:r.type||'RDV', badge:''};
+  });
+
+  // Ajouter les prospects avec un RDV Bilan planifié (date >= aujourd'hui, statut pas Closé/Refusé)
+  ST.clients.forEach(function(c){
+    if (!c.date || c.date < today) return;
+    if (c.statut === 'Closé' || c.statut === 'Refusé') return;
+    if (c.rdvStatut === 'Présent' || c.rdvStatut === 'Absent') return; // déjà passé
+    allRdvs.push({
+      date: c.date,
+      name: (c.prenom||'') + ' ' + (c.nom||''),
+      time: c.rdvType || '',
+      type: 'RDV Bilan',
+      badge: '📋'
+    });
+  });
+
+  // Trier par date
+  allRdvs.sort(function(a,b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+
+  if(!allRdvs.length){el.innerHTML='<div class="rdv-empty">Aucun RDV — ajoutez en via le bouton ci-dessous</div>';return;}
+  const next=allRdvs[0];
+  const d=new Date(next.date+'T12:00:00');
+  if(isNaN(d.getTime())){el.innerHTML='<div class="rdv-empty">Prochain RDV : '+next.name+' — '+next.date+'</div>';return;}
+  el.innerHTML='<div class="rdv-card"><div class="rdv-date"><div class="rdv-day">'+d.getDate()+'</div><div class="rdv-month">'+months[d.getMonth()]+'</div></div><div class="rdv-info"><div class="rdv-name">'+(next.badge?next.badge+' ':'')+next.name+'</div><div class="rdv-meta">'+days[d.getDay()]+(next.time?' · '+next.time:'')+'</div><div class="rdv-badge">'+next.type+'</div></div></div>';
 }
 
 // ═══════════════════════════════════════════════════
@@ -2806,9 +3289,8 @@ function openWrapped() {
 
   content.innerHTML =
     '<div class="wr-hero">' +
-      '<div class="wr-year">BE ACTIV CRM · ' + year + '</div>' +
-      '<div class="wr-title">Votre<br>Année 🎯</div>' +
-      '<div class="wr-sub">Coach JM · Récap complet</div>' +
+      '<div class="wr-title" style="font-size:28px;line-height:1.2">Mon Année ' + year + ' 🎯</div>' +
+      '<div class="wr-sub">Coach JM · BE ACTIV BILAN CRM</div>' +
     '</div>' +
 
     '<div class="wr-grid">' +
@@ -2862,8 +3344,8 @@ function exportWrappedPDF() {
   doc.rect(0,0,100,180,'F');
   doc.setTextColor(255,255,255);
   doc.setFontSize(10); doc.setFont('helvetica','bold');
-  doc.text('BE ACTIV CRM · '+year, 50, 14, {align:'center'});
-  doc.setFontSize(18); doc.text('VOTRE ANNÉE 🎯', 50, 24, {align:'center'});
+  doc.setFontSize(18); doc.text('MON ANNÉE '+year+' 🎯', 50, 18, {align:'center'});
+  doc.setFontSize(9); doc.text('Coach JM · BE ACTIV BILAN CRM', 50, 26, {align:'center'});
   // Extract KPIs from DOM
   var kpis = card.querySelectorAll('.wr-kpi');
   var y = 40;
@@ -2882,7 +3364,18 @@ function exportWrappedPDF() {
 }
 
 function exportWrappedPNG() {
-  toast('info','📸 Capture… utilisez la fonction screenshot de votre téléphone pour sauvegarder cette vue');
+  var card = document.getElementById('wrapped-card');
+  if (!card) return;
+  if (!window.html2canvas) { toast('err','html2canvas non disponible'); return; }
+  var year = ST.statsYear || new Date().getFullYear();
+  toast('info','⏳ Génération en cours…');
+  html2canvas(card, { scale:2, useCORS:true, backgroundColor:null }).then(function(canvas){
+    var link = document.createElement('a');
+    link.download = 'beactiv-wrapped-'+year+'.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('ok','🖼 PNG téléchargé !');
+  }).catch(function(){ toast('err','Erreur export PNG'); });
 }
 
 function renderGraph() {
@@ -2954,12 +3447,25 @@ function setupChips() {
 // ═══════════════════════════════════════════════════
 function getRadioVal(name){const el=document.querySelector('input[name="'+name+'"]:checked');return el?el.value:'';}
 function getCheckedIn(sel){return Array.from(document.querySelectorAll(sel+' input[type=checkbox]:checked')).map(i=>i.value);}
+function getCheckedByFid(fid){
+  return Array.from(document.querySelectorAll('input[type=checkbox][data-fid="'+fid+'"]:checked')).map(function(i){return i.value;});
+}
 function collectBilan(){
   return{
     prenom:gv('b-pn'),nom:gv('b-nn'),age:gv('b-age'),ville:gv('b-ville'),profession:gv('b-prof'),
     source:getRadioVal('source'),rdvStatut:gv('b-rdv-statut'),date:gv('b-date'),
     notesTrain:gv('b-notes-train'),dispoJours:Array.from(document.querySelectorAll('input[name="dispo"]:checked')).map(i=>i.value).join(', '),
-    notesNeat:gv('b-notes-neat'),pas:gv('b-pas'),notesAlim:gv('b-notes-alim'),notesVie:gv('b-notes-vie'),
+    'b-relation-train':getCheckedByFid('b-relation-train'),
+    'b-faille-train':getCheckedByFid('b-faille-train'),
+    materiel:gv('b-materiel'),
+    notesNeat:gv('b-notes-neat'),pas:gv('b-pas'),
+    'b-relation-neat':getCheckedByFid('b-relation-neat'),
+    notesAlim:gv('b-notes-alim'),
+    'b-relation-alim':getCheckedByFid('b-relation-alim'),
+    'b-intol':getCheckedByFid('b-intol'),
+    notesVie:gv('b-notes-vie'),
+    'b-relation-vie':getCheckedByFid('b-relation-vie'),
+    'b-faille-vie':getCheckedByFid('b-faille-vie'),
     profilTypeCode:getRadioVal('profil'),
     vision6m:gv('b-vision6m'),pointA:gv('b-pointA'),blocages:gv('b-blocages'),echec6m:gv('b-echec6m'),attenteCoach:gv('b-attente-coach'),
     offres:getCheckedIn('#bilan-offres-list').join(', '),
@@ -3026,12 +3532,11 @@ async function callAI(system,user,model,maxTokens){
 }
 
 async function analyzePQ(){
-  const raw=gv('pq-raw');if(raw.length<20){toast('err','⚠️ Collez les réponses Tally');return;}
+  const raw=gv('pq-raw');if(raw.length<20){toast('err','⚠️ Collez les réponses Calendly');return;}
   const btn=document.getElementById('btn-pq');btn.disabled=true;btn.textContent='⏳ Analyse…';
   try{
-    const pg=Object.entries(PROFILS).map(([k,v])=>k+'='+v).join(' | ');
-    const sys='Tu es l\'assistant IA du coach Jonathan (BE ACTIV). Analyse les réponses du formulaire prospect. GRILLE : '+pg+'. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
-    const usr='Réponses :\n---\n'+raw.slice(0,3000)+'\n---\nJSON strict :\n{"resumeProfil":"2-3 phrases","objectifPrincipal":"court","freinsProbables":"texte","motivationsDominantes":"texte","pointsDeVigilance":"texte","niveauUrgence":"Faible|Moyen|Élevé|Critique","profilTypeCode":"P1..P12","profilTypeLabel":"libellé exact","profilTypeCodeSecondaire":"P1..P12 ou null","profilTypeLabelSecondaire":"libellé ou null","profilTypeReason":"justification","approcheCoachingRecommandee":"texte","closingPotential":0,"closingStatusSuggestion":"Chaud|Tiède|Froid|À qualifier"}';
+    const sys='Tu es l\'assistant IA du coach Jonathan (BE ACTIV, Grenoble/Lyon). Tu analyses les réponses du questionnaire Calendly pré-RDV pour classer le profil prospect. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. 4 LEVIERS : BOUGER | MANGER | RÉCUPÉRER | RÉGULER. 3 PHASES : RESET | SCULPT | HEALTH.\n\n'+BA_PROFILS_SYS+'\n\nRÈGLES : Assigne 1 profil principal obligatoire (P1..P11), 1 secondaire optionnel si pertinent. Justifie selon les réponses. Si doute médical grave → P11. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
+    const usr='Réponses :\n---\n'+raw.slice(0,3000)+'\n---\nJSON strict :\n{"resumeProfil":"2-3 phrases","objectifPrincipal":"court","freinsProbables":"texte","motivationsDominantes":"texte","pointsDeVigilance":"texte","niveauUrgence":"Faible|Moyen|Élevé|Critique","profilTypeCode":"P1..P11","profilTypeLabel":"libellé exact","profilTypeCodeSecondaire":"P1..P11 ou null","profilTypeLabelSecondaire":"libellé ou null","profilTypeReason":"justification courte","approcheCoachingRecommandee":"texte","closingPotential":0,"closingStatusSuggestion":"Chaud|Tiède|Froid|À qualifier"}';
     const r=await callAI(sys,usr,'claude-haiku-4-5-20251001',1200);
     ST.pqSummary=r;renderPQResult(r);
     document.getElementById('pq-result').style.display='block';
@@ -3053,7 +3558,7 @@ async function analyzeBilan(){
   try{
     const b=collectBilan();
     const pqCtx=ST.pqSummary?'Pré-bilan : '+ST.pqSummary.profilTypeCode+' — '+ST.pqSummary.profilTypeLabel+'. Closing: '+ST.pqSummary.closingPotential+'%. Vigilances: '+(ST.pqSummary.pointsDeVigilance||'aucune')+'.'  :'';
-    const sys='Tu es l\'assistant IA du coach Jonathan (BE ACTIV, Grenoble/Lyon). Analyse les données du bilan coach et produis une synthèse interne professionnelle. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. 4 LEVIERS : BOUGER (musculation + NEAT) | MANGER (nourrir sans punir) | RÉCUPÉRER (sommeil prioritaire) | RÉGULER (stress, hormones). 3 PHASES : RESET (reprendre contrôle) | SCULPT (construire/recomposer) | HEALTH (entretenir). Identifie les leviers réels, détermine la phase adaptée, recommande l\'offre cohérente. Jamais de restriction sévère ou comptage calorique avant les fondations. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
+    const sys='Tu es l\'assistant IA du coach Jonathan (BE ACTIV, Grenoble/Lyon). Analyse les données du bilan coach et produis une synthèse interne professionnelle. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. 4 LEVIERS : BOUGER (musculation + NEAT) | MANGER (nourrir sans punir) | RÉCUPÉRER (sommeil prioritaire) | RÉGULER (stress, hormones). 3 PHASES : RESET (reprendre contrôle) | SCULPT (construire/recomposer) | HEALTH (entretenir). Jamais de restriction sévère ou comptage calorique avant les fondations.\n\n'+BA_PROFILS_SYS+'\n\nIdentifie les leviers réels, détermine la phase adaptée, confirme ou affine le profil, recommande l\'offre cohérente. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
     const usr=pqCtx+'\nProspect : '+b.prenom+' '+b.nom+', '+(b.age||'?')+' ans, '+(b.ville||'NC')+'\nSource : '+(b.source||'NC')+' | Profil: '+(b.profilTypeCode||'NC')+'\nVision 6 mois : '+(b.vision6m||'').slice(0,200)+'\nBlocages : '+(b.blocages||'').slice(0,150)+'\nEntraînement : '+(b.notesTrain||'NC')+' | NEAT : '+(b.pas||'NC')+' pas\nAlimentation : '+(b.notesAlim||'NC')+'\nMode de vie : '+(b.notesVie||'NC')+'\nOffres : '+(b.offres||'NC')+' | Montant : '+(b.montant||'NC')+'€\n\nJSON strict :\n{"syntheseBilan":"3-4 phrases","hypotheseCoach":"texte","facteursLimitants":"texte","facteursLeviers":"texte","incoherencesOuVigilances":"texte ou null","prioritesCoaching":"3 priorités","profilTypeCodeUpdated":"P1..P12","profilTypeLabelUpdated":"libellé","closingPotentialUpdated":0,"recommandationSuiteRDV":"Démarrer maintenant|Envoyer offre|Relancer dans 1 semaine|Ne pas continuer","offreRecommandee":"texte"}';
     const r=await callAI(sys,usr,'claude-haiku-4-5-20251001',1300);
     ST.bilanSummary=r;
@@ -3080,9 +3585,9 @@ async function genReport(){
     const imc=t.poids&&t.taille?(parseFloat(t.poids)/Math.pow(parseFloat(t.taille)/100,2)).toFixed(1):'NC';
     const pqCtx=ST.pqSummary?'PRÉ-BILAN: '+ST.pqSummary.resumeProfil+' | Profil: '+ST.pqSummary.profilTypeCode:'Pré-bilan non effectué';
     const bilanCtx=ST.bilanSummary?'BILAN: '+ST.bilanSummary.syntheseBilan+' | Leviers: '+(ST.bilanSummary.facteursLeviers||'NC'):'Bilan non effectué';
-    const sys='Tu es Jonathan, coach sportif expert BE ACTIV. Rédige un compte rendu final client : professionnel, bienveillant, précis, motivant. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
+    const sys='Tu es Jonathan, coach Transformation & Énergie, fondateur de BE ACTIV (Grenoble/Lyon). Tu rédiges le compte rendu final personnalisé remis au client après son bilan complet. Ce document sera lu directement par le client — soigne le style, la clarté et la personnalisation maximale. Utilise le prénom du client. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. PROCESSUS : ANCRER → SIMPLIFIER → RÉPÉTER → AJUSTER → LÂCHER PRISE. 4 LEVIERS : BOUGER (musculation + NEAT) | MANGER (nourrir sans punir, zéro restriction) | RÉCUPÉRER (sommeil = résultats) | RÉGULER (stress, hormones, cycle). 3 PHASES : RESET | SCULPT | HEALTH. JAMAIS : restrictions sévères, comptage calorique obsessionnel, hacks nutritionnels avant les fondations. Style : professionnel mais humain, bienveillant, concret, actionnable. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
     const usr='CLIENT: '+b.prenom+' '+b.nom+', '+(b.age||'?')+' ans, '+(b.ville||'NC')+'\nPROFIL: '+(b.profilTypeCode||(ST.bilanSummary&&ST.bilanSummary.profilTypeCodeUpdated)||'NC')+' | IMC: '+imc+'\nVISION: '+(b.vision6m||'').slice(0,200)+'\nBLOCAGES: '+(b.blocages||'').slice(0,150)+'\n'+pqCtx+'\n'+bilanCtx+'\nTESTS: Mobilité='+t.mobGlobal+'/100 IRD='+t.ird+' Planche='+t.planche+'s\nTaille='+t.taille+'cm Poids='+t.poids+'kg Tour nombril='+t.tn+' Tour taille='+t.tt+'\nOffres: '+b.offres+' | Montant: '+b.montant+'€\n\nJSON strict :\n{"profilGlobal":"paragraphe","synthesePreBilan":"résumé","syntheseBilan":"résumé","analyseMorphologique":"mesures","analyseMobilite":"mobilité","analyseCardio":"cardio IRD","analyseForce":"planche force","analyseCompo":"composition","pointsForts":["pt1","pt2","pt3"],"freinsPrincipaux":["f1","f2"],"axesPrioritaires":["a1","a2","a3"],"planAction90J":"plan","objectifsSMART":["obj1","obj2"],"conseilsTraining":"texte","conseilsNutrition":"texte","conseilsRecuperation":"texte","messageMotivation":"message","scoreMobilite":0,"scoreCondition":0,"scoreGlobal":0,"niveauGlobal":"Débutant|Intermédiaire|Avancé|Expert","profilTypeCodeFinal":"P1..P12","profilTypeLabelFinal":"libellé","closingStatusRecommended":"Démarrer maintenant|Envoyer offre|Relancer|Ne pas continuer","offreRecommandee":"texte","closingSummaryCoach":"note confidentielle","emailSubject":"objet","emailBody":"corps email"}';
-    const r=await callAI(sys,usr,'claude-sonnet-4-20250514',3500);
+    const r=await callAI(sys,usr,'claude-sonnet-4-6',3500);
     ST.finalReport=r;ST.finalReport._client=b;ST.finalReport._tests=t;
     renderReport(r,b);
     document.getElementById('rpt-loading').style.display='none';
@@ -3143,6 +3648,28 @@ async function dlPDF(){
 }
 
 // ═══════════════════════════════════════════════════
+// PNG
+// ═══════════════════════════════════════════════════
+async function dlPNG(){
+  if(!ST.finalReport){toast('err','⚠️ Générez d\'abord le rapport');return;}
+  if(!window.html2canvas){toast('err','html2canvas non disponible');return;}
+  const btn=document.getElementById('btn-png');btn.disabled=true;btn.textContent='⏳…';
+  const r=ST.finalReport,b=r._client||{};
+  const content=document.getElementById('rpt-content');
+  if(!content){btn.disabled=false;btn.textContent='🖼 PNG';return;}
+  toast('info','⏳ Génération PNG…');
+  try{
+    const canvas=await html2canvas(content,{scale:2,useCORS:true,backgroundColor:'#faf8f5'});
+    const link=document.createElement('a');
+    link.download=('BeActiv_'+(b.prenom||'Client')+'_'+(b.nom||'')+'_'+today()+'.png').replace(/\s+/g,'_');
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    toast('ok','🖼 PNG téléchargé !');
+  }catch(e){toast('err','❌ PNG : '+e.message);}
+  btn.disabled=false;btn.textContent='🖼 PNG';
+}
+
+// ═══════════════════════════════════════════════════
 // EMAIL
 // ═══════════════════════════════════════════════════
 function openEmailModal(){
@@ -3171,7 +3698,7 @@ var _pqNewSummary = null; // stocke le résultat IA de la pré-qualif pour le no
 
 function analyzePQForNewProspect() {
   var raw = (document.getElementById('pq-new-raw').value || '').trim();
-  if (!raw) { toast('err', '⚠️ Collez les réponses Tally avant d\'analyser'); return; }
+  if (!raw) { toast('err', '⚠️ Collez les réponses Calendly avant d\'analyser'); return; }
   if (!ST.apiKey) { toast('err', '⚠️ Clé API Anthropic requise (Config)'); return; }
   var btn = document.getElementById('btn-pq-new');
   var ldg = document.getElementById('pq-new-loading');
@@ -3184,7 +3711,7 @@ function analyzePQForNewProspect() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ raw: raw, apiKey: ST.apiKey })
-  }).then(function(r){ return r.json(); }).then(function(data) {
+  }).then(function(r){ if(!r.ok) return r.text().then(function(t){throw new Error('Erreur serveur: '+t.slice(0,80));}); return r.json(); }).then(function(data) {
     _pqNewSummary = data;
     if (ldg) ldg.style.display = 'none';
     if (btn) btn.disabled = false;
@@ -3214,49 +3741,124 @@ function analyzePQForNewProspect() {
   });
 }
 
+// ── Groupe / Amies ──────────────────────────────────
+var _groupeCount = 0;
+function toggleGroupeSection() {
+  var s = document.getElementById('groupe-section');
+  var visible = s.style.display !== 'none';
+  if (visible) {
+    s.style.display = 'none';
+    document.getElementById('groupe-persons').innerHTML = '';
+    _groupeCount = 0;
+    document.getElementById('btn-add-groupe').textContent = '👥 + Ajouter une amie / ami (groupe)';
+  } else {
+    s.style.display = 'block';
+    document.getElementById('btn-add-groupe').textContent = '✕ Annuler le groupe';
+    addGroupePerson();
+  }
+}
+function addGroupePerson() {
+  if (_groupeCount >= 2) { toast('info', 'Maximum 3 personnes au total'); return; }
+  _groupeCount++;
+  var n = _groupeCount;
+  var div = document.createElement('div');
+  div.id = 'groupe-person-' + n;
+  div.className = 'card';
+  div.style.marginBottom = '10px';
+  div.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--bx);margin-bottom:10px">👤 Personne ' + (n+1) + '</div>'
+    + '<div class="g2"><div class="f"><label>Prénom *</label><input id="gp'+n+'-prenom" type="text" placeholder="Prénom"></div>'
+    + '<div class="f"><label>Nom</label><input id="gp'+n+'-nom" type="text" placeholder="Nom"></div></div>'
+    + '<div class="g2"><div class="f"><label>Âge</label><input id="gp'+n+'-age" type="number" placeholder="30"></div>'
+    + '<div class="f"><label>Sexe</label><select id="gp'+n+'-sexe"><option value="">—</option><option value="Femme">Femme</option><option value="Homme">Homme</option></select></div></div>'
+    + '<div class="f"><label>Téléphone</label><input id="gp'+n+'-tel" type="tel" placeholder="06 xx xx xx xx"></div>'
+    + '<button type="button" class="btn btn-R btn-sm" style="margin-top:4px" onclick="removeGroupePerson('+n+')">✕ Retirer</button>';
+  document.getElementById('groupe-persons').appendChild(div);
+  if (_groupeCount >= 2) document.getElementById('btn-add-person').style.display = 'none';
+}
+function removeGroupePerson(n) {
+  var el = document.getElementById('groupe-person-' + n);
+  if (el) el.remove();
+  _groupeCount--;
+  document.getElementById('btn-add-person').style.display = 'block';
+}
+
 function saveNewProspect() {
   var prenom = (document.getElementById('np-prenom').value || '').trim();
   var nom = (document.getElementById('np-nom').value || '').trim();
   if (!prenom) { toast('err', '⚠️ Prénom requis'); return; }
-  var prospect = {
-    id: Date.now().toString(),
-    prenom: prenom,
-    nom: nom,
-    age: document.getElementById('np-age').value || '',
-    sexe: document.getElementById('np-sexe').value || '',
-    tel: (document.getElementById('np-tel').value || '').trim(),
-    email: (document.getElementById('np-email').value || '').trim(),
-    adresse: (document.getElementById('np-adresse').value || '').trim(),
-    ville: (document.getElementById('np-ville').value || '').trim(),
-    statut: 'Non closé',
-    pq_summary: _pqNewSummary || null,
-    profil_code: _pqNewSummary ? (_pqNewSummary.profilTypeCode || '') : '',
-    profil_label: _pqNewSummary ? (_pqNewSummary.profilTypeLabel || '') : '',
-    score_global: _pqNewSummary ? (_pqNewSummary.potentielClosing || null) : null,
-    updated_at: new Date().toISOString(),
-    date: new Date().toISOString().split('T')[0]
-  };
-  ST.clients.unshift(prospect);
+  var ville = (document.getElementById('np-ville').value || '').trim();
+  var date = new Date().toISOString().split('T')[0];
+
+  function makeProspect(p, n, a, s, t, v) {
+    return { id: Date.now().toString() + Math.random().toString(36).slice(2),
+      prenom:p, nom:n, age:a, sexe:s, tel:t, ville:v||ville,
+      statut:'Non closé', pq_summary: _pqNewSummary||null,
+      profil_code: _pqNewSummary?(_pqNewSummary.profilTypeCode||''):'',
+      profil_label: _pqNewSummary?(_pqNewSummary.profilTypeLabel||''):'',
+      score_global: _pqNewSummary?(_pqNewSummary.potentielClosing||null):null,
+      updated_at: new Date().toISOString(), date: date };
+  }
+
+  var mainProspect = makeProspect(prenom, nom,
+    document.getElementById('np-age').value||'',
+    document.getElementById('np-sexe').value||'',
+    (document.getElementById('np-tel').value||'').trim(), ville);
+  mainProspect.email = cleanEmail((document.getElementById('np-email').value||'').trim());
+  var npRdvType = (document.getElementById('np-rdv-type').value||'').trim();
+  var npRdvDate = (document.getElementById('np-rdv-date').value||'').trim();
+  if (npRdvType) mainProspect.rdvType = npRdvType;
+  if (npRdvDate) mainProspect.date = npRdvDate;
+
+  var allProspects = [mainProspect];
+
+  // Ajouter les personnes du groupe
+  for (var i = 1; i <= 2; i++) {
+    var gpPrenom = document.getElementById('gp'+i+'-prenom');
+    if (!gpPrenom) continue;
+    var gp = gpPrenom.value.trim();
+    if (!gp) continue;
+    allProspects.push(makeProspect(gp,
+      (document.getElementById('gp'+i+'-nom').value||'').trim(),
+      (document.getElementById('gp'+i+'-age').value||''),
+      (document.getElementById('gp'+i+'-sexe').value||''),
+      (document.getElementById('gp'+i+'-tel').value||'').trim(), ville));
+  }
+
+  // Groupe : assigner groupId + group_name + is_group_leader
+  if (allProspects.length > 1) {
+    var groupId = 'g_' + Date.now();
+    var groupName = (document.getElementById('np-group-name').value || '').trim() || null;
+    allProspects.forEach(function(p, idx) {
+      p.groupId         = groupId;
+      p.group_name      = groupName;
+      p.is_group_leader = (idx === 0);
+    });
+  }
+
+  allProspects.forEach(function(p){ ST.clients.unshift(p); saveToSupabase(p); });
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-  saveToSupabase(prospect);
-  // Reset form
-  ['np-prenom','np-nom','np-age','np-tel','np-email','np-adresse','np-ville'].forEach(function(id){
-    var el = document.getElementById(id); if (el) el.value = '';
-  });
+
+  // Reset
+  ['np-prenom','np-nom','np-age','np-tel','np-email','np-ville','np-rdv-date'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; }); var nprt=document.getElementById('np-rdv-type'); if(nprt) nprt.selectedIndex=0;
   document.getElementById('np-sexe').value = '';
   document.getElementById('pq-new-raw').value = '';
   document.getElementById('pq-new-summary-card').style.display = 'none';
-  _pqNewSummary = null;
+  document.getElementById('groupe-section').style.display = 'none';
+  document.getElementById('groupe-persons').innerHTML = '';
+  document.getElementById('btn-add-groupe').textContent = '👥 + Ajouter une amie / ami (groupe)';
+  var gnEl = document.getElementById('np-group-name'); if (gnEl) gnEl.value = '';
+  _groupeCount = 0; _pqNewSummary = null;
+
   renderClients();
-  toast('ok', '✅ ' + prenom + ' ' + nom + ' ajouté(e) comme prospect');
-  // Aller sur la fiche du prospect directement
+  var msg = allProspects.length > 1 ? '✅ ' + allProspects.length + ' prospects créés !' : '✅ ' + prenom + ' ' + nom + ' ajouté(e)';
+  toast('ok', msg);
   switchClientTab('prospects');
   showPg('clients');
-  setTimeout(function(){ openClient(prospect.id); }, 300);
+  setTimeout(function(){ openClient(mainProspect.id); }, 300);
 }
 
 function resetProspectForm() {
-  ['np-prenom','np-nom','np-age','np-tel','np-email','np-adresse','np-ville'].forEach(function(id){
+  ['np-prenom','np-nom','np-age','np-tel','np-email','np-ville'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
   });
   var sel = document.getElementById('np-sexe'); if (sel) sel.value = '';
@@ -3481,8 +4083,14 @@ function openEditClientModal(clientId) {
 function saveClient(){
   const b=collectBilan(),r=ST.finalReport;
   if(!b.prenom&&!b.nom){toast('err','⚠️ Prénom/nom requis');return;}
-  // Récupérer le prospect existant pour préserver ses données (statut, sig_steps, mode_stages, etc.)
   const existingClient = ST.clientId ? ST.clients.find(function(c){return c.id==ST.clientId;}) : null;
+  // Historique des RDVs — si la date change, archiver l'ancienne entrée
+  var existingRdvDate = (existingClient||{}).date;
+  var newDate = b.date || '';
+  var rdv_history = [].concat((existingClient||{}).rdv_history || []);
+  if (existingRdvDate && newDate && existingRdvDate !== newDate) {
+    rdv_history.push({date:existingRdvDate, statut:(existingClient||{}).rdvStatut||'', type:(existingClient||{}).rdvType||'', savedAt:new Date().toISOString()});
+  }
   const client=Object.assign({}, existingClient||{}, {
     id:ST.clientId||Date.now().toString(),
     prenom:b.prenom||((existingClient||{}).prenom)||'',
@@ -3490,17 +4098,36 @@ function saveClient(){
     age:b.age||((existingClient||{}).age)||'',
     ville:b.ville||((existingClient||{}).ville)||'',
     profession:b.profession,
-    source:b.source,date:b.date,
+    // Préserver source depuis F1 si non saisie en F2
+    source:b.source||((existingClient||{}).source)||'',
+    date:b.date,
+    rdv_history:rdv_history,
     profil_code:(r&&r.profilTypeCodeFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeCodeUpdated)||b.profilTypeCode||((existingClient||{}).profil_code)||'',
     profil_label:(r&&r.profilTypeLabelFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeLabelUpdated)||'',
     offres:b.offres||((existingClient||{}).offres)||'',
     montant:b.montant,objections:b.objections,
-    // Préserver le statut existant si le prospect est déjà en cours de closing
     statut:((existingClient||{}).statut)||'Non closé',
     score_global:r?r.scoreGlobal:((existingClient||{}).score_global)||null,
     pq_summary:ST.pqSummary||((existingClient||{}).pq_summary)||null,
-    bilan_summary:ST.bilanSummary,
+    bilan_summary:ST.bilanSummary||((existingClient||{}).bilan_summary)||null,
     final_report:r,
+    // Champs bruts du bilan pour synthèse post-RDV
+    bilan_raw: {
+      notesTrain:b.notesTrain||'', pas:b.pas||'',
+      notesAlim:b.notesAlim||'', notesVie:b.notesVie||'',
+      vision6m:b.vision6m||'', pointA:b.pointA||'',
+      blocages:b.blocages||'', echec6m:b.echec6m||'',
+      attenteCoach:b.attenteCoach||'',
+      materiel:b.materiel||'',
+      profilTypeCode:b.profilTypeCode||'',
+      'b-relation-train':b['b-relation-train']||[],
+      'b-faille-train':b['b-faille-train']||[],
+      'b-relation-neat':b['b-relation-neat']||[],
+      'b-relation-alim':b['b-relation-alim']||[],
+      'b-intol':b['b-intol']||[],
+      'b-relation-vie':b['b-relation-vie']||[],
+      'b-faille-vie':b['b-faille-vie']||[]
+    },
     updated_at:new Date().toISOString()
   });
   ST.clientId=client.id;
@@ -3513,6 +4140,20 @@ function saveClient(){
   // Effacer le brouillon car client sauvegardé
   clearBilanDraft();
   toast('ok','✅ '+client.prenom+' '+client.nom+' sauvegardé');
+}
+
+// Sauvegarde le bilan et redirige vers la fiche prospect
+function saveBilanAndReturn() {
+  saveClient();
+  var clientId = ST.clientId;
+  if (clientId) {
+    setTimeout(function() {
+      switchClientTab('prospects');
+      showPg('clients');
+      renderClients();
+      setTimeout(function(){ openClient(clientId); }, 350);
+    }, 500);
+  }
 }
 
 function isNewClient(c) {
@@ -3530,6 +4171,7 @@ function renderClients(){
   var list=ST.clients.filter(function(c){
     var ms=!srch||((c.prenom||'')+' '+(c.nom||'')+' '+(c.ville||'')+' '+(c.structureName||'')).toLowerCase().includes(srch);
     var mv=ST.filterStatut==='all'||c.statut===ST.filterStatut;
+    // Clients tab = Closé (pas Membre CC — ils restent dans Prospects)
     var tabMatch=isProspectTab?(!c.statut||prospectStatuts.includes(c.statut)):(c.statut==='Closé');
     return ms&&mv&&tabMatch;
   });
@@ -3545,17 +4187,22 @@ function renderClients(){
     var dt=c.updated_at?new Date(c.updated_at).toLocaleDateString('fr-FR'):'';
     var offreTxt = ((c.offres||'').split(',')[0].trim()||'—');
     var displayStatut = c.statut;
-    if (c.statut === 'Non closé' && c.date) displayStatut = 'En cours';
+    var todayStr = new Date().toISOString().split('T')[0];
+    if (c.statut === 'Non closé' && c.date && c.date >= todayStr) displayStatut = 'En cours';
     var statPill = c.statut ? '<span class="pill '+(sp[displayStatut]||sp[c.statut]||'')+'" style="font-size:10px'+(isClosing?';animation:pulse-y 2s ease-in-out infinite':'')+'">'+(isNew?'🆕 ':'')+displayStatut+'</span>' : '';
     var newBadge = isNew ? '<span class="badge-new">New</span>' : '';
     var closingBadge = isClosing ? '<span class="badge-closing">Closing</span>' : '';
+    var retourBadge = (c.relances && c.relances.length > 0) ? '<span style="font-size:9px;font-weight:700;background:rgba(130,80,200,.15);color:#8a50c8;border:1px solid rgba(130,80,200,.3);border-radius:50px;padding:1px 6px;margin-left:2px">🔄 Retour</span>' : '';
     // Badge groupe
     var groupBadge='';
     if(c.groupId && groupCounts[c.groupId]){
       var n=groupCounts[c.groupId];
       var lbl=n===2?'DUO':n===3?'TRIO':'GROUPE';
-      groupBadge='<span class="badge-group">'+lbl+'</span>';
+      var leaderMark=c.is_group_leader?' ★':'';
+      groupBadge='<span class="badge-group">'+(c.group_name?c.group_name+' · ':'')+lbl+leaderMark+'</span>';
     }
+    // Badge SAP
+    var sapBadge=c.sap_enabled?'<span style="font-size:9px;font-weight:700;background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3);border-radius:50px;padding:1px 6px">🏠 SAP</span>':'';
     // Mode sélection
     var isSelected=ST.selectMode&&ST.selectedIds.indexOf(c.id)>-1;
     var selCheck=ST.selectMode?'<div class="sel-check'+(isSelected?' on':'')+'>'+(isSelected?'✓':'')+'</div>':'';
@@ -3569,7 +4216,7 @@ function renderClients(){
       +'<div class="cmeta">'+(c.ville||'—')+' · '+offreTxt+' · '+dt+'</div></div>'
       +'<div class="cbadges">'
         +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
-        + newBadge + closingBadge + groupBadge
+        + newBadge + closingBadge + groupBadge + sapBadge + retourBadge
         + ((!isNew&&!isClosing)?(c.statut?statPill:''):'')
         +(c.score_global!=null?'<span style="font-size:11px;color:var(--tx3)">★ '+c.score_global+'</span>':'')
       +'</div></div>';
@@ -3629,7 +4276,7 @@ function loadSuiteOptions() {
   try { var s=localStorage.getItem('ba_suite_opts'); if(s) return JSON.parse(s); } catch(e){}
   return SUITE_OPTIONS_DEFAULT.map(function(o){return Object.assign({},o);});
 }
-function saveSuiteOptions(arr) { localStorage.setItem('ba_suite_opts', JSON.stringify(arr)); }
+function saveSuiteOptions(arr) { localStorage.setItem('ba_suite_opts', JSON.stringify(arr)); saveSettingRemote('ba_suite_opts', arr); }
 
 
 // Étapes communes à toutes les phases (personnalisables dans l'éditeur)
@@ -3673,6 +4320,7 @@ function loadPhasesCustom() {
 function savePhasesCustom(phases) {
   try {
     localStorage.setItem('ba_phases_custom', JSON.stringify(phases));
+    saveSettingRemote('ba_phases_custom', phases);
   } catch(e) {}
 }
 
@@ -3694,7 +4342,7 @@ var MODE_STAGE_DEFS = {
   transformation: [
     {id:'rapport', lbl:'1er RAPPORT', ico:'📊', steps:[
       {id:'tests',lbl:'Tests physiques'},
-      {id:'rapport_complet',lbl:'Rapport complet (Pré-qualif + Bilan + Tests)'},
+      {id:'rapport_complet',lbl:'Rapport Complet (F1+F2+F3) généré'},
       {id:'done',lbl:'Terminée ✅',isFinal:true}
     ]},
     {id:'onboarding', lbl:'ONBOARDING', ico:'🚀', steps:[
@@ -3704,7 +4352,7 @@ var MODE_STAGE_DEFS = {
       {id:'feu_vert',lbl:'Feu Vert'},
       {id:'done',lbl:'Terminée ✅',isFinal:true}
     ]},
-    {id:'activ_reset', lbl:'ACTIV RESET', ico:'🔴', steps:[
+    {id:'activ_reset', lbl:'GO ACTIV', ico:'🔴', steps:[
       {id:'go',lbl:'GO !'},
       {id:'fondations',lbl:'Fondations'},
       {id:'optimisation',lbl:'Optimisation'},
@@ -3715,8 +4363,27 @@ var MODE_STAGE_DEFS = {
       {id:'done',lbl:'ACTIV RESET VALIDÉE ✅',isFinal:true}
     ]}
   ],
-  cours_collectifs: [
-    {id:'demarrage', lbl:'DÉMARRAGE', ico:'🎵', steps:[
+  // ACTIV PROGRAM ESSENTIEL — parcours spécifique 2 mois
+  essentiel: [
+    {id:'rapport', lbl:'1er RAPPORT', ico:'📊', steps:[
+      {id:'tests',lbl:'Tests physiques'},
+      {id:'rapport_complet',lbl:'Rapport Complet (F1+F2+F3) généré'},
+      {id:'done',lbl:'Terminée ✅',isFinal:true}
+    ]},
+    {id:'onboarding_essentiel', lbl:'ONBOARDING', ico:'🚀', steps:[
+      {id:'acces_programme',lbl:'Accès Programme délivré'},
+      {id:'seance_lancement',lbl:'Séance de lancement'},
+      {id:'done',lbl:'Terminée ✅',isFinal:true}
+    ]},
+    {id:'activ_essentiel', lbl:'ACTIV ESSENTIEL', ico:'🟠', steps:[
+      {id:'demarrage',lbl:'Démarrage (J0)'},
+      {id:'bilan_mi',lbl:'Bilan mi-parcours (sem. 4)'},
+      {id:'bilan_fin',lbl:'Bilan fin de parcours (sem. 8)'},
+      {id:'done',lbl:'Terminée ✅',isFinal:true}
+    ]}
+  ],
+  collectif: [
+    {id:'demarrage', lbl:'DÉMARRAGE', ico:'🔥', steps:[
       {id:'premiere_seance',lbl:'1ère séance'},
       {id:'done',lbl:'Terminée ✅',isFinal:true}
     ]}
@@ -3729,6 +4396,18 @@ var ACTIV_CONTINUE_STAGES = {
   health: {id:'activ_continue_health', lbl:'ACTIV CONTINUE — HEALTH', ico:'🟢♾️', steps:[{id:'test_maj',lbl:'Test (MAJ)'},{id:'go',lbl:'GO'},{id:'optimisation',lbl:'Optimisation'},{id:'done',lbl:'VALIDÉE ✅',isFinal:true}]}
 };
 
+// ─── Config custom des stages (admin éditeur) ────────
+function loadCustomStageDefs(){try{var s=localStorage.getItem('ba_custom_stage_defs');if(s)return JSON.parse(s);}catch(e){}return{};}
+function saveCustomModeStages(modeKey,stages){var d=loadCustomStageDefs();d[modeKey]=stages;localStorage.setItem('ba_custom_stage_defs',JSON.stringify(d));saveSettingRemote('ba_custom_stage_defs',d);}
+function getStageDefsForMode(modeKey){var c=loadCustomStageDefs();return c[modeKey]||MODE_STAGE_DEFS[modeKey]||MODE_STAGE_DEFS['action'];}
+
+// ─── Labels personnalisés parcours ───────────────────
+function cleanEmail(e){ return e ? e.replace(/^mailto:/i,'').trim() : e; }
+
+function loadParcoursLabels(){try{var s=localStorage.getItem('ba_parcours_labels');if(s)return JSON.parse(s);}catch(e){}return{};}
+function saveParcoursLabel(key,val){var labels=loadParcoursLabels();labels[key]=val;localStorage.setItem('ba_parcours_labels',JSON.stringify(labels));saveSettingRemote('ba_parcours_labels',labels);}
+function getPLbl(key,dflt){var l=loadParcoursLabels();return(l[key]&&l[key].trim())?l[key]:dflt;}
+
 function initModeStages(c, stagesDef) {
   if (!c.mode_stages) c.mode_stages = [];
   stagesDef.forEach(function(stageDef, si){
@@ -3739,19 +4418,22 @@ function initModeStages(c, stagesDef) {
 }
 
 function getActiveStageDefs(c) {
-  var mode = null;
+  var mode = null, offreName = '';
   if (c.sig_offre_id) {
     var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
-    if (o) mode = o.modeOffre;
+    if (o) { mode = o.modeOffre; offreName = (o.name||'').toUpperCase(); }
   }
-  // Fallback sur le premier phaseRun si pas de sig_offre_id
   if (!mode && c.phaseRuns && c.phaseRuns[0] && c.phaseRuns[0].offreId) {
     var o2 = loadOffres().find(function(x){return x.id===c.phaseRuns[0].offreId;});
-    if (o2) mode = o2.modeOffre;
+    if (o2) { mode = o2.modeOffre; offreName = (o2.name||'').toUpperCase(); }
   }
-  var baseDefs = MODE_STAGE_DEFS[mode] || MODE_STAGE_DEFS['action'];
-  // Ajouter les ACTIV CONTINUE si présents
-  var continueDefs = (c.activ_continue_stages || []).map(function(key){return ACTIV_CONTINUE_STAGES[key];}).filter(Boolean);
+  var modeKey = mode || 'action';
+  // ACTIV PROGRAM ESSENTIEL → parcours spécifique
+  if (modeKey === 'transformation' && (offreName.indexOf('ESSENTIEL') > -1 || offreName.indexOf("PROGRAM'") > -1 || offreName.indexOf('PROGRAM ') > -1)) {
+    modeKey = 'essentiel';
+  }
+  var baseDefs = getStageDefsForMode(modeKey).map(function(s){return Object.assign({},s,{_mode:modeKey});});
+  var continueDefs = (c.activ_continue_stages || []).map(function(ck){var s=ACTIV_CONTINUE_STAGES[ck];return s?Object.assign({},s,{_mode:'continue_'+ck}):null;}).filter(Boolean);
   return baseDefs.concat(continueDefs);
 }
 
@@ -3792,9 +4474,11 @@ function renderModeStages(clientId, c, container) {
     var pct = stageData.steps.length > 0 ? Math.round(doneCnt/stageData.steps.length*100) : 0;
     var pbar = '<div style="height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:4px"><div style="height:100%;width:'+pct+'%;background:'+(isPast?'var(--G)':'var(--bx)')+';border-radius:2px;transition:width .3s"></div></div>';
 
+    var _stageM=stageDef._mode||'action';
+    var _stageLbl=getPLbl('stage_'+_stageM+'_'+stageDef.id, stageDef.lbl);
     hd.innerHTML = '<span style="font-size:20px">'+stageDef.ico+'</span>'
       + '<div style="flex:1;min-width:0">'
-      + '<div style="font-weight:700;font-size:13.5px;color:'+(isActive?'var(--bx)':isPast?'var(--G)':'var(--tx4)')+'">ÉTAPE : '+stageDef.lbl+statusBadge+'</div>'
+      + '<div style="font-weight:700;font-size:13.5px;color:'+(isActive?'var(--bx)':isPast?'var(--G)':'var(--tx4)')+'">ÉTAPE : '+_stageLbl+statusBadge+'</div>'
       + '<div style="font-size:11px;color:var(--tx3);margin-top:1px">'+doneCnt+'/'+stageData.steps.length+' étapes</div>'
       + pbar + '</div>'
       + '<span style="color:var(--tx4);font-size:11px">'+(isActive||isPast?'▼':'▶')+'</span>';
@@ -3817,7 +4501,7 @@ function renderModeStages(clientId, c, container) {
         chk.className = 'sig-check' + (st.done?' done':isLocked?' locked':'');
         var lbl = document.createElement('div');
         lbl.className = 'sig-lbl' + (st.done?' done':isLocked?' locked':'');
-        lbl.innerHTML = step.lbl + (step.isFinal ? '' : '');
+        lbl.innerHTML = getPLbl('step_'+_stageM+'_'+stageDef.id+'_'+step.id+'_'+stepIdx, step.lbl);
         if (!st.done && !isLocked && isActive) {
           chk.style.cursor = 'pointer';
           chk.onclick = (function(cid, sIdx, stIdx){ return function(){
@@ -3862,8 +4546,23 @@ function renderModeStages(clientId, c, container) {
 
     var sid = lastCompletedStageDef.id;
 
-    if (sid === 'activ_reset') {
-      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">✅ ACTIV RESET VALIDÉE !</div>';
+    if (sid === 'activ_essentiel') {
+      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:6px">✅ ACTIV ESSENTIEL terminé !</div>';
+      var dStep = lastCompletedData.steps[0];
+      if (dStep && dStep.doneAt) {
+        var startE = new Date(dStep.doneAt);
+        var endE = new Date(startE.getTime() + 56*24*3600*1000);
+        var nowE = new Date();
+        var daysRemE = Math.ceil((endE - nowE) / (24*3600*1000));
+        if (daysRemE > 0) {
+          endDiv.innerHTML += '<div style="font-size:11px;color:var(--tx4);margin-bottom:8px">⏱ Fin prévue le '+endE.toLocaleDateString('fr-FR')+' (dans '+daysRemE+' j)</div>';
+        }
+      }
+      endDiv.appendChild(mkBtn('btn btn-dk', '🔂', 'Relancer ACTIV ESSENTIEL', function(){ relancerActivEssentiel(clientId); }));
+      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
+
+    } else if (sid === 'activ_reset') {
+      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">🚀 GO ACTIV !</div>';
       endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
       endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — RESET',  function(){ addActivContinue(clientId,'reset'); }));
       endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — SCULPT', function(){ addActivContinue(clientId,'sculpt'); }));
@@ -3910,8 +4609,13 @@ function renderModeStages(clientId, c, container) {
       endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'Relancer l\'étape', function(){ relancerEtapeAction(clientId); }));
       endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre',   function(){ openNewOffreForClient(clientId); }));
 
-    } else if (mode === 'cours_collectifs') {
-      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">🏁 Parcours terminé !</div>';
+    } else if (mode === 'collectif') {
+      var isMembreCC = (c && c.statut === 'Membre CC');
+      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:6px">🏁 Parcours collectif terminé !</div>'
+        + (isMembreCC ? '<div style="font-size:11px;color:var(--V);margin-bottom:8px">♾️ Statut : Membre CC</div>' : '');
+      if (!isMembreCC) {
+        endDiv.appendChild(mkBtn('btn btn-V', '♾️', 'Basculer → Membre CC', function(){ setMembreCC(clientId); }));
+      }
       endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
 
     } else {
@@ -3933,12 +4637,15 @@ function validateModeStep(clientId, stageIdx, stepIdx) {
     toast('err', '⚠️ Validez l\'étape précédente d\'abord'); return;
   }
   var stepDef = stagesDef[stageIdx] && stagesDef[stageIdx].steps[stepIdx];
-  // Étapes spéciales : ouvrir F3 ou générer rapport complet
+  // Étapes spéciales : ouvrir F3 ou générer rapport
   if (stepDef && stepDef.id === 'tests') {
     openTestsParcours(clientId, stageIdx, stepIdx); return;
   }
   if (stepDef && stepDef.id === 'rapport_complet') {
     genReportComplet(clientId, stageIdx, stepIdx); return;
+  }
+  if (stepDef && stepDef.id === 'rapport_leger') {
+    genRapportLeger(clientId, stageIdx, stepIdx); return;
   }
   c.mode_stages[stageIdx].steps[stepIdx].done = true;
   c.mode_stages[stageIdx].steps[stepIdx].doneAt = new Date().toISOString();
@@ -3954,22 +4661,50 @@ var _testsParcoursCtx = null; // {clientId, stageIdx, stepIdx}
 
 function openTestsParcours(clientId, stageIdx, stepIdx) {
   _testsParcoursCtx = {clientId:clientId, stageIdx:stageIdx, stepIdx:stepIdx};
-  var container = document.getElementById('tests-parcours-form');
-  container.innerHTML = '';
-  // Réutiliser le formulaire Tests existant (renderTestsForm) dans ce conteneur
-  var def = loadFormDef('tests');
-  def.forEach(function(section) {
-    var secDiv = document.createElement('div');
-    secDiv.style.marginBottom = '14px';
-    secDiv.innerHTML = '<div style="font-weight:700;font-size:12px;color:var(--bx);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">'+section.title+'</div>';
-    section.fields.forEach(function(field) {
-      var fDiv = document.createElement('div');
-      fDiv.className = 'f';
-      fDiv.innerHTML = '<label>'+field.label+'</label><input id="tp-'+field.id+'" type="'+(field.type||'text')+'" placeholder="'+(field.placeholder||'')+'">';
-      secDiv.appendChild(fDiv);
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  var td = (c && c.tests_data) || {};
+  var nom = c ? ((c.prenom||'')+' '+(c.nom||'')) : '';
+  var age = (c && c.age) ? c.age+' ans' : '';
+
+  // SOURCE DE VÉRITÉ : loadFormDef('tests') — toutes les sections visibles, programme manuel
+  var formDef = loadFormDef('tests');
+  var html = '<div style="background:var(--bg3);border-radius:8px;padding:9px 14px;margin-bottom:14px;font-size:13px">'
+    + '<strong>'+(nom.trim()||'Client')+'</strong>'+(age?' · '+age:'')+' · <span style="color:var(--bx)">'+(c&&c.offres||'Non renseigné')+'</span>'
+    + '</div>';
+
+  formDef.forEach(function(section) {
+    if (section.type !== 'group' || !section.fields) return;
+    html += '<div class="sh">' + (section.section||'') + '</div><div class="card">';
+    section.fields.forEach(function(f) {
+      var key = f.id.replace(/^t-/, '');
+      var stored = td[key] !== undefined ? td[key] : (td[f.id] !== undefined ? td[f.id] : '');
+      if (f.type === 'checkboxes') {
+        var arr = Array.isArray(stored) ? stored : [];
+        html += '<div class="f"><label>'+(f.label||f.id)+'</label>';
+        (f.options||[]).forEach(function(o) {
+          html += '<label class="chk-item" style="cursor:pointer"><input type="checkbox" data-tf="'+key+'" value="'+o+'"'+(arr.indexOf(o)>-1?' checked':'')+'><div class="chk-box"></div><span class="chk-lbl">'+o+'</span></label>';
+        });
+        html += '</div>';
+      } else if (f.type === 'radio') {
+        html += '<div class="f"><label>'+(f.label||f.id)+'</label>';
+        (f.options||[]).forEach(function(o) {
+          html += '<label class="chk-item" style="cursor:pointer"><input type="radio" name="tf-'+key+'" data-tf="'+key+'" value="'+o+'"'+(stored===o?' checked':'')+'><div class="radio-box"></div><span class="chk-lbl">'+o+'</span></label>';
+        });
+        html += '</div>';
+      } else if (f.type === 'select') {
+        html += '<div class="f"><label>'+(f.label||f.id)+'</label><select id="f3-'+key+'">'
+          + (f.options||[]).map(function(o){ return '<option'+(stored===o?' selected':'')+'>'+o+'</option>'; }).join('')
+          + '</select></div>';
+      } else if (f.type === 'textarea') {
+        html += '<div class="f"><label>'+(f.label||f.id)+'</label><textarea id="f3-'+key+'" rows="2" placeholder="'+(f.placeholder||'')+'">'+stored+'</textarea></div>';
+      } else {
+        html += '<div class="f"><label>'+(f.label||f.id)+'</label><input id="f3-'+key+'" type="'+(f.type||'text')+'" placeholder="'+(f.placeholder||'')+'" value="'+stored+'"></div>';
+      }
     });
-    container.appendChild(secDiv);
+    html += '</div>';
   });
+
+  document.getElementById('tests-parcours-form').innerHTML = html;
   document.getElementById('mdl-tests-parcours').style.display = 'block';
 }
 
@@ -3983,12 +4718,34 @@ function saveTestsParcours() {
   var ctx = _testsParcoursCtx;
   var c = ST.clients.find(function(x){ return x.id == ctx.clientId; });
   if (!c) return;
-  // Collecter les données des inputs tp-*
+  // Collecter depuis la définition éditeurs (source de vérité), toutes les sections
   var testsData = {};
-  document.querySelectorAll('#tests-parcours-form input').forEach(function(el) {
-    var key = el.id.replace('tp-', '');
-    testsData[key] = el.value;
+  var formDef = loadFormDef('tests');
+  formDef.forEach(function(section) {
+    if (section.type !== 'group' || !section.fields) return;
+    section.fields.forEach(function(f) {
+      var key = f.id.replace(/^t-/, '');
+      if (f.type === 'checkboxes') {
+        var vals = [];
+        document.querySelectorAll('#tests-parcours-form input[type=checkbox][data-tf="'+key+'"]').forEach(function(el) {
+          if (el.checked) vals.push(el.value);
+        });
+        testsData[key] = vals;
+      } else if (f.type === 'radio') {
+        var chkd = document.querySelector('#tests-parcours-form input[type=radio][data-tf="'+key+'"]:checked');
+        testsData[key] = chkd ? chkd.value : '';
+      } else {
+        var el = document.getElementById('f3-'+key);
+        if (el) testsData[key] = el.value;
+      }
+    });
   });
+  // Calculer IRD automatiquement si P1/P2/P3 présents
+  if (testsData.p1 && testsData.p2 && testsData.p3) {
+    testsData.ird = ((parseFloat(testsData.p1)+parseFloat(testsData.p2)+parseFloat(testsData.p3)-200)/10).toFixed(1);
+  }
+  // Alias pour compatibilité avec genReportComplet (lit t.mobGlobal)
+  if (testsData['mob-global']) testsData.mobGlobal = testsData['mob-global'];
   c.tests_data = testsData;
   // Valider le step Tests
   c.mode_stages[ctx.stageIdx].steps[ctx.stepIdx].done = true;
@@ -4013,11 +4770,26 @@ async function genReportComplet(clientId, stageIdx, stepIdx) {
   try {
     var t = c.tests_data || {};
     var imc = t.poids && t.taille ? (parseFloat(t.poids)/Math.pow(parseFloat(t.taille)/100,2)).toFixed(1) : 'NC';
-    var pqCtx = c.pq_summary ? 'PRÉ-BILAN: '+c.pq_summary.resumeProfil+' | Profil: '+c.pq_summary.profilTypeCode : 'Pré-bilan non effectué';
-    var bilanCtx = c.bilan_summary ? 'BILAN: '+c.bilan_summary.syntheseBilan+' | Leviers: '+(c.bilan_summary.facteursLeviers||'NC') : 'Bilan non effectué';
-    var sys = 'Tu es Jonathan, coach Transformation & Énergie BE ACTIV. Rédige le RAPPORT COMPLET (F1+F2+F3) personnalisé pour le client post-signature. Ce rapport inclut les tests physiques réels. Style : professionnel, bienveillant, concret. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
-    var usr = 'CLIENT: '+(c.prenom||'')+' '+(c.nom||'')+', '+(c.age||'?')+' ans, '+(c.ville||'NC')+'\nIMC: '+imc+'\n'+pqCtx+'\n'+bilanCtx+'\nTESTS PHYSIQUES: Taille='+t.taille+'cm Poids='+t.poids+'kg Tour nombril='+t.tn+' Tour taille='+t.tt+'\nMobilité='+t.mobGlobal+'/100 IRD='+t.ird+' Planche='+t.planche+'s\nOffre: '+(c.offres||'NC')+'\n\nJSON strict:\n{"profilGlobal":"paragraphe","analyseMorphologique":"mesures","analyseMobilite":"mobilité","analyseCardio":"cardio","analyseForce":"force","pointsForts":["pt1","pt2"],"freinsPrincipaux":["f1","f2"],"planAction90J":"plan","conseilsTraining":"texte","conseilsNutrition":"texte","conseilsRecuperation":"texte","messageMotivation":"message","scoreMobilite":0,"scoreCondition":0,"scoreGlobal":0,"niveauGlobal":"Débutant|Intermédiaire|Avancé"}';
-    var r = await callAI(sys, usr, 'claude-sonnet-4-6', 3000);
+    var pqCtx = c.pq_summary ? (c.pq_summary.resumeProfil||'NC')+' | Profil: '+(c.pq_summary.profilTypeCode||'NC') : 'Non effectué';
+    var bilanCtx = c.bilan_summary ? (c.bilan_summary.syntheseBilan||'NC')+' | Leviers: '+(c.bilan_summary.facteursLeviers||'NC') : 'Non effectué';
+    var douleurs = Array.isArray(t.douleurs) ? t.douleurs.join(', ') : (t.douleurs||'NC');
+    var squatObs = Array.isArray(t['mob-squat']) ? t['mob-squat'].join(', ') : (Array.isArray(t.squatObs) ? t.squatObs.join(', ') : (t['mob-squat']||t.squatObs||'NC'));
+    var mobScore = t['mob-global']||t.mobGlobal||'NC';
+    var mobZones = [t['mob-post']?'Post:'+t['mob-post']:'',t['mob-sh']?'Épaules:'+t['mob-sh']:'',t['mob-hi']?'Hanches:'+t['mob-hi']:'',t['mob-an']?'Chevilles:'+t['mob-an']:''].filter(Boolean).join(' | ')||(t.mobZones||'NC');
+    var sys = 'Tu es Jonathan, coach BE ACTIV. Génère un rapport complet F1+F2+F3 en JSON strict sans backticks. Sois concret, personnalisé, bienveillant. Français uniquement.';
+    var usr = 'CLIENT: '+(c.prenom||'NC')+' '+(c.nom||'')+', '+(c.age||'?')+' ans, '+(c.ville||'NC')
+      +'\nIMC: '+imc+' | Poids: '+(t.poids||'NC')+'kg | Taille: '+(t.taille||'NC')+'cm'
+      +'\nMesures: nombril='+(t.tn||'NC')+' taille='+(t.tt||'NC')+' hanche='+(t.th||'NC')+' cuisses='+(t.tc||'NC')+' bras='+(t.tb||'NC')
+      +'\nCardio: P1='+(t.p1||'NC')+' P2='+(t.p2||'NC')+' P3='+(t.p3||'NC')+' IRD='+(t.ird||'NC')+' FCmax='+(t.fcmax||'NC')
+      +'\nMobilité: '+mobScore+'/100 | Zones: '+mobZones+(t['mob-asy']?' | Asymétries: '+t['mob-asy']:'')
+      +'\nSquat: '+squatObs
+      +'\nForce: Planche='+(t.planche||t['planche']||'NC')+'s'
+      +'\nDouleurs: '+douleurs
+      +'\nPré-bilan: '+pqCtx
+      +'\nBilan: '+bilanCtx
+      +'\nOffre: '+(c.offres||'NC')
+      +'\n\nJSON:\n{"profilGlobal":"","analyseMorphologique":"","analyseMobilite":"","analyseCardio":"","analyseForce":"","pointsForts":["",""],"freinsPrincipaux":["",""],"planAction90J":"","conseilsTraining":"","conseilsNutrition":"","conseilsRecuperation":"","messageMotivation":"","scoreMobilite":0,"scoreCondition":0,"scoreGlobal":0,"niveauGlobal":""}';
+    var r = await callAI(sys, usr, 'claude-haiku-4-5-20251001', 2000);
     c.final_report = r; c.final_report._client = c; c.final_report._tests = t;
     // Valider le step rapport_complet
     var stagesDef = getActiveStageDefs(c);
@@ -4044,8 +4816,109 @@ async function genReportComplet(clientId, stageIdx, stepIdx) {
 }
 
 function dlPDF_complet() {
-  var c = ST.clients.find(function(x){ return x.final_report && x.final_report._tests; });
-  toast('info', '📄 Export PDF rapport complet — même fonction que rapport standard');
+  // Trouver le client dont le rapport est ouvert (dernier généré)
+  var c = ST.clients.find(function(x){ return x.final_report || x.rapport_leger; });
+  if (!c) { toast('err', '⚠️ Aucun rapport trouvé'); return; }
+  var r = c.final_report || c.rapport_leger;
+  var isComplet = !!c.final_report;
+  var titre = isComplet ? 'Rapport Complet — F1+F2+F3' : 'Rapport Léger — F1+F2';
+  var t = isComplet ? (c.tests_data || {}) : null;
+
+  function sec(title, body) {
+    if (!body) return '';
+    return '<div class="rpt-section"><div class="rpt-section-title">'+title+'</div><div class="rpt-section-body">'+body+'</div></div>';
+  }
+  function listSec(title, arr) {
+    if (!arr || !arr.length) return '';
+    return '<div class="rpt-section"><div class="rpt-section-title">'+title+'</div><ul class="rpt-list">'+arr.map(function(i){return '<li>'+i+'</li>';}).join('')+'</ul></div>';
+  }
+
+  var html = '<h1>'+titre+'</h1>'
+    + '<h2>'+(c.prenom||'')+' '+(c.nom||'')+' · '+(c.age||'?')+' ans · '+(c.ville||'')+(c.offres?' · '+c.offres:'')+'</h2>'
+    + sec('Profil global', r.profilGlobal)
+    + listSec('Points forts', r.pointsForts)
+    + listSec('Freins principaux', r.freinsPrincipaux);
+
+  if (isComplet && t) {
+    var imc = t.poids && t.taille ? (parseFloat(t.poids)/Math.pow(parseFloat(t.taille)/100,2)).toFixed(1) : 'NC';
+    html += sec('Données physiques', 'Taille : '+t.taille+' cm | Poids : '+t.poids+' kg | IMC : '+imc+'<br>Tour nombril : '+t.tn+' cm | Tour taille : '+t.tt+' cm<br>Mobilité : '+t.mobGlobal+'/100 | IRD : '+t.ird+' | Planche : '+t.planche+' s');
+    html += sec('Analyse morphologique', r.analyseMorphologique);
+    html += sec('Analyse mobilité', r.analyseMobilite);
+    html += sec('Plan 90 jours', r.planAction90J);
+    html += sec('Conseils training', r.conseilsTraining);
+    html += sec('Conseils nutrition', r.conseilsNutrition);
+    html += sec('Conseils récupération', r.conseilsRecuperation);
+    if (r.scoreGlobal) html += '<div class="rpt-section"><div class="rpt-section-title">Scores</div><div class="rpt-section-body"><span class="rpt-score">Mobilité '+r.scoreMobilite+'/100</span><span class="rpt-score">Condition '+r.scoreCondition+'/100</span><span class="rpt-score">Global '+r.scoreGlobal+'/100 — '+r.niveauGlobal+'</span></div></div>';
+  } else {
+    html += sec('Plan 30 jours', r.planAction30J);
+    html += sec('Conseils coach', r.conseilsCoach);
+    html += sec('Prochaine étape', r.prochainRDV);
+  }
+  html += sec('Message personnalisé', r.messageMotivation);
+  html += '<div class="rpt-footer">Rapport généré le '+new Date().toLocaleDateString('fr-FR')+' · BE ACTIV BILAN CRM · Coach JM</div>';
+
+  var pz = document.getElementById('print-zone');
+  pz.innerHTML = html;
+  window.print();
+}
+
+// ── Rapport Léger ACTION (F1+F2) ─────────────────────
+async function genRapportLeger(clientId, stageIdx, stepIdx) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  if (!c.bilan_summary && !c.pq_summary) {
+    toast('err', '⚠️ Effectuez au moins F1 (Préqualif) avant de générer le rapport');
+    return;
+  }
+  var mdl = document.getElementById('mdl-rapport-complet');
+  mdl.style.display = 'block';
+  document.getElementById('rpt-complet-loading').style.display = 'block';
+  document.getElementById('rpt-complet-content').innerHTML = '';
+  document.getElementById('rpt-complet-actions').style.display = 'none';
+  // Titre
+  var titleEl = mdl.querySelector('h2');
+  if (titleEl) titleEl.textContent = '📋 Rapport Léger (F1+F2)';
+  try {
+    var pqCtx = c.pq_summary ? 'PRÉ-BILAN: '+c.pq_summary.resumeProfil+' | Profil: '+c.pq_summary.profilTypeCode+' | Potentiel closing: '+c.pq_summary.closingPotential+'%' : 'Pré-bilan non effectué';
+    var bilanCtx = c.bilan_summary ? 'BILAN: '+c.bilan_summary.syntheseBilan+' | Leviers: '+(c.bilan_summary.facteursLeviers||'NC')+' | Objectif: '+(c.bilan_summary.objectifPrincipal||'NC') : 'Bilan non effectué';
+    // Détecter le mode pour adapter le rapport
+    var offreModeRpt = 'action';
+    if (c.sig_offre_id) { var _or = loadOffres().find(function(x){return x.id===c.sig_offre_id;}); if(_or) offreModeRpt = _or.modeOffre||'action'; }
+    var modeCtx = offreModeRpt === 'collectif'
+      ? 'MODE COLLECTIF — La personne suit des cours collectifs. Le rapport doit tout de même inclure des recommandations de coaching individuel (axes prioritaires si elle devait évoluer vers un coaching 1:1) et des conseils autonomes applicables hors cours collectifs.'
+      : offreModeRpt === 'action'
+      ? 'MODE ACTION — Coaching individuel mensuel. Plan 30 jours concret et renouvelable.'
+      : 'MODE TRANSFORMATION — Plan d\'action orienté transformation sur le long terme.';
+    var sys = 'Tu es Jonathan, coach BE ACTIV. Rédige un RAPPORT (F1+F2) personnalisé. Style : chaleureux, professionnel, orienté action. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
+    var usr = 'CLIENT: '+(c.prenom||'')+' '+(c.nom||'')+', '+(c.age||'?')+' ans, '+(c.ville||'NC')
+      +'\n'+pqCtx+'\n'+bilanCtx
+      +'\nOffre choisie: '+(c.offres||'NC')
+      +'\n'+modeCtx
+      +'\n\nJSON strict:\n{"profilGlobal":"paragraphe synthèse","pointsForts":["pt1","pt2","pt3"],"freinsPrincipaux":["f1","f2"],"planAction30J":"actions concrètes 30 jours","conseilsCoach":"conseils personnalisés"'+(offreModeRpt==='collectif'?',"axesCoachingIndividuel":"si coaching 1:1, axes prioritaires à travailler"':'')+' ,"messageMotivation":"message encourageant","prochainRDV":"suggestion prochaine étape"}';
+    var r = await callAI(sys, usr, 'claude-sonnet-4-6', 1500);
+    c.rapport_leger = r;
+    // Valider le step
+    c.mode_stages[stageIdx].steps[stepIdx].done = true;
+    c.mode_stages[stageIdx].steps[stepIdx].doneAt = new Date().toISOString();
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    document.getElementById('rpt-complet-loading').style.display = 'none';
+    document.getElementById('rpt-complet-content').innerHTML = '<div class="ai-card">'
+      + '<div class="ai-title">📋 Rapport Léger généré</div>'
+      + (r.profilGlobal?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--bx)">Profil</div><div class="ai-blk-c">'+r.profilGlobal+'</div></div>':'')
+      + (r.planAction30J?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--G)">Plan 30 jours</div><div class="ai-blk-c">'+r.planAction30J+'</div></div>':'')
+      + (r.conseilsCoach?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--B)">Conseils coach</div><div class="ai-blk-c">'+r.conseilsCoach+'</div></div>':'')
+      + (r.axesCoachingIndividuel?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--Y)">🎯 Si coaching 1:1</div><div class="ai-blk-c">'+r.axesCoachingIndividuel+'</div></div>':'')
+      + (r.messageMotivation?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">Message</div><div class="ai-blk-c">'+r.messageMotivation+'</div></div>':'')
+      + '</div>';
+    document.getElementById('rpt-complet-actions').style.display = 'block';
+    renderClientModal(clientId);
+    toast('ok', '✨ Rapport Léger généré !');
+  } catch(e) {
+    document.getElementById('rpt-complet-loading').style.display = 'none';
+    document.getElementById('rpt-complet-content').innerHTML = '<div style="color:var(--R)">❌ '+e.message+'</div>';
+  }
 }
 
 function addActivContinue(clientId, key) {
@@ -4057,6 +4930,73 @@ function addActivContinue(clientId, key) {
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
   toast('ok', '⏺ ACTIV CONTINUE — ' + key.toUpperCase() + ' démarré');
+  renderClientModal(clientId);
+}
+
+// ── Réactivation prospect ───────────────────────────
+var _reactivClientId = null;
+function openReactivationModal(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  _reactivClientId = clientId;
+  document.getElementById('reactiv-prospect-name').textContent = (c.prenom||'') + ' ' + (c.nom||'');
+  document.getElementById('reactiv-note').value = '';
+  document.getElementById('mdl-reactivation').style.display = 'block';
+}
+function saveReactivation(type) {
+  if (!_reactivClientId) return;
+  var c = ST.clients.find(function(x){ return x.id == _reactivClientId; });
+  if (!c) return;
+  var note = (document.getElementById('reactiv-note').value || '').trim();
+  var fromStatut = c.statut || 'Non closé';
+  var newStatut = (type === 'choix_offre') ? 'Closing en cours' : 'À relancer';
+  // Ajouter l'entrée d'historique
+  if (!c.relances) c.relances = [];
+  c.relances.push({
+    date: new Date().toISOString(),
+    type: type,
+    from_statut: fromStatut,
+    new_statut: newStatut,
+    note: note
+  });
+  c.statut = newStatut;
+  c.last_interaction = new Date().toISOString();
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  document.getElementById('mdl-reactivation').style.display = 'none';
+  renderClients();
+  var typeMsg = {rdv_bilan:'🗓 RDV Bilan à planifier', choix_offre:'💼 Passage en Closing en cours', manuel:'📝 Relance enregistrée'};
+  toast('ok', '🔄 Réactivé · ' + (typeMsg[type]||''));
+  // Rouvrir la fiche
+  setTimeout(function(){ openClient(_reactivClientId); }, 300);
+  _reactivClientId = null;
+}
+
+function setMembreCC(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  c.statut = 'Membre CC';
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  toast('ok', '♾️ Basculé en Membre CC — visible dans Prospects');
+  renderClientModal(clientId);
+}
+
+function relancerActivEssentiel(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  var stagesDef = getActiveStageDefs(c);
+  initModeStages(c, stagesDef);
+  var essIdx = stagesDef.findIndex ? stagesDef.findIndex(function(sd){ return sd.id === 'activ_essentiel'; }) : -1;
+  if (essIdx < 0) { for(var i=0;i<stagesDef.length;i++){if(stagesDef[i].id==='activ_essentiel'){essIdx=i;break;}} }
+  if (essIdx < 0) return;
+  c.mode_stages[essIdx].steps.forEach(function(s){ s.done = false; s.doneAt = null; });
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  toast('ok', '🔂 ACTIV ESSENTIEL relancé');
   renderClientModal(clientId);
 }
 
@@ -4168,7 +5108,7 @@ function renderClientModal(id) {
   var _cSexeDisplay = c.sexe || (c.sex==='F'?'Femme':c.sex==='M'?'Homme':'');
   if (_cSexeDisplay) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Sexe</div><div style="font-weight:600">'+_cSexeDisplay+'</div></div>';
   if (c.tel)   clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Téléphone</div><div style="font-weight:600">'+c.tel+'</div></div>';
-  if (c.email) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+c.email+'</div></div>';
+  if (c.email) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+cleanEmail(c.email)+'</div></div>';
   if (c.profession) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Profession</div><div style="font-weight:600">'+c.profession+'</div></div>';
   clientInfoRows += '</div>';
   if (c.ville || c.age || _cSexeDisplay || c.tel || c.email || c.profession) {
@@ -4215,15 +5155,77 @@ function gv(id){const el=document.getElementById(id);return el?el.value.trim():'
 
 function sv2(id,v){const el=document.getElementById(id);if(el&&v!=null)el.textContent=v;}
 
+// ═══════════════════════════════════════════════════
+// SYNC PARAMÈTRES — ba_settings (Supabase)
+// ═══════════════════════════════════════════════════
+// Clés synchronisées (hors config car chicken-and-egg)
+var SYNC_SETTINGS_KEYS = ['ba_parcours_labels','ba_form_bilan','ba_form_tests','ba_offres_v8','ba_suite_opts','ba_phases_custom'];
+
+async function saveSettingRemote(lsKey, value) {
+  if (!ST.sbUrl || !ST.sbKey) return;
+  try {
+    await fetch(ST.sbUrl + '/rest/v1/ba_settings', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},
+      body: JSON.stringify({ key: lsKey, value: JSON.stringify(value), updated_at: new Date().toISOString() })
+    });
+  } catch(e) {}
+}
+
+async function loadSettingsFromSupabase() {
+  if (!ST.sbUrl || !ST.sbKey) return;
+  try {
+    var keys = SYNC_SETTINGS_KEYS.map(function(k){ return '"'+k+'"'; }).join(',');
+    var res = await fetch(ST.sbUrl + '/rest/v1/ba_settings?key=in.('+keys+')', {
+      headers: {'apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey}
+    });
+    if (!res.ok) return;
+    var rows = await res.json();
+    var updated = false;
+    rows.forEach(function(row) {
+      // Bloquer les anciennes définitions de formulaire bilan (champs supprimés)
+      if (row.key === 'ba_form_bilan') {
+        try {
+          var remoteForm = row.value || '';
+          if (remoteForm.includes('b-rdv-type') || remoteForm.includes('b-pret-payer') || remoteForm.includes('pret-payer') || (remoteForm.includes('b-source') && remoteForm.includes('bf2'))) {
+            // Ancienne version détectée — pousser le nouveau défaut vers Supabase et ignorer
+            saveSettingRemote('ba_form_bilan', BILAN_FORM_DEFAULT);
+            localStorage.removeItem('ba_form_bilan');
+            localStorage.setItem('ba_form_bilan_ver', String(BILAN_FORM_VERSION));
+            updated = true;
+            return;
+          }
+        } catch(e) {}
+      }
+      var local = localStorage.getItem(row.key);
+      // Prendre la version la plus récente (remote vs local)
+      var localTs = 0;
+      try { var lj = JSON.parse(local||'null'); if(lj && lj.__updated_at) localTs = new Date(lj.__updated_at).getTime(); } catch(e){}
+      var remoteTs = row.updated_at ? new Date(row.updated_at).getTime() : 0;
+      if (remoteTs > localTs || !local) {
+        try { localStorage.setItem(row.key, row.value); updated = true; } catch(e){}
+      }
+    });
+    if (updated) {
+      // Recharger les éléments UI qui dépendent des settings
+      renderBilanForm();
+      renderTestsForm();
+      if (document.getElementById('editor-parcours') && document.getElementById('editor-parcours').style.display !== 'none') renderParcoursEditor();
+    }
+  } catch(e) {}
+}
+
 async function loadFromSupabase(){
   if(!ST.sbUrl||!ST.sbKey)return;
   try{
     const res=await fetch(ST.sbUrl+'/rest/v1/be_activ_clients?order=updated_at.desc&limit=500',{headers:{'apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey}});
     if(!res.ok)return;const rows=await res.json();
     rows.forEach(row=>{
-      let pq=null,bilan=null,final=null;
-      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;}catch(e){}
-      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,ville:row.ville,profession:row.profession,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offres,pretPayer:row.pret_payer,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,updated_at:row.updated_at};
+      // Ignorer les enregistrements sans nom (prospects vides/incomplets)
+      if(!row.prenom && !row.nom) return;
+      let pq=null,bilan=null,final=null,bilanRaw=null,rdvHistory=null;
+      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;rdvHistory=j.rdv_history||null;}catch(e){}
+      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,rdv_history:rdvHistory,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offre,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,bilan_raw:bilanRaw,updated_at:row.updated_at,groupId:row.group_id||null,group_name:row.group_name||null,is_group_leader:row.is_group_leader||false,sap_enabled:row.sap_enabled||false};
       const i=ST.clients.findIndex(c=>c.id===sc.id);if(i>=0)ST.clients[i]=sc;else ST.clients.unshift(sc);
     });
     localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
@@ -4233,8 +5235,11 @@ async function loadFromSupabase(){
 
 async function saveToSupabase(c){
   if(!ST.sbUrl||!ST.sbKey)return;
+  // Ne pas sauvegarder un prospect sans nom (évite les enregistrements vides)
+  if(!c.prenom && !c.nom) return;
+  // Champs lus par Finance JM (useBAClients) : id, nom, prenom, name, offre, montant, profil_code, date_rdv, is_client
   try{
-    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,age:parseInt(c.age)||null,ville:c.ville,profession:c.profession,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offres:c.offres,pret_payer:c.pretPayer,montant:c.montant?parseFloat(c.montant):null,statut:c.statut,score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report}),updated_at:c.updated_at})});
+    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,name:(c.prenom+' '+c.nom).trim(),age:parseInt(c.age)||null,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offre:c.offres,montant:c.montant?parseFloat(c.montant):null,is_client:c.statut==='Closé',score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report,bilan_raw:c.bilan_raw||null,rdv_history:c.rdv_history||null}),updated_at:c.updated_at,group_id:c.groupId||null,group_name:c.group_name||null,is_group_leader:c.is_group_leader||false})});
   }catch(e){}
 }
 
@@ -4392,9 +5397,168 @@ function renderSectionsEditor(formKey) {
   });
 }
 
+function _pInp(key, dflt) {
+  var val = getPLbl(key, dflt).replace(/"/g,'&quot;');
+  return '<input type="text" value="'+val+'" style="font-size:12px;flex:1;border:1px solid var(--rim2);border-radius:5px;padding:3px 8px;background:var(--bg3);color:var(--tx);font-family:inherit;width:100%;box-sizing:border-box" onchange="saveParcoursLabel(\''+key+'\',this.value)">';
+}
+function _pInpSm(key, dflt) {
+  var val = getPLbl(key, dflt).replace(/"/g,'&quot;');
+  return '<input type="text" value="'+val+'" style="font-size:11px;font-weight:700;flex:1;border:1px solid var(--rim2);border-radius:5px;padding:2px 7px;background:var(--bg3);color:var(--tx3);font-family:inherit;text-transform:uppercase;letter-spacing:.4px;width:100%;box-sizing:border-box" onchange="saveParcoursLabel(\''+key+'\',this.value)">';
+}
+
+// ── Parcours editor helpers ─────────────────────────
+function _pcInp(val, onchangeJs) {
+  val = (val||'').replace(/"/g,'&quot;');
+  return '<input type="text" value="'+val+'" style="font-size:12px;flex:1;min-width:0;border:1px solid var(--rim2);border-radius:5px;padding:3px 8px;background:var(--bg3);color:var(--tx);font-family:inherit;box-sizing:border-box" onchange="'+onchangeJs+'">';
+}
+function _pcInpBold(val, onchangeJs) {
+  val = (val||'').replace(/"/g,'&quot;');
+  return '<input type="text" value="'+val+'" style="font-size:11px;font-weight:700;flex:1;min-width:0;border:1px solid var(--rim2);border-radius:5px;padding:2px 7px;background:var(--bg3);color:var(--tx3);font-family:inherit;text-transform:uppercase;letter-spacing:.4px;box-sizing:border-box" onchange="'+onchangeJs+'">';
+}
+function _pcDelBtn(onclick) {
+  return '<button onclick="'+onclick+'" style="flex-shrink:0;background:none;border:none;color:var(--R);font-size:14px;cursor:pointer;padding:2px 4px;line-height:1" title="Supprimer">🗑</button>';
+}
+
+function _pcSaveStage(modeKey, stages) {
+  saveCustomModeStages(modeKey, stages);
+  renderParcoursEditor();
+  toast('ok', '✅ Parcours sauvegardé');
+}
+
+function pcDeleteStep(modeKey, stageId, stepIdx) {
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  var stage = stages.find(function(s){ return s.id === stageId; });
+  if (!stage) return;
+  stage.steps.splice(stepIdx, 1);
+  _pcSaveStage(modeKey, stages);
+}
+function pcMoveStep(modeKey, stageId, stepIdx, dir) {
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  var stage = stages.find(function(s){ return s.id === stageId; });
+  if (!stage) return;
+  var ni = stepIdx + dir;
+  if (ni < 0 || ni >= stage.steps.length) return;
+  var tmp = stage.steps[stepIdx]; stage.steps[stepIdx] = stage.steps[ni]; stage.steps[ni] = tmp;
+  _pcSaveStage(modeKey, stages);
+}
+function pcAddStep(modeKey, stageId) {
+  var lbl = prompt('Libellé de la nouvelle étape :');
+  if (!lbl || !lbl.trim()) return;
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  var stage = stages.find(function(s){ return s.id === stageId; });
+  if (!stage) return;
+  // Insérer avant le step final
+  var finalIdx = stage.steps.findIndex ? stage.steps.findIndex(function(s){ return s.isFinal; }) : -1;
+  if (finalIdx < 0) { for(var i=0;i<stage.steps.length;i++){if(stage.steps[i].isFinal){finalIdx=i;break;}} }
+  var newStep = {id:'custom_'+Date.now(), lbl: lbl.trim()};
+  if (finalIdx >= 0) { stage.steps.splice(finalIdx, 0, newStep); } else { stage.steps.push(newStep); }
+  _pcSaveStage(modeKey, stages);
+}
+function pcDeleteStage(modeKey, stageId) {
+  if (!confirm('Supprimer cette étape du parcours ?')) return;
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  var idx = stages.findIndex ? stages.findIndex(function(s){ return s.id === stageId; }) : -1;
+  if (idx < 0) { for(var i=0;i<stages.length;i++){if(stages[i].id===stageId){idx=i;break;}} }
+  if (idx < 0) return;
+  stages.splice(idx, 1);
+  _pcSaveStage(modeKey, stages);
+}
+function pcAddStage(modeKey) {
+  var lbl = prompt('Nom du nouvel étape / bloc :');
+  if (!lbl || !lbl.trim()) return;
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  stages.push({id:'custom_stage_'+Date.now(), lbl:lbl.trim(), ico:'📌', steps:[{id:'done',lbl:'Terminée ✅',isFinal:true}]});
+  _pcSaveStage(modeKey, stages);
+}
+function pcEditStepLbl(modeKey, stageId, stepIdx, val) {
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  var stage = stages.find(function(s){ return s.id === stageId; });
+  if (!stage || !stage.steps[stepIdx]) return;
+  stage.steps[stepIdx].lbl = val;
+  saveCustomModeStages(modeKey, stages);
+}
+function pcEditStageLbl(modeKey, stageId, val) {
+  var stages = JSON.parse(JSON.stringify(getStageDefsForMode(modeKey)));
+  var stage = stages.find(function(s){ return s.id === stageId; });
+  if (!stage) return;
+  stage.lbl = val;
+  saveCustomModeStages(modeKey, stages);
+}
+function pcResetMode(modeKey) {
+  if (!confirm('Réinitialiser le mode '+modeKey+' aux valeurs par défaut ?')) return;
+  var d = loadCustomStageDefs();
+  delete d[modeKey];
+  localStorage.setItem('ba_custom_stage_defs', JSON.stringify(d));
+  saveSettingRemote('ba_custom_stage_defs', d);
+  renderParcoursEditor();
+  toast('ok', '↩ Mode réinitialisé');
+}
+
 function renderParcoursEditor() {
-  renderPhaseList('c1', PHASES_C1, 'parcours-c1-editor');
-  renderPhaseList('c2', PHASES_C2, 'parcours-c2-editor');
+  var el = document.getElementById('parcours-modes-view');
+  if (!el) return;
+  var modes = [
+    { key:'action',         ico:'⚡', label:'MODE ACTION',         color:'var(--Y)' },
+    { key:'transformation', ico:'🔄', label:'MODE TRANSFORMATION (ACTIV RESET HYBRIDE / ONLINE)', color:'var(--V)' },
+    { key:'essentiel',      ico:'🟠', label:'MODE ESSENTIEL (ACTIV PROGRAM ESSENTIEL)', color:'#e86a00' },
+    { key:'collectif',      ico:'🔥', label:'MODE COLLECTIF',      color:'var(--B)' }
+  ];
+  var html = '';
+
+  // ── Signature commune
+  html += '<div style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:12px 14px;margin-bottom:10px">'
+    + '<div style="font-weight:700;font-size:12px;color:var(--bx);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">✍️ SIGNATURE — Commune à tous les modes</div>'
+    + '<div style="display:flex;flex-direction:column;gap:5px">';
+  SIG_STEPS.forEach(function(step){
+    html += '<div style="display:flex;align-items:center;gap:6px">'
+      + '<span style="font-size:14px;flex-shrink:0">'+step.ico+'</span>'
+      + _pInp('sig_'+step.id, step.lbl)
+      + '</div>';
+  });
+  html += '</div></div>';
+
+  // ── Modes
+  modes.forEach(function(m) {
+    var stages = getStageDefsForMode(m.key);
+    var isCustom = !!loadCustomStageDefs()[m.key];
+    html += '<div style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:12px 14px;margin-bottom:10px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+      + '<div style="font-weight:700;font-size:11px;color:'+m.color+';text-transform:uppercase;letter-spacing:.7px">'+m.ico+' '+m.label+'</div>'
+      + '<div style="display:flex;gap:4px">'
+      + (isCustom ? '<button onclick="pcResetMode(\''+m.key+'\')" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--rim2);background:var(--bg3);color:var(--tx3);cursor:pointer">↩ Défaut</button>' : '')
+      + '<button onclick="pcAddStage(\''+m.key+'\')" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--bx);background:none;color:var(--bx);cursor:pointer">+ Bloc</button>'
+      + '</div></div>';
+
+    stages.forEach(function(stage) {
+      html += '<div style="margin-bottom:10px;border:1px solid var(--rim3);border-radius:8px;padding:8px 10px">'
+        + '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">'
+        + '<span style="font-size:13px;flex-shrink:0">'+(stage.ico||'📌')+'</span>'
+        + _pcInpBold(stage.lbl, 'pcEditStageLbl("'+m.key+'","'+stage.id+'",this.value)')
+        + _pcDelBtn('pcDeleteStage("'+m.key+'","'+stage.id+'")')
+        + '</div>'
+        + '<div style="display:flex;flex-direction:column;gap:3px;padding-left:10px">';
+
+      stage.steps.forEach(function(s, si) {
+        var canDel = !s.isFinal && stage.steps.length > 1;
+        html += '<div style="display:flex;align-items:center;gap:4px">'
+          + '<span style="font-size:10px;color:var(--tx4);flex-shrink:0;width:14px">'+(s.isFinal?'✅':'→')+'</span>'
+          + _pcInp(s.lbl, 'pcEditStepLbl("'+m.key+'","'+stage.id+'",'+si+',this.value)')
+          + (si > 0 && !s.isFinal ? '<button onclick="pcMoveStep(\''+m.key+'\',\''+stage.id+'\','+si+',-1)" style="flex-shrink:0;background:none;border:none;color:var(--tx4);font-size:12px;cursor:pointer;padding:2px 3px" title="Monter">↑</button>' : '<span style="width:18px;flex-shrink:0"></span>')
+          + (canDel ? _pcDelBtn('pcDeleteStep("'+m.key+'","'+stage.id+'",'+si+')') : '<span style="width:22px;flex-shrink:0"></span>')
+          + '</div>';
+      });
+      html += '</div>'
+        + '<button onclick="pcAddStep(\''+m.key+'\',\''+stage.id+'\')" style="margin-top:6px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px dashed var(--bx);background:none;color:var(--bx);cursor:pointer;width:100%">+ Ajouter une étape</button>'
+        + '</div>';
+    });
+
+    // ACTIV CONTINUE (transformation seulement, lecture seule pour l'instant)
+    if (m.key === 'transformation') {
+      html += '<div style="margin-top:4px;font-size:11px;color:var(--tx4);padding:6px 4px">♾️ ACTIV CONTINUE (RESET / SCULPT / HEALTH) — configurable via les étiquettes ci-dessus</div>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
 }
 
 function switchEditor(tab, chip) {
@@ -4779,7 +5943,7 @@ async function pullOffresFromFinances() {
     console.warn('pullOffresFromFinances: bizSrKey non configurée, tentative avec anon key (peut échouer si RLS actif)');
   }
   try {
-    var res = await fetch(url + '/rest/v1/offres?select=id,name,price,active,is_ala_carte,duration,max_installments,theme&order=name.asc', {
+    var res = await fetch(url + '/rest/v1/offres?select=id,name,price,active,is_ala_carte,duration,max_installments,theme,offer_type&order=name.asc', {
       headers: { 'apikey': useKey, 'Authorization': 'Bearer ' + useKey }
     });
     if (!res.ok) {
@@ -4822,8 +5986,19 @@ async function pullOffresFromFinances() {
         test:        'none',
         theme:       r.theme || 'PROGRAMMES',
         modeOffre:   modeOffre,
+        offer_type:  r.offer_type || null,  // 'session' | 'programme' — source de vérité Business
         readOnly:    true   // offres Business → non modifiable dans BILAN CRM
       };
+    });
+    // Merge intelligent : conserver les modeOffre modifiés manuellement
+    var existingOffres = loadOffres();
+    offres = offres.map(function(o) {
+      var existing = existingOffres.find(function(e){ return e.id === o.id; });
+      // Si l'offre existait déjà et que son modeOffre a été modifié manuellement → le garder
+      if (existing && existing.modeOffre && existing.modeOffre !== o.modeOffre && !existing.readOnly) {
+        o.modeOffre = existing.modeOffre;
+      }
+      return o;
     });
     saveOffres(offres);
     localStorage.setItem('ba_offres_from_business', '1');
@@ -4867,81 +6042,87 @@ function togglePhase(clientId, globalIdx) {
 var FINANCES_USER_ID = 'f7dc5ec6-ac35-4179-b3a9-68d9c4edf888';
 
 async function syncClientToFinances(c) {
-  // Cible : table prospects du Supabase BE ACTIV BUSINESS
-  // closing="OUI" + statut="CLIENT" → apparaît dans Clients > Actifs
-  // closing="OUI" + statut="ARCHIVÉ" → apparaît dans Clients > Inactifs
-  var bizUrl   = ST.bizUrl   || BIZ_URL_DEFAULT;
-  var bizSrKey = ST.bizSrKey || '';
-
-  if (!bizSrKey) {
-    console.warn('syncClientToFinances: bizSrKey non configurée → Config');
-    return;
-  }
-
+  // Pousse via /api/push-client (serveur) → credentials jamais exposés côté browser
+  // Ne pousse que les champs identité + origine — Business gère prix_reel, sap_enabled, etc.
   var fullName = ((c.prenom || '') + ' ' + (c.nom || '')).trim();
   if (c.isPro) fullName = c.structureName || fullName;
   if (!fullName) return;
 
-  // Résoudre le nom de l'offre depuis sig_offre_id (nouveau système) ou c.offres (legacy)
-  var offreName = '-';
-  if (c.sig_offre_id) {
-    var _sigO = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
-    if (_sigO) offreName = _sigO.name;
+  // Résoudre le nom de l'offre : snapshot closing > sig_offre_id live > legacy c.offres
+  var offreName = c.business_offer_name || '-';
+  var _offreObj = null;
+  if (offreName === '-') {
+    if (c.sig_offre_id) {
+      _offreObj = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
+      if (_offreObj) offreName = _offreObj.name;
+    }
+    if (offreName === '-' && c.offres) offreName = c.offres.split(',')[0].trim() || '-';
+  } else if (c.sig_offre_id) {
+    _offreObj = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
   }
-  if (offreName === '-' && c.offres) offreName = c.offres.split(',')[0].trim() || '-';
 
-  // Normaliser le sexe → "F" ou "H" (format attendu par Business)
+  // Normaliser le sexe → "F" ou "H"
   var sexBiz = 'F';
   var rawSex = c.sexe || c.sex || '';
   if (rawSex === 'Homme' || rawSex === 'H' || rawSex === 'M') sexBiz = 'H';
 
-  // Statut Business : CLIENT (actif) ou ARCHIVÉ (inactif si programme terminé)
+  // Statut Business : CLIENT | ARCHIVÉ | PROSPECT
   var allStagesDone = false;
   if (c.mode_stages && c.mode_stages.length > 0) {
     allStagesDone = c.mode_stages.every(function(s) {
       return s.steps && s.steps.length > 0 && s.steps.every(function(st){ return st.done; });
     });
   }
-  var statutBiz = allStagesDone ? 'ARCHIVÉ' : 'CLIENT';
+  var isClosedClient = (c.statut === 'Closé');
+  var statutBiz = allStagesDone ? 'ARCHIVÉ' : (isClosedClient ? 'CLIENT' : 'PROSPECT');
+  var closingBiz = isClosedClient ? 'OUI' : 'NON';
 
-  // Payload mappé sur les colonnes réelles de la table prospects de BE ACTIV BUSINESS
-  var payload = {
-    id:               'bcrm_' + c.id,
-    user_id:          FINANCES_USER_ID,
-    sex:              sexBiz,
-    name:             fullName,
-    contact:          c.tel || '',
-    source:           c.source || '',
-    statut:           statutBiz,
-    date:             (c.closedAt ? c.closedAt.split('T')[0] : '') || c.date || '',
-    type:             c.rdvType || '',
-    presence:         '',
-    heure:            '',
-    objectif:         c.objectif || '',
-    objection:        (c.objections && c.objections[0]) || '',
-    closing:          'OUI',
-    offre:            offreName,
-    notes:            c.notes || '',
-    profile:          c.profil_code || '',
-    prix_reel:        parseFloat(c.montant) || 0,
-    note_bilan:       c.score_global || 0,
-    note_profil:      0,
-    bilan_validated:  !!(c.bilan_summary),
-    age:              parseInt(c.age) || null,
-    sap_enabled:      false,
-    updated_at:       new Date().toISOString()
-  };
+  // Montant : actual_amount > montant saisi > catalog_price_snapshot > prix offre live
+  var catalogSnap = c.catalog_price_snapshot || (_offreObj ? _offreObj.price : null);
+  var actualAmt   = c.actual_amount ? parseFloat(c.actual_amount)
+                  : (c.montant     ? parseFloat(c.montant)
+                  : catalogSnap);
+  var paiementMode    = c.payment_mode || (c.versements && c.versements.length > 0 ? c.versements.length : ((_offreObj && _offreObj.paiement) ? _offreObj.paiement : 1));
+  var installPlanned  = c.installments_planned || paiementMode;
+  var versementsRecus = c.versements ? c.versements.filter(function(v){return v.done;}).length : (isClosedClient ? paiementMode : 0);
 
-  var headers = {
-    'Content-Type': 'application/json',
-    'apikey':        bizSrKey,
-    'Authorization': 'Bearer ' + bizSrKey,
-    'Prefer':        'resolution=merge-duplicates'
+  // Moyen de paiement → canal Finance JM
+  var moyenPaiement = c.moyen_paiement || null;
+  var canalFinance = moyenPaiement === 'cb' || moyenPaiement === 'virement' ? 'banque'
+                   : moyenPaiement === 'especes' ? 'especes'
+                   : moyenPaiement ? 'autre' : null;
+
+  var prospect = {
+    id:                      'bcrm_' + c.id,
+    user_id:                 FINANCES_USER_ID,
+    sex:                     sexBiz,
+    name:                    fullName,
+    contact:                 c.tel || '',
+    source:                  c.source || '',
+    statut:                  statutBiz,
+    date:                    (c.closedAt ? c.closedAt.split('T')[0] : '') || c.date || '',
+    objectif:                c.objectif || '',
+    closing:                 closingBiz,
+    offre:                   offreName,
+    offer_type:              c.offer_type || null,          // 'session' | 'programme'
+    notes:                   c.notes || '',
+    profile:                 c.profil_code || '',
+    age:                     parseInt(c.age) || null,
+    catalog_price_snapshot:  catalogSnap,
+    actual_amount:           actualAmt,
+    montant:                 actualAmt,                     // compat Business legacy
+    moyen_paiement:          moyenPaiement,                 // cb | virement | especes | plateforme | autre
+    canal_finance:           canalFinance,                  // banque | especes | autre (pour Finance JM)
+    paiement_mode:           paiementMode,
+    installments_planned:    installPlanned,
+    versements_recus:        versementsRecus,
   };
 
   try {
-    var res = await fetch(bizUrl + '/rest/v1/prospects', {
-      method: 'POST', headers: headers, body: JSON.stringify(payload)
+    var res = await fetch('/api/push-client', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prospect: prospect })
     });
     if (!res.ok) {
       var errTxt = await res.text();
@@ -4967,8 +6148,11 @@ function updateStatutParcours(clientId, newStatut) {
   c.updated_at = new Date().toISOString();
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
-  // Sync vers App Finances uniquement au moment du closing (pas à chaque changement)
+  // Sync vers Business au closing ET quand un client redevient prospect
   if (newStatut === 'Closé' && !wasAlreadyClosed) {
+    syncClientToFinances(c);
+  } else if (wasAlreadyClosed && newStatut !== 'Closé') {
+    // Client redevenu prospect → màj Business (statut PROSPECT, closing NON)
     syncClientToFinances(c);
   }
   renderClients();
@@ -5136,9 +6320,20 @@ function isSectionActiveForProgramme(sec, programme) {
 function buildFieldRow(formKey, def, si, fi, f) {
   var row = document.createElement('div');
   row.className = 'field-row';
-  var lbl = document.createElement('span');
+  var lbl = document.createElement('input');
   lbl.className = 'field-row-lbl';
-  lbl.textContent = f.label || f.id;
+  lbl.type = 'text';
+  lbl.value = f.label || f.id;
+  lbl.style.cssText = 'border:none;outline:none;background:transparent;font-family:inherit;width:100%;min-width:0;cursor:text';
+  lbl.onchange = function() {
+    var d = loadFormDef(formKey);
+    if(d[si] && d[si].fields && d[si].fields[fi]) {
+      d[si].fields[fi].label = this.value;
+      saveFormDef(formKey, d);
+    }
+  };
+  lbl.onfocus = function(){ this.style.background='var(--bg3)'; this.style.borderRadius='4px'; this.style.padding='2px 6px'; };
+  lbl.onblur  = function(){ this.style.background='transparent'; this.style.padding='0'; };
   row.appendChild(lbl);
   var type = document.createElement('span');
   type.className = 'field-row-type';
@@ -5198,5 +6393,6 @@ function renderPhaseList(cycleKey, phasesArr, containerId) {
 
 <!-- TOAST NOTIFICATION -->
 <div id="toast"></div>
+<div id="print-zone" style="display:none"></div>
 </body>
 </html>
