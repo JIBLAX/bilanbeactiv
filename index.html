@@ -5351,7 +5351,6 @@ async function loadFromSupabase(){
       const i=ST.clients.findIndex(c=>c.id===sc.id);if(i>=0)ST.clients[i]=sc;else ST.clients.unshift(sc);
     });
     localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
-    toast('info','☁️ '+rows.length+' clients synchronisés');
   }catch(e){}
 }
 
