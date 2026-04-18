@@ -1773,34 +1773,6 @@ function setBilanDecision(decision) {
   renderClients();
 }
 
-function startRun2(clientId) {
-  var c=ST.clients.find(function(x){return x.id==clientId;});
-  if(!c) return;
-  var run1=c.phaseRuns[0];
-  var offres=loadOffres();
-  var o=run1.offreId?offres.find(function(x){return x.id===run1.offreId;}):null;
-  var phaseKey=o&&o.parcours?'reset':'suivi';
-  c.phaseRuns.push({phaseKey:phaseKey,offreId:run1.offreId,jaugeVal:0,certified:false});
-  c.cycle=c.phaseRuns.length;
-  var allPh=getClientPhasesAll(c);
-  if(!c.phases) c.phases=[];
-  while(c.phases.length<allPh.length){c.phases.push({id:allPh[c.phases.length].id,done:false,startDate:null});}
-  c.updated_at=new Date().toISOString();
-  localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
-  saveToSupabase(c);
-  renderClientModal(clientId);
-  var offreName = o ? o.name : 'le programme';
-  toast('ok', '🚀 ' + offreName + ' démarré !');
-}
-
-const RUN_1 = [
-  {id:'rdv-bilan',     ico:'📅', lbl:'RDV Bilan',      days:0},
-  {id:'go-contrat',    ico:'✍️', lbl:'GO Contrat',      days:0},
-  {id:'contrat-signe', ico:'📄', lbl:'Contrat signé',   days:0},
-  {id:'paiement',      ico:'💳', lbl:'Paiement validé', days:0},
-  {id:'tests',         ico:'📏', lbl:'Tests',           days:0, optionnel:true},
-  {id:'run1-done',     ico:'✅', lbl:'Run 1 validé',    days:0, isMilestone:true}
-];
 
 // ═══════════════════════════════════════════════════
 // DONNÉES IMPORTÉES — CRM + FINANCES
@@ -1827,7 +1799,6 @@ function injectImportedClients() {
   if (added > 0) {
     localStorage.setItem('ba_clients_v8', JSON.stringify(existingList));
     ST.clients = existingList;
-    console.log('Import: ' + added + ' clients ajoutés');
   }
   return added;
 }
@@ -2274,7 +2245,9 @@ function renderSection(sec) {
 }
 function renderBilanForm() {
   const def = loadFormDef('bilan');
-  document.getElementById('bilan-form-container').innerHTML = def.map(renderSection).join('');
+  const bilanContainer = document.getElementById('bilan-form-container');
+  if (!bilanContainer) return;
+  bilanContainer.innerHTML = def.map(renderSection).join('');
   renderBilanOffresList();
   const bd = gv('b-date'); if(!bd) { const el=document.getElementById('b-date'); if(el) el.value=new Date().toISOString().split('T')[0]; }
 }
@@ -2564,11 +2537,16 @@ window.onload = function() {
   const lc=localStorage.getItem('ba_clients_v8');
   if(lc) try{ST.clients=JSON.parse(lc);}catch(e){}
 
+  // Nettoyer les prospects vides (sans prénom ni nom) qui auraient été importés par erreur
+  var _beforeClean=ST.clients.length;
+  ST.clients=ST.clients.filter(function(c){return c.prenom||c.nom;});
+  if(ST.clients.length<_beforeClean){localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));}
+
   // Migration statuts legacy
   var _statMap={'Clos':'Closé','CLOS':'Closé','CLOSÉ':'Closé','CLOSE':'Closé','Non clos':'Non closé','relancer':'À relancer','Refus':'Refusé','REFUS':'Refusé'};
   var _migrated=0;
   ST.clients.forEach(function(c){if(_statMap[c.statut]){c.statut=_statMap[c.statut];_migrated++;}});
-  if(_migrated>0){localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));console.log('Migration: '+_migrated+' statuts corrigés');}
+  if(_migrated>0){localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));}
 
   const lr=localStorage.getItem('ba_rdvs_v8');
   if(lr) try{ST.rdvs=JSON.parse(lr);}catch(e){}
@@ -3616,12 +3594,6 @@ function openClient(id) {
   }
 }
 
-function openFromSaved(){
-  if(ST.finalReport){renderReport(ST.finalReport,ST.finalReport._client||{});document.getElementById('rpt-empty').style.display='none';document.getElementById('rpt-content').style.display='block';document.getElementById('rpt-actions').style.display='block';}
-  showPg('rapport');
-}
-
-
 
 // ═══════════════════════════════════════════════════
 // PARCOURS CLIENT — PHASES
@@ -3703,29 +3675,6 @@ function savePhasesCustom(phases) {
   try {
     localStorage.setItem('ba_phases_custom', JSON.stringify(phases));
   } catch(e) {}
-}
-
-// Rétro-compat (utilisé dans quelques endroits)
-
-function getClientPhasesAll(c) {
-  // Run 0 = étapes d'entrée (RUN_1 : RDV Bilan → Tests physiques)
-  // Run 1+ = programme complet (PHASES_BASE selon offre)
-  if (!c.phaseRuns || c.phaseRuns.length === 0) {
-    c.phaseRuns = [{phaseKey:'reset', certified:false, offreId:null, jaugeVal:0}];
-  }
-  var all = [];
-  var customBase = loadPhasesCustom().base || PHASES_BASE;
-  c.phaseRuns.forEach(function(run, ri) {
-    var stepsSource = (ri === 0) ? RUN_1 : customBase;
-    stepsSource.forEach(function(p) {
-      all.push(Object.assign({}, p, {
-        id: p.id+'_r'+ri,
-        runIdx: ri,
-        phaseKey: run.phaseKey
-      }));
-    });
-  });
-  return all;
 }
 
 
@@ -4672,7 +4621,6 @@ function deletePhaseNew(key,idx){
   });
 }
 
-function openMore(){ toggleMore(); }
 
 // ═══════════════════════════════════════════════════
 // ARCHITECTURE SYNC
@@ -5002,8 +4950,6 @@ async function syncClientToFinances(c) {
       if (res.status === 401 || res.status === 403) {
         toast('info', '🔑 Sync échouée — vérifie la Service Role Key Business dans Config');
       }
-    } else {
-      console.log('syncClientToFinances: ' + fullName + ' → prospects [' + statutBiz + '] OK');
     }
   } catch(e) {
     console.warn('syncClientToFinances error:', e);
@@ -5028,46 +4974,6 @@ function updateStatutParcours(clientId, newStatut) {
   }
   renderClients();
   toast('ok', '✅ Statut mis à jour : ' + newStatut);
-}
-
-// ═══════════════════════════════════════════════════
-// ACTIVATE CYCLE 2 (démarre un run suivant)
-// ═══════════════════════════════════════════════════
-function activateCycle2(clientId, mode, opts) {
-  var c = ST.clients.find(function(x){ return x.id == clientId; });
-  if (!c) return;
-  // Certifier le run actuel
-  var currentRunIdx = c.phaseRuns.length - 1;
-  c.phaseRuns[currentRunIdx].certified = true;
-
-  var offres = loadOffres();
-  var currentRun = c.phaseRuns[currentRunIdx];
-  var phaseKey = (opts && opts.phaseKey) ? opts.phaseKey : (currentRun.phaseKey || 'reset');
-
-  // Déterminer l'offre du prochain run
-  var offreId = (opts && opts.offreId) ? opts.offreId : currentRun.offreId;
-
-  c.phaseRuns.push({
-    phaseKey: phaseKey,
-    offreId: offreId,
-    jaugeVal: 0,
-    certified: false,
-    suiteKey: (opts && opts.suiteKey) ? opts.suiteKey : null,
-    startDate: new Date().toISOString().split('T')[0]
-  });
-  c.cycle = c.phaseRuns.length;
-
-  // Étendre le tableau phases
-  var allPh = getClientPhasesAll(c);
-  if (!c.phases) c.phases = [];
-  while (c.phases.length < allPh.length) {
-    c.phases.push({ id: allPh[c.phases.length].id, done: false, startDate: null });
-  }
-  c.updated_at = new Date().toISOString();
-  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-  saveToSupabase(c);
-  renderClientModal(clientId);
-  toast('ok', '🚀 Nouveau cycle démarré !');
 }
 
 
