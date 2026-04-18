@@ -861,8 +861,8 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="chip on" data-v="all">Tous</div>
     <div class="chip" data-v="Contact">Contact</div>
     <div class="chip" data-v="Attente RDV">Attente RDV</div>
-    <div class="chip" data-v="Closing en cours">Closing en cours</div>
     <div class="chip" data-v="Non Closé">Non Closé</div>
+    <div class="chip" data-v="Sans Suite">Sans Suite</div>
   </div>
   <div id="clients-list"></div>
 </div>
@@ -920,7 +920,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
         <button class="btn btn-R" onclick="setBilanDecision('refus')">❌ Non Closé</button>
         <button class="btn btn-G" onclick="setBilanDecision('ok')">✅ OK → Closing</button>
       </div>
-      <p class="note" style="margin-top:8px">Si OK : le prospect passera en "Closing en cours" dans vos Contacts.</p>
+      <p class="note" style="margin-top:8px">Si OK : le prospect passera en "Attente RDV" (signature) dans vos Contacts.</p>
     </div>
   </div>
 </div>
@@ -1506,7 +1506,7 @@ function deleteSelected(){
 }
 
 function renderProspectModal(id, c, container) {
-  var sp={'Closé':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Closing en cours':'pill-Y','Non Closé':'pill-R','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R'};
+  var sp={'Closé':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Non Closé':'pill-R','Sans Suite':'pill-V','Ancien Client':'pill-V','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R','Closing en cours':'pill-Y'};
   var titleEl=document.createElement('div'); titleEl.className='mdl-t';
   titleEl.innerHTML=(c.prenom||'')+' '+(c.nom||'');
   var closeBtn=document.createElement('button'); closeBtn.className='mdl-x'; closeBtn.textContent='✕';
@@ -1516,7 +1516,7 @@ function renderProspectModal(id, c, container) {
   // Pills statut + source
   var pills=document.createElement('div'); pills.style.cssText='display:flex;gap:5px;flex-wrap:wrap;margin-bottom:13px';
   var statutLabel = c.statut||'Prospect';
-  var isClosingEnCours = (c.statut === 'Closing en cours');
+  var isClosingEnCours = (c.sig_started === true);
   pills.innerHTML='<span class="pill '+(sp[c.statut]||'pill-B')+'">'+statutLabel+'</span>'
     +(c.source?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.source+'</span>':'')
     +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
@@ -1634,7 +1634,7 @@ function renderProspectModal(id, c, container) {
       sigProBtn.innerHTML = '✍️ Démarrer Signature';
       sigProBtn.onclick = (function(cid){ return function(){
         var cl = ST.clients.find(function(x){ return x.id == cid; });
-        if (cl) { cl.statut = 'Closing en cours'; cl.updated_at = new Date().toISOString(); localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); saveToSupabase(cl); renderClients(); closeModal('client'); setTimeout(function(){ openClient(cid); },300); }
+        if (cl) { cl.statut = 'Attente RDV'; cl.sig_started = true; cl.updated_at = new Date().toISOString(); localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); saveToSupabase(cl); renderClients(); closeModal('client'); setTimeout(function(){ openClient(cid); },300); }
       }; })(id);
       actionsDiv.appendChild(sigProBtn);
     }
@@ -1665,7 +1665,7 @@ function renderProspectModal(id, c, container) {
   actionsDiv.appendChild(editBtn);
 
   // ── Bouton Réactiver (statuts inactifs)
-  var inactifStatuts = ['Non Closé','Contact','Attente RDV','Membre CC','','Refusé','Non closé','À relancer'];
+  var inactifStatuts = ['Non Closé','Sans Suite','Contact','Attente RDV','Membre CC','','Refusé','Non closé','À relancer'];
   if (!c.statut || inactifStatuts.indexOf(c.statut) > -1) {
     var reactBtn = document.createElement('button');
     reactBtn.className = 'btn btn-V btn-w btn-sm';
@@ -2156,8 +2156,8 @@ function setBilanDecision(decision) {
   var c = ST.clients.find(function(x){ return x.id == clientId; });
   if (!c) return;
   if (decision === 'ok') {
-    c.statut = 'Closing en cours';
-    toast('ok', '✅ Prospect passé en "Closing en cours"');
+    c.statut = 'Attente RDV'; c.sig_started = true;
+    toast('ok', '✅ Bilan OK — Attente signature');
     closeModal('client');
     setTimeout(function(){
       switchClientTab('prospects');
@@ -3050,7 +3050,7 @@ window.onload = function() {
   if(ST.clients.length<_beforeClean){localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));}
 
   // Migration statuts legacy
-  var _statMap={'Clos':'Closé','CLOS':'Closé','CLOSÉ':'Closé','CLOSE':'Closé','Non clos':'Contact','relancer':'Attente RDV','Refus':'Non Closé','REFUS':'Non Closé','Refusé':'Non Closé','À relancer':'Attente RDV','Non closé':'Contact'};
+  var _statMap={'Clos':'Closé','CLOS':'Closé','CLOSÉ':'Closé','CLOSE':'Closé','Non clos':'Contact','relancer':'Attente RDV','Refus':'Non Closé','REFUS':'Non Closé','Refusé':'Non Closé','À relancer':'Attente RDV','Non closé':'Contact','Closing en cours':'Attente RDV'};
   var _migrated=0;
   ST.clients.forEach(function(c){if(_statMap[c.statut]){c.statut=_statMap[c.statut];_migrated++;}});
   if(_migrated>0){localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));}
@@ -3236,7 +3236,7 @@ function renderNextRDV() {
   // Ajouter les prospects avec un RDV Bilan planifié (date >= aujourd'hui, statut pas Closé/Refusé)
   ST.clients.forEach(function(c){
     if (!c.date || c.date < today) return;
-    if (c.statut === 'Closé' || c.statut === 'Non Closé' || c.statut === 'Refusé') return;
+    if (c.statut === 'Closé' || c.statut === 'Non Closé' || c.statut === 'Refusé' || c.statut === 'Ancien Client') return;
     if (c.rdvStatut === 'Présent' || c.rdvStatut === 'Absent') return; // déjà passé
     allRdvs.push({
       date: c.date,
@@ -4067,7 +4067,7 @@ function renderProClientModal(id, c, container) {
 
   var statutWrap = document.createElement('div');
   statutWrap.style.cssText = 'display:flex;flex-direction:column;gap:7px;margin-bottom:13px';
-  ['Contact','Attente RDV','Closing en cours','Non Closé','Closé'].forEach(function(s) {
+  ['Contact','Attente RDV','Non Closé','Sans Suite','Closé','Ancien Client'].forEach(function(s) {
     var btn = document.createElement('button');
     btn.className = 'btn btn-dk btn-w btn-sm';
     btn.textContent = s;
@@ -4238,7 +4238,7 @@ function saveBilanAndReturn() {
       label: 'Résultat du RDV',
       type: 'select',
       options: [
-        'ok|✅ OK → Démarrer la signature',
+        'ok|✅ OK → Signature en attente',
         'non_close|❌ Non Closé — La personne ne signe pas',
         'attente|📅 Attente RDV — Reporter le bilan',
         'none|⏸ Décider plus tard'
@@ -4253,8 +4253,8 @@ function saveBilanAndReturn() {
       if (c) {
         var decision = r.values.decision;
         if (decision === 'ok') {
-          c.statut = 'Closing en cours';
-          toast('ok', '✅ Closing en cours !');
+          c.statut = 'Attente RDV'; c.sig_started = true;
+          toast('ok', '✅ Bilan OK — Attente signature');
         } else if (decision === 'non_close') {
           c.statut = 'Non Closé';
           toast('info', '❌ Non Closé');
@@ -4289,22 +4289,22 @@ function renderClients(){
   var srch=(srchEl?srchEl.value:'').toLowerCase();
   var isProspectTab=currentClientTab==='prospects';
   // Prospects = tout sauf 'Closé'
-  var prospectStatuts=['Contact','Attente RDV','Closing en cours','Non Closé','Non closé','En cours','À relancer','Refusé','','Membre CC'];
+  var prospectStatuts=['Contact','Attente RDV','Non Closé','Sans Suite','Non closé','En cours','À relancer','Refusé','','Membre CC'];
   var list=ST.clients.filter(function(c){
     var ms=!srch||((c.prenom||'')+' '+(c.nom||'')+' '+(c.source||'')+' '+(c.ville||'')+' '+(c.structureName||'')).toLowerCase().includes(srch);
     var mv=ST.filterStatut==='all'||c.statut===ST.filterStatut;
     // Clients tab = Closé (pas Membre CC — ils restent dans Prospects)
-    var tabMatch=isProspectTab?(!c.statut||prospectStatuts.includes(c.statut)):(c.statut==='Closé');
+    var tabMatch=isProspectTab?(!c.statut||prospectStatuts.includes(c.statut)):(c.statut==='Closé'||c.statut==='Ancien Client');
     return ms&&mv&&tabMatch;
   });
   if(!list.length){document.getElementById('clients-list').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun contact</div><div class="empty-s">'+(isProspectTab?'Ajoutez votre premier prospect.':'Aucun client closé.')+'</div></div>';return;}
-  const sp={'Closé':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Closing en cours':'pill-Y','Non Closé':'pill-R','Membre CC':'pill-V','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R','En cours':'pill-B'};
+  const sp={'Closé':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Non Closé':'pill-R','Sans Suite':'pill-V','Ancien Client':'pill-V','Membre CC':'pill-V','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R','En cours':'pill-B','Closing en cours':'pill-Y'};
   // Compter les membres par groupId pour les badges
   var groupCounts={};
   ST.clients.forEach(function(c){ if(c.groupId){ groupCounts[c.groupId]=(groupCounts[c.groupId]||0)+1; } });
   document.getElementById('clients-list').innerHTML=list.map(function(c){
     var init = c.isPro ? '🏢' : ((c.prenom||'?')[0]+(c.nom||'?')[0]).toUpperCase();
-    var isClosing = c.statut === 'Closing en cours';
+    var isClosing = c.sig_started === true;
     var isNew = isNewClient(c);
     var dt=c.updated_at?new Date(c.updated_at).toLocaleDateString('fr-FR'):'';
     var offreTxt = ((c.offres||'').split(',')[0].trim()||'—');
@@ -4746,8 +4746,26 @@ function renderModeStages(clientId, c, container) {
       endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
     }
 
+    if (c.statut !== 'Ancien Client') {
+      endDiv.appendChild(mkBtn('btn btn-dk', '🏁', 'Fin de coaching → Ancien Client', function(){ setAncienClient(clientId); }));
+    }
     container.appendChild(endDiv);
   }
+}
+
+function setAncienClient(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  dlgConfirm('Marquer ' + (c.prenom||c.nom||'ce client') + ' comme Ancien Client ?', 'Confirmer').then(function(r) {
+    if (!r.confirmed) return;
+    c.statut = 'Ancien Client';
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    renderClients();
+    renderClientModal(clientId);
+    toast('ok', '🏁 ' + (c.prenom||'Client') + ' — Ancien Client');
+  });
 }
 
 function validateModeStep(clientId, stageIdx, stepIdx) {
@@ -5071,7 +5089,8 @@ function saveReactivation(type) {
   if (!c) return;
   var note = (document.getElementById('reactiv-note').value || '').trim();
   var fromStatut = c.statut || 'Contact';
-  var newStatut = (type === 'choix_offre') ? 'Closing en cours' : 'Attente RDV';
+  var newStatut = 'Attente RDV';
+  if (type === 'choix_offre') c.sig_started = true;
   // Ajouter l'entrée d'historique
   if (!c.relances) c.relances = [];
   c.relances.push({
@@ -5088,7 +5107,7 @@ function saveReactivation(type) {
   saveToSupabase(c);
   document.getElementById('mdl-reactivation').style.display = 'none';
   renderClients();
-  var typeMsg = {rdv_bilan:'🗓 RDV Bilan à planifier', choix_offre:'💼 Passage en Closing en cours', manuel:'📝 Relance enregistrée'};
+  var typeMsg = {rdv_bilan:'🗓 RDV Bilan à planifier', choix_offre:'💼 Signature en attente', manuel:'📝 Relance enregistrée'};
   toast('ok', '🔄 Réactivé · ' + (typeMsg[type]||''));
   // Rouvrir la fiche
   setTimeout(function(){ openClient(_reactivClientId); }, 300);
@@ -5175,7 +5194,7 @@ function openNewOffreForClient(clientId) {
   c.sig_offre_id = null;
   c.mode_stages = null;
   c.activ_continue_stages = [];
-  c.statut = 'Closing en cours';
+  c.statut = 'Attente RDV'; c.sig_started = true;
   c.updated_at = new Date().toISOString();
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
@@ -5196,8 +5215,8 @@ function renderClientModal(id) {
   // PRO closé → modal client standard (avec parcours Action)
   // PRO non closé → tombe dans renderProspectModal ci-dessous
 
-  // PROSPECT (y compris "Closing en cours")
-  if (c.statut !== 'Closé') { renderProspectModal(id, c, container); openModal('client'); return; }
+  // PROSPECT — Ancien Client affiche le modal client (parcours visible)
+  if (c.statut !== 'Closé' && c.statut !== 'Ancien Client') { renderProspectModal(id, c, container); openModal('client'); return; }
 
   // ── Titre
   var titleEl = document.createElement('div');
@@ -5217,7 +5236,9 @@ function renderClientModal(id) {
   if (c.sig_offre_id) { var _o=loadOffres().find(function(x){return x.id===c.sig_offre_id;}); if(_o) offreMode=_o.modeOffre; }
   var offreName = null;
   if (c.sig_offre_id) { var _oo=loadOffres().find(function(x){return x.id===c.sig_offre_id;}); if(_oo) offreName=_oo.name; }
-  pills.innerHTML = '<span class="pill pill-G">'+(isNew?'🆕 ':'')+'Closé'+(isNew?' · New':'')+'</span>'
+  var _statutLabel = c.statut === 'Ancien Client' ? 'Ancien Client' : 'Closé';
+  var _pillCls = c.statut === 'Ancien Client' ? 'pill-V' : 'pill-G';
+  pills.innerHTML = '<span class="pill '+_pillCls+'">'+(isNew?'🆕 ':'')+_statutLabel+(isNew?' · New':'')+'</span>'
     + (offreMode ? '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(offreMode)+'</span>' : '')
     + (offreName ? '<span class="pill pill-Y" style="font-size:10px">'+offreName+'</span>' : '')
     + (c.profil_code && c.profil_code!=='PRO' ? '<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.profil_code+'</span>' : '');
