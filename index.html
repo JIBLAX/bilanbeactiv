@@ -1639,22 +1639,24 @@ function renderProspectModal(id, c, container) {
       actionsDiv.appendChild(sigProBtn);
     }
   } else {
-    // Bouton RDV Bilan — seulement si bilan pas encore fait
-    var hasBilanData = c.bilan_raw && (c.bilan_raw.notesTrain || c.bilan_raw.vision6m || c.bilan_raw.pointA || c.bilan_raw.blocages || c.bilan_raw.attenteCoach || c.bilan_raw.notesAlim);
-    var bilanAlreadyDone = c.bilan_summary || hasBilanData;
-    var bilanBtn = document.createElement('button');
-    if (!bilanAlreadyDone) {
-      bilanBtn.className = 'btn btn-bx btn-w';
-      bilanBtn.innerHTML = c.pq_summary ? '📝 RDV Bilan' : '📅 RDV Bilan';
-    } else {
-      bilanBtn.className = 'btn btn-dk btn-w btn-sm';
-      bilanBtn.innerHTML = '📝 Modifier le bilan';
+    // Bouton RDV Bilan — masqué si prospect refusé (doit réactiver d'abord)
+    if (c.statut !== 'Refusé') {
+      var hasBilanData = c.bilan_raw && (c.bilan_raw.notesTrain || c.bilan_raw.vision6m || c.bilan_raw.pointA || c.bilan_raw.blocages || c.bilan_raw.attenteCoach || c.bilan_raw.notesAlim);
+      var bilanAlreadyDone = c.bilan_summary || hasBilanData;
+      var bilanBtn = document.createElement('button');
+      if (!bilanAlreadyDone) {
+        bilanBtn.className = 'btn btn-bx btn-w';
+        bilanBtn.innerHTML = c.pq_summary ? '📝 RDV Bilan' : '📅 RDV Bilan';
+      } else {
+        bilanBtn.className = 'btn btn-dk btn-w btn-sm';
+        bilanBtn.innerHTML = '📝 Modifier le bilan';
+      }
+      bilanBtn.onclick = (function(cid){ return function(){
+        closeModal('client');
+        startBilanForProspect(cid);
+      }; })(id);
+      actionsDiv.appendChild(bilanBtn);
     }
-    bilanBtn.onclick = (function(cid){ return function(){
-      closeModal('client');
-      startBilanForProspect(cid);
-    }; })(id);
-    actionsDiv.appendChild(bilanBtn);
   }
 
   var editBtn=document.createElement('button'); editBtn.className='btn btn-dk btn-w';
