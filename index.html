@@ -859,10 +859,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
   <div class="chips" id="chips-statut">
     <div class="chip on" data-v="all">Tous</div>
-    <div class="chip" data-v="Non closé">Non closé</div>
+    <div class="chip" data-v="Contact">Contact</div>
+    <div class="chip" data-v="Attente RDV">Attente RDV</div>
     <div class="chip" data-v="Closing en cours">Closing en cours</div>
-    <div class="chip" data-v="À relancer">À relancer</div>
-    <div class="chip" data-v="Refusé">Refusé</div>
+    <div class="chip" data-v="Non Closé">Non Closé</div>
   </div>
   <div id="clients-list"></div>
 </div>
@@ -917,7 +917,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div id="bilan-decision-wrap" style="display:none;margin-top:12px;background:var(--bg2);border:1.5px solid var(--rim);border-radius:var(--r2);padding:14px">
       <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📋 Décision suite au Bilan</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <button class="btn btn-R" onclick="setBilanDecision('refus')">❌ REFUS — Stop</button>
+        <button class="btn btn-R" onclick="setBilanDecision('refus')">❌ Non Closé</button>
         <button class="btn btn-G" onclick="setBilanDecision('ok')">✅ OK → Closing</button>
       </div>
       <p class="note" style="margin-top:8px">Si OK : le prospect passera en "Closing en cours" dans vos Contacts.</p>
@@ -1209,7 +1209,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
         </div>
         <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Repartir vers…</div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <button class="btn btn-bx btn-w" onclick="saveReactivation('rdv_bilan')">🗓 Nouveau RDV Bilan <span style="font-size:10px;opacity:.7;margin-left:4px">→ À relancer</span></button>
+          <button class="btn btn-bx btn-w" onclick="saveReactivation('rdv_bilan')">🗓 Nouveau RDV Bilan <span style="font-size:10px;opacity:.7;margin-left:4px">→ Attente RDV</span></button>
           <button class="btn btn-Y btn-w" onclick="saveReactivation('choix_offre')">💼 Proposer une offre directement <span style="font-size:10px;opacity:.7;margin-left:4px">→ Closing en cours</span></button>
         </div>
       </div>
@@ -1506,7 +1506,7 @@ function deleteSelected(){
 }
 
 function renderProspectModal(id, c, container) {
-  var sp={'Closé':'pill-G','Non closé':'pill-B','Closing en cours':'pill-Y','À relancer':'pill-Y','Refusé':'pill-R'};
+  var sp={'Closé':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Closing en cours':'pill-Y','Non Closé':'pill-R','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R'};
   var titleEl=document.createElement('div'); titleEl.className='mdl-t';
   titleEl.innerHTML=(c.prenom||'')+' '+(c.nom||'');
   var closeBtn=document.createElement('button'); closeBtn.className='mdl-x'; closeBtn.textContent='✕';
@@ -1608,7 +1608,7 @@ function renderProspectModal(id, c, container) {
         + '<div style="background:var(--bg2);border:1.5px solid var(--rim);border-radius:var(--r2);padding:12px;margin-bottom:8px">'
         + '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">📋 Décision suite au Bilan</div>'
         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-        + '<button class="btn btn-R" onclick="setBilanDecision(\'refus\')">❌ REFUS</button>'
+        + '<button class="btn btn-R" onclick="setBilanDecision(\'refus\')">❌ Non Closé</button>'
         + '<button class="btn btn-G" onclick="setBilanDecision(\'ok\')">✅ OK → Closing</button>'
         + '</div></div>'
         + '<button class="btn btn-bx btn-w" style="width:100%" onclick="partagerBilanSummary(\''+id+'\')">📤 Partager la synthèse</button>';
@@ -1639,22 +1639,24 @@ function renderProspectModal(id, c, container) {
       actionsDiv.appendChild(sigProBtn);
     }
   } else {
-    // Bouton RDV Bilan — seulement si bilan pas encore fait
-    var hasBilanData = c.bilan_raw && (c.bilan_raw.notesTrain || c.bilan_raw.vision6m || c.bilan_raw.pointA || c.bilan_raw.blocages || c.bilan_raw.attenteCoach || c.bilan_raw.notesAlim);
-    var bilanAlreadyDone = c.bilan_summary || hasBilanData;
-    var bilanBtn = document.createElement('button');
-    if (!bilanAlreadyDone) {
-      bilanBtn.className = 'btn btn-bx btn-w';
-      bilanBtn.innerHTML = c.pq_summary ? '📝 RDV Bilan' : '📅 RDV Bilan';
-    } else {
-      bilanBtn.className = 'btn btn-dk btn-w btn-sm';
-      bilanBtn.innerHTML = '📝 Modifier le bilan';
+    // Bouton RDV Bilan — masqué si Non Closé (doit réactiver d'abord)
+    if (c.statut !== 'Non Closé' && c.statut !== 'Refusé') {
+      var hasBilanData = c.bilan_raw && (c.bilan_raw.notesTrain || c.bilan_raw.vision6m || c.bilan_raw.pointA || c.bilan_raw.blocages || c.bilan_raw.attenteCoach || c.bilan_raw.notesAlim);
+      var bilanAlreadyDone = c.bilan_summary || hasBilanData;
+      var bilanBtn = document.createElement('button');
+      if (!bilanAlreadyDone) {
+        bilanBtn.className = 'btn btn-bx btn-w';
+        bilanBtn.innerHTML = c.pq_summary ? '📝 RDV Bilan' : '📅 RDV Bilan';
+      } else {
+        bilanBtn.className = 'btn btn-dk btn-w btn-sm';
+        bilanBtn.innerHTML = '📝 Modifier le bilan';
+      }
+      bilanBtn.onclick = (function(cid){ return function(){
+        closeModal('client');
+        startBilanForProspect(cid);
+      }; })(id);
+      actionsDiv.appendChild(bilanBtn);
     }
-    bilanBtn.onclick = (function(cid){ return function(){
-      closeModal('client');
-      startBilanForProspect(cid);
-    }; })(id);
-    actionsDiv.appendChild(bilanBtn);
   }
 
   var editBtn=document.createElement('button'); editBtn.className='btn btn-dk btn-w';
@@ -1663,7 +1665,7 @@ function renderProspectModal(id, c, container) {
   actionsDiv.appendChild(editBtn);
 
   // ── Bouton Réactiver (statuts inactifs)
-  var inactifStatuts = ['Refusé','Non closé','À relancer','Membre CC',''];
+  var inactifStatuts = ['Non Closé','Contact','Attente RDV','Membre CC','','Refusé','Non closé','À relancer'];
   if (!c.statut || inactifStatuts.indexOf(c.statut) > -1) {
     var reactBtn = document.createElement('button');
     reactBtn.className = 'btn btn-V btn-w btn-sm';
@@ -1718,6 +1720,9 @@ function startBilanForProspect(clientId) {
     if (document.getElementById('b-age')) document.getElementById('b-age').value = c.age || '';
     if (document.getElementById('b-ville')) document.getElementById('b-ville').value = c.ville || '';
     if (document.getElementById('b-prof')) document.getElementById('b-prof').value = c.profession || '';
+    // Pré-remplir rdvStatut et date
+    if (c.rdvStatut && document.getElementById('b-rdv-statut')) { document.getElementById('b-rdv-statut').value = c.rdvStatut; onBilanRdvStatutChange(); }
+    if (c.date && document.getElementById('b-date')) document.getElementById('b-date').value = c.date;
     // Pré-remplir les checkboxes du bilan depuis bilan_raw si client déjà vu
     if (c.bilan_raw) {
       var br = c.bilan_raw;
@@ -2147,8 +2152,8 @@ function setBilanDecision(decision) {
       setTimeout(function(){ openClient(clientId); }, 300);
     }, 400);
   } else {
-    c.statut = 'Refusé';
-    toast('info', '❌ Prospect marqué comme refusé');
+    c.statut = 'Non Closé';
+    toast('info', '❌ Prospect Non Closé');
   }
   c.updated_at = new Date().toISOString();
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
@@ -2634,8 +2639,10 @@ function renderField(f) {
       return '<div class="f">' + lbl + '<input id="' + f.id + '" type="' + f.type + '" placeholder="' + (f.placeholder||'') + '"' + (f.oninput ? ' oninput="'+f.oninput+'"' : '') + '></div>';
     case 'textarea':
       return '<div class="f">' + lbl + '<textarea id="' + f.id + '" rows="2" placeholder="' + (f.placeholder||'') + '"></textarea></div>';
-    case 'select':
-      return '<div class="f">' + lbl + '<select id="' + f.id + '">' + (f.options||[]).map(o=>'<option>' + o + '</option>').join('') + '</select></div>';
+    case 'select': {
+      var onchg = f.id === 'b-rdv-statut' ? ' onchange="onBilanRdvStatutChange()"' : '';
+      return '<div class="f">' + lbl + '<select id="' + f.id + '"' + onchg + '>' + (f.options||[]).map(o=>'<option>' + o + '</option>').join('') + '</select></div>';
+    }
     case 'radio':
       return '<div class="f">' + lbl + (f.options||[]).map(o => {
         const [val,lbl2] = o.includes('|') ? o.split('|') : [o,o];
@@ -2663,8 +2670,8 @@ function renderSection(sec) {
   const key = sec.section ? sec.section[0]+sec.section[1] : '';
   const shCls = Object.entries(shColor).find(([k])=>sec.section&&sec.section.includes(k));
   const cls = shCls ? shCls[1] : '';
-  return '<div class="sh ' + cls + '">' + (sec.section||'') + '</div><div class="card">' +
-    (sec.fields||[]).map(renderField).join('') + '</div>';
+  return '<div class="bilan-sec-wrap" data-sec-id="' + (sec.id||'') + '"><div class="sh ' + cls + '">' + (sec.section||'') + '</div><div class="card">' +
+    (sec.fields||[]).map(renderField).join('') + '</div></div>';
 }
 function renderBilanForm() {
   const def = loadFormDef('bilan');
@@ -2673,6 +2680,77 @@ function renderBilanForm() {
   bilanContainer.innerHTML = def.map(renderSection).join('');
   renderBilanOffresList();
   const bd = gv('b-date'); if(!bd) { const el=document.getElementById('b-date'); if(el) el.value=new Date().toISOString().split('T')[0]; }
+  // Wire absent logic (in case already pre-filled)
+  onBilanRdvStatutChange();
+}
+
+function onBilanRdvStatutChange() {
+  var sel = document.getElementById('b-rdv-statut');
+  var val = sel ? sel.value : '';
+  var container = document.getElementById('bilan-form-container');
+  if (!container) return;
+
+  var sections = container.querySelectorAll('.bilan-sec-wrap');
+  var absentPanel = document.getElementById('bilan-absent-panel');
+
+  if (val === 'Absent') {
+    // Masquer toutes les sections sauf bf2 (RDV) et bf9 (Offre & Closing = objections)
+    sections.forEach(function(sec) {
+      var id = sec.dataset.secId;
+      sec.style.display = (id === 'bf2' || id === 'bf9') ? '' : 'none';
+    });
+    // Injecter le panneau de décision si pas encore là
+    if (!absentPanel) {
+      var panel = document.createElement('div');
+      panel.id = 'bilan-absent-panel';
+      panel.style.cssText = 'margin:14px 0;background:var(--bg2);border:1.5px solid rgba(214,48,49,.3);border-radius:var(--r2);padding:16px';
+      panel.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--R);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">⚠️ Prospect absent — que faire ?</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+        + '<button class="btn btn-w" style="background:rgba(200,130,10,.1);color:var(--Y);border:1.5px solid rgba(200,130,10,.3)" onclick="setBilanAbsentDecision(\'reporter\')">📅 Reporter<br><span style="font-size:10px;font-weight:500;opacity:.8">Attente RDV</span></button>'
+        + '<button class="btn btn-R btn-w" onclick="setBilanAbsentDecision(\'non_close\')">❌ Non Closé<br><span style="font-size:10px;font-weight:500;opacity:.8">La personne ne veut plus</span></button>'
+        + '</div>'
+        + '<p class="note" style="margin-top:10px">Reporter : un nouveau RDV Bilan pourra être planifié.<br>Non Closé : la personne abandonne définitivement.</p>';
+      var bf2Sec = container.querySelector('.bilan-sec-wrap[data-sec-id="bf2"]');
+      if (bf2Sec) {
+        bf2Sec.insertAdjacentElement('afterend', panel);
+      } else {
+        container.insertBefore(panel, container.firstChild);
+      }
+    }
+  } else {
+    // Afficher toutes les sections
+    sections.forEach(function(sec) { sec.style.display = ''; });
+    if (absentPanel) absentPanel.remove();
+  }
+}
+
+function setBilanAbsentDecision(decision) {
+  // Sauvegarder les données du bilan (rdvStatut=Absent + date + objections)
+  saveClient();
+  var clientId = ST.clientId;
+  if (!clientId) return;
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+
+  if (decision === 'reporter') {
+    c.statut = 'Attente RDV';
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    toast('info', '📅 RDV reporté — Attente RDV');
+  } else {
+    c.statut = 'Non Closé';
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    toast('info', '❌ Prospect Non Closé');
+  }
+  renderClients();
+  setTimeout(function() {
+    switchClientTab('prospects');
+    showPg('clients');
+    setTimeout(function(){ openClient(clientId); }, 350);
+  }, 600);
 }
 function renderTestsForm(programmeOverride) {
   // Déterminer le programme actif
@@ -2980,7 +3058,7 @@ window.onload = function() {
   if(ST.clients.length<_beforeClean){localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));}
 
   // Migration statuts legacy
-  var _statMap={'Clos':'Closé','CLOS':'Closé','CLOSÉ':'Closé','CLOSE':'Closé','Non clos':'Non closé','relancer':'À relancer','Refus':'Refusé','REFUS':'Refusé'};
+  var _statMap={'Clos':'Closé','CLOS':'Closé','CLOSÉ':'Closé','CLOSE':'Closé','Non clos':'Contact','relancer':'Attente RDV','Refus':'Non Closé','REFUS':'Non Closé','Refusé':'Non Closé','À relancer':'Attente RDV','Non closé':'Contact'};
   var _migrated=0;
   ST.clients.forEach(function(c){if(_statMap[c.statut]){c.statut=_statMap[c.statut];_migrated++;}});
   if(_migrated>0){localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));}
@@ -3137,16 +3215,16 @@ function saveRDV() {
   var rdv = {id:Date.now().toString(), clientId:prospectId, name:name, date:gv('rdv-date'), time:gv('rdv-time'), type:gv('rdv-type')};
   ST.rdvs.push(rdv); ST.rdvs.sort(function(a,b){return a.date.localeCompare(b.date);});
   localStorage.setItem('ba_rdvs_v8', JSON.stringify(ST.rdvs));
-  // Passer automatiquement le prospect en "Closing en cours"
-  if (c.statut === 'Non closé' || !c.statut) {
-    c.statut = 'Closing en cours';
+  // Passer automatiquement le prospect en "Attente RDV"
+  if (!c.statut || c.statut === 'Non closé' || c.statut === 'Contact' || c.statut === 'Attente RDV') {
+    c.statut = 'Attente RDV';
     c.updated_at = new Date().toISOString();
     localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
     saveToSupabase(c);
     renderClients();
   }
   closeModal('rdv'); renderNextRDV();
-  toast('ok', '✅ RDV ajouté — ' + name + ' → Closing en cours');
+  toast('ok', '✅ RDV ajouté — ' + name + ' → Attente RDV');
 }
 function renderNextRDV() {
   const el=document.getElementById('home-rdv'); if(!el)return;
@@ -3163,7 +3241,7 @@ function renderNextRDV() {
   // Ajouter les prospects avec un RDV Bilan planifié (date >= aujourd'hui, statut pas Closé/Refusé)
   ST.clients.forEach(function(c){
     if (!c.date || c.date < today) return;
-    if (c.statut === 'Closé' || c.statut === 'Refusé') return;
+    if (c.statut === 'Closé' || c.statut === 'Non Closé' || c.statut === 'Refusé') return;
     if (c.rdvStatut === 'Présent' || c.rdvStatut === 'Absent') return; // déjà passé
     allRdvs.push({
       date: c.date,
@@ -3799,7 +3877,7 @@ function saveNewProspect() {
   function makeProspect(p, n, a, s, t, v) {
     return { id: Date.now().toString() + Math.random().toString(36).slice(2),
       prenom:p, nom:n, age:a, sexe:s, tel:t, ville:v||ville,
-      statut:'Non closé', pq_summary: _pqNewSummary||null,
+      statut:'Contact', pq_summary: _pqNewSummary||null,
       profil_code: _pqNewSummary?(_pqNewSummary.profilTypeCode||''):'',
       profil_label: _pqNewSummary?(_pqNewSummary.profilTypeLabel||''):'',
       score_global: _pqNewSummary?(_pqNewSummary.potentielClosing||null):null,
@@ -3907,7 +3985,7 @@ function saveProClient() {
     montant: gv('pro-montant') ? parseFloat(gv('pro-montant')) : null,
     proFreq: gv('pro-freq'),
     notes: gv('pro-notes'),
-    statut: 'Non closé',
+    statut: 'Contact',
     profil_code: 'PRO',
     profil_label: 'Structure / Entreprise',
     score_global: null,
@@ -3994,7 +4072,7 @@ function renderProClientModal(id, c, container) {
 
   var statutWrap = document.createElement('div');
   statutWrap.style.cssText = 'display:flex;flex-direction:column;gap:7px;margin-bottom:13px';
-  ['Non closé','Closé','À relancer','Refusé'].forEach(function(s) {
+  ['Contact','Attente RDV','Closing en cours','Non Closé','Closé'].forEach(function(s) {
     var btn = document.createElement('button');
     btn.className = 'btn btn-dk btn-w btn-sm';
     btn.textContent = s;
@@ -4113,7 +4191,8 @@ function saveClient(){
     profil_label:(r&&r.profilTypeLabelFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeLabelUpdated)||'',
     offres:b.offres||((existingClient||{}).offres)||'',
     montant:b.montant,objections:b.objections,
-    statut:((existingClient||{}).statut)||'Non closé',
+    statut:((existingClient||{}).statut)||'Contact',
+    rdvStatut: b.rdvStatut || ((existingClient||{}).rdvStatut) || '',
     score_global:r?r.scoreGlobal:((existingClient||{}).score_global)||null,
     pq_summary:ST.pqSummary||((existingClient||{}).pq_summary)||null,
     bilan_summary:ST.bilanSummary||((existingClient||{}).bilan_summary)||null,
@@ -4163,9 +4242,9 @@ function saveBilanAndReturn() {
       label: 'Résultat du RDV',
       type: 'select',
       options: [
-        'ok|✅ Closé — Démarrer la signature',
-        'relance|🔄 À relancer',
-        'refus|❌ Refusé',
+        'ok|✅ OK → Démarrer la signature',
+        'non_close|❌ Non Closé — La personne ne signe pas',
+        'attente|📅 Attente RDV — Reporter le bilan',
         'none|⏸ Décider plus tard'
       ],
       value: 'ok'
@@ -4180,12 +4259,12 @@ function saveBilanAndReturn() {
         if (decision === 'ok') {
           c.statut = 'Closing en cours';
           toast('ok', '✅ Closing en cours !');
-        } else if (decision === 'relance') {
-          c.statut = 'À relancer';
-          toast('info', '🔄 À relancer');
-        } else if (decision === 'refus') {
-          c.statut = 'Refusé';
-          toast('info', '❌ Marqué comme refusé');
+        } else if (decision === 'non_close') {
+          c.statut = 'Non Closé';
+          toast('info', '❌ Non Closé');
+        } else if (decision === 'attente') {
+          c.statut = 'Attente RDV';
+          toast('info', '📅 Attente RDV');
         }
         if (decision !== 'none') {
           c.updated_at = new Date().toISOString();
@@ -4214,7 +4293,7 @@ function renderClients(){
   var srch=(srchEl?srchEl.value:'').toLowerCase();
   var isProspectTab=currentClientTab==='prospects';
   // Prospects = tout sauf 'Closé'
-  var prospectStatuts=['Non closé','En cours','Closing en cours','À relancer','Refusé','','Membre CC'];
+  var prospectStatuts=['Contact','Attente RDV','Closing en cours','Non Closé','Non closé','En cours','À relancer','Refusé','','Membre CC'];
   var list=ST.clients.filter(function(c){
     var ms=!srch||((c.prenom||'')+' '+(c.nom||'')+' '+(c.source||'')+' '+(c.ville||'')+' '+(c.structureName||'')).toLowerCase().includes(srch);
     var mv=ST.filterStatut==='all'||c.statut===ST.filterStatut;
@@ -4223,7 +4302,7 @@ function renderClients(){
     return ms&&mv&&tabMatch;
   });
   if(!list.length){document.getElementById('clients-list').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun contact</div><div class="empty-s">'+(isProspectTab?'Ajoutez votre premier prospect.':'Aucun client closé.')+'</div></div>';return;}
-  const sp={'Closé':'pill-G','Non closé':'pill-B','En cours':'pill-B','Closing en cours':'pill-Y','À relancer':'pill-Y','Refusé':'pill-R','Membre CC':'pill-V'};
+  const sp={'Closé':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Closing en cours':'pill-Y','Non Closé':'pill-R','Membre CC':'pill-V','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R','En cours':'pill-B'};
   // Compter les membres par groupId pour les badges
   var groupCounts={};
   ST.clients.forEach(function(c){ if(c.groupId){ groupCounts[c.groupId]=(groupCounts[c.groupId]||0)+1; } });
@@ -4235,7 +4314,7 @@ function renderClients(){
     var offreTxt = ((c.offres||'').split(',')[0].trim()||'—');
     var displayStatut = c.statut;
     var todayStr = new Date().toISOString().split('T')[0];
-    if (c.statut === 'Non closé' && c.date && c.date >= todayStr) displayStatut = 'En cours';
+    if ((c.statut === 'Non closé' || c.statut === 'Contact' || c.statut === 'Attente RDV') && c.date && c.date >= todayStr) displayStatut = 'Attente RDV';
     var statPill = c.statut ? '<span class="pill '+(sp[displayStatut]||sp[c.statut]||'')+'" style="font-size:10px'+(isClosing?';animation:pulse-y 2s ease-in-out infinite':'')+'">'+(isNew?'🆕 ':'')+displayStatut+'</span>' : '';
     var newBadge = isNew ? '<span class="badge-new">New</span>' : '';
     var closingBadge = isClosing ? '<span class="badge-closing">Closing</span>' : '';
@@ -4995,8 +5074,8 @@ function saveReactivation(type) {
   var c = ST.clients.find(function(x){ return x.id == _reactivClientId; });
   if (!c) return;
   var note = (document.getElementById('reactiv-note').value || '').trim();
-  var fromStatut = c.statut || 'Non closé';
-  var newStatut = (type === 'choix_offre') ? 'Closing en cours' : 'À relancer';
+  var fromStatut = c.statut || 'Contact';
+  var newStatut = (type === 'choix_offre') ? 'Closing en cours' : 'Attente RDV';
   // Ajouter l'entrée d'historique
   if (!c.relances) c.relances = [];
   c.relances.push({
@@ -6218,6 +6297,9 @@ async function syncClientsToFinances() {
 function mapStatutToBusiness(statut) {
   var map = {
     'Closé': 'CLOSE',
+    'Contact': 'CONTACT',
+    'Attente RDV': 'RDV',
+    'Non Closé': 'REFUS',
     'Non closé': 'RDV',
     'À relancer': 'CONTACT',
     'Refusé': 'REFUS'
@@ -6296,11 +6378,11 @@ function mapStatutFromBusiness(statut, closing) {
   var map = {
     'CLOSE': 'Closé',
     'CLIENT': 'Closé',
-    'RDV': 'Non closé',
-    'CONTACT': 'À relancer',
-    'REFUS': 'Refusé'
+    'RDV': 'Attente RDV',
+    'CONTACT': 'Contact',
+    'REFUS': 'Non Closé'
   };
-  return map[statut] || 'Non closé';
+  return map[statut] || 'Contact';
 }
 
 
