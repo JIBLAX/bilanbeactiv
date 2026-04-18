@@ -863,6 +863,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="chip" data-v="Attente RDV">Attente RDV</div>
     <div class="chip" data-v="Non Closé">Non Closé</div>
     <div class="chip" data-v="Sans Suite">Sans Suite</div>
+    <div class="chip" data-v="Ancien Client">Ancien Client</div>
   </div>
   <div id="clients-list"></div>
 </div>
@@ -3175,9 +3176,10 @@ function updateKPIs() {
   document.getElementById('kp-ca-year').textContent=year;
   const yc=ST.clients.filter(c=>getYear(c.date)===year);
   const total=ST.clients.length, rdv=yc.length;
-  const closings=yc.filter(c=>c.statut==='Closé').length;
+  const _isClosed=c=>c.statut==='Closé'||c.statut==='Ancien Client';
+  const closings=yc.filter(_isClosed).length;
   const taux=rdv>0?Math.round(closings/rdv*100):0;
-  const ca=yc.filter(c=>c.statut==='Closé').reduce((s,c)=>s+(parseFloat(c.montant)||0),0);
+  const ca=yc.filter(_isClosed).reduce((s,c)=>s+(parseFloat(c.montant)||0),0);
   sv2('kp-p',total||'—'); sv2('kp-r',rdv||'—');
   sv2('kp-t',taux?taux+'%':'—'); sv2('kp-ca',ca>0?ca+'€':'—');
   sv2('sb-closing',taux?taux+'%':'—'); sv2('tb-closing',taux?taux+'%':'—');
@@ -3190,7 +3192,7 @@ function updateKPIs() {
 function openRDVModal() {
   var sel = document.getElementById('rdv-prospect-id');
   sel.innerHTML = '<option value="">— Choisir un prospect —</option>';
-  var prospects = ST.clients.filter(function(c){ return c.statut !== 'Closé' && !c.isPro && (c.prenom||c.nom); });
+  var prospects = ST.clients.filter(function(c){ return c.statut !== 'Closé' && c.statut !== 'Ancien Client' && !c.isPro && (c.prenom||c.nom); });
   prospects.forEach(function(c){
     var opt = document.createElement('option');
     opt.value = c.id;
@@ -3265,9 +3267,10 @@ function renderStats() {
   const year=ST.statsYear||new Date().getFullYear();
   sv2('stats-year',year);
   const yc=ST.clients.filter(c=>getYear(c.date)===year);
-  const total=yc.length, closings=yc.filter(c=>c.statut==='Closé').length;
+  const _isC=c=>c.statut==='Closé'||c.statut==='Ancien Client';
+  const total=yc.length, closings=yc.filter(_isC).length;
   const taux=total>0?Math.round(closings/total*100):0;
-  const ca=yc.filter(c=>c.statut==='Closé').reduce((s,c)=>s+(parseFloat(c.montant)||0),0);
+  const ca=yc.filter(_isC).reduce((s,c)=>s+(parseFloat(c.montant)||0),0);
   const objTotal=yc.reduce((s,c)=>s+(c.objections||[]).length,0);
   sv2('stat-closing-pct',taux+'%');
   sv2('st-p',total||'—'); sv2('st-r',total||'—'); sv2('st-c',closings||'—');
@@ -3279,7 +3282,7 @@ function renderStats() {
     el.innerHTML=sorted.length?sorted.map(([k,v])=>'<div class="stat-bar-item"><div class="stat-bar-lbl">'+k.slice(0,20)+'</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width:'+(v/max*100)+'%;background:'+col+'"></div></div><div class="stat-bar-val">'+v+'</div></div>').join(''):'<div class="note">Aucune donnée</div>';
   }
   const offresCount={};
-  yc.filter(c=>c.statut==='Closé').forEach(c=>{(c.offres||'').split(',').forEach(o=>{const t=o.trim();if(t)offresCount[t]=(offresCount[t]||0)+1;});});
+  yc.filter(_isC).forEach(c=>{(c.offres||'').split(',').forEach(o=>{const t=o.trim();if(t)offresCount[t]=(offresCount[t]||0)+1;});});
   barEl('stats-offres',offresCount,'var(--Y)');
   const srcs={};yc.forEach(c=>{if(c.source)srcs[c.source]=(srcs[c.source]||0)+1;});
   barEl('stats-sources',srcs,'var(--bx)');
@@ -3302,7 +3305,7 @@ function renderStats() {
     if(!m.startsWith(year+''))return;
     if(!monthly[m])monthly[m]={rdv:0,closings:0,ca:0};
     monthly[m].rdv++;
-    if(c.statut==='Closé'){monthly[m].closings++;monthly[m].ca+=(parseFloat(c.montant)||0);}
+    if(c.statut==='Closé'||c.statut==='Ancien Client'){monthly[m].closings++;monthly[m].ca+=(parseFloat(c.montant)||0);}
   });
   const rowsEl=document.getElementById('stats-monthly-rows');
   if(rowsEl){
@@ -4289,12 +4292,12 @@ function renderClients(){
   var srch=(srchEl?srchEl.value:'').toLowerCase();
   var isProspectTab=currentClientTab==='prospects';
   // Prospects = tout sauf 'Closé'
-  var prospectStatuts=['Contact','Attente RDV','Non Closé','Sans Suite','Non closé','En cours','À relancer','Refusé','','Membre CC'];
+  var prospectStatuts=['Contact','Attente RDV','Non Closé','Sans Suite','Ancien Client','Non closé','En cours','À relancer','Refusé','','Membre CC'];
   var list=ST.clients.filter(function(c){
     var ms=!srch||((c.prenom||'')+' '+(c.nom||'')+' '+(c.source||'')+' '+(c.ville||'')+' '+(c.structureName||'')).toLowerCase().includes(srch);
     var mv=ST.filterStatut==='all'||c.statut===ST.filterStatut;
-    // Clients tab = Closé (pas Membre CC — ils restent dans Prospects)
-    var tabMatch=isProspectTab?(!c.statut||prospectStatuts.includes(c.statut)):(c.statut==='Closé'||c.statut==='Ancien Client');
+    // Clients tab = Closé uniquement
+    var tabMatch=isProspectTab?(!c.statut||prospectStatuts.includes(c.statut)):c.statut==='Closé';
     return ms&&mv&&tabMatch;
   });
   if(!list.length){document.getElementById('clients-list').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun contact</div><div class="empty-s">'+(isProspectTab?'Ajoutez votre premier prospect.':'Aucun client closé.')+'</div></div>';return;}
