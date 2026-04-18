@@ -1709,12 +1709,26 @@ function renderProspectModal(id, c, container) {
 function startBilanForProspect(clientId) {
   var c = ST.clients.find(function(x){ return x.id == clientId; });
   if (!c) return;
+
+  // Supprimer immédiatement tout brouillon d'un autre client
+  var existingDraft = localStorage.getItem('ba_bilan_draft');
+  if (existingDraft) {
+    try {
+      var d = JSON.parse(existingDraft);
+      if (!d['__clientId'] || d['__clientId'] !== clientId) {
+        localStorage.removeItem('ba_bilan_draft');
+      }
+    } catch(e) { localStorage.removeItem('ba_bilan_draft'); }
+  }
+
   ST.clientId = clientId;
   ST.pqSummary = c.pq_summary || null;
   ST.bilanSummary = c.bilan_summary || null;
   ST.finalReport = c.final_report || null;
   // Pré-remplir les champs du bilan avec les infos déjà connues
   setTimeout(function(){
+    // Guard : si le client a changé entre temps, ne rien écrire
+    if (ST.clientId !== clientId) return;
     if (document.getElementById('b-pn')) document.getElementById('b-pn').value = c.prenom || '';
     if (document.getElementById('b-nn')) document.getElementById('b-nn').value = c.nom || '';
     if (document.getElementById('b-age')) document.getElementById('b-age').value = c.age || '';
@@ -1732,13 +1746,11 @@ function startBilanForProspect(clientId) {
       });
       if (br.materiel && document.getElementById('b-materiel')) document.getElementById('b-materiel').value = br.materiel;
     }
-    // Masquer les champs déjà connus (nom, prénom, âge, ville) — les infos de base sont prises au prospect
+    // Masquer les champs déjà connus (nom, prénom, âge, ville)
     ['b-pn','b-nn','b-age','b-ville'].forEach(function(fid){
       var el = document.getElementById(fid);
       if (el) { var row = el.closest('.f'); if (row) row.style.display = 'none'; }
     });
-    // Afficher le titre de section identification masqué si tous champs masqués
-    // Scroller vers le champ Profession qui est le point de départ
     var profEl = document.getElementById('b-prof');
     if (profEl) {
       var profRow = profEl.closest('.f');
@@ -3059,16 +3071,19 @@ function showPg(name) {
   if(name==='home'){updateKPIs();renderNextRDV();}
   if(name==='offres') renderOffresPage();
   if(name==='pq') {
-    // Restaurer la pré-qualif si brouillon existe
-    var pqDraft = localStorage.getItem('ba_bilan_draft');
-    if (pqDraft) {
-      try {
-        var d = JSON.parse(pqDraft);
-        if (d['__pq_raw']) {
-          var el = document.getElementById('pq-raw');
-          if (el && !el.value) el.value = d['__pq_raw'];
-        }
-      } catch(e) {}
+    // Restaurer la pré-qualif uniquement pour un nouveau dossier (ST.clientId null)
+    // Un client existant ne doit jamais voir le brouillon d'un autre
+    if (!ST.clientId) {
+      var pqDraft = localStorage.getItem('ba_bilan_draft');
+      if (pqDraft) {
+        try {
+          var d = JSON.parse(pqDraft);
+          if (d['__pq_raw']) {
+            var el = document.getElementById('pq-raw');
+            if (el && !el.value) el.value = d['__pq_raw'];
+          }
+        } catch(e) {}
+      }
     }
   }
   if(name==='bilan'){
@@ -5914,10 +5929,13 @@ function restoreBilanDraft() {
   // ⚠️ Vérifier d'abord que le brouillon correspond au client en cours
   // AVANT de toucher le DOM — sinon les champs d'un autre client contaminent le formulaire
   var draftClientId = draft['__clientId'];
-  if (ST.clientId && draftClientId && draftClientId !== ST.clientId) {
-    return false;
+  if (ST.clientId) {
+    // Un client est actif : le brouillon doit lui appartenir exactement
+    if (!draftClientId || draftClientId !== ST.clientId) return false;
+  } else {
+    // Nouveau dossier : restaurer le clientId depuis le brouillon
+    if (draftClientId) ST.clientId = draftClientId;
   }
-  if (draftClientId && !ST.clientId) ST.clientId = draftClientId;
 
   // Restaurer champs texte / number / date / select / textarea
   Object.keys(draft).forEach(function(k) {
