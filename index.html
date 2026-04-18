@@ -2183,26 +2183,6 @@ var IMPORTED_CLIENTS = [];
 
 function injectImportedClients() { return 0; }
 
-  
-  var added = 0;
-  IMPORTED_CLIENTS.forEach(function(c) {
-    var found = existingList.find(function(x) {
-      return (x.prenom && c.prenom && x.prenom.toLowerCase() === c.prenom.toLowerCase() &&
-              x.nom && c.nom && x.nom.toLowerCase() === c.nom.toLowerCase());
-    });
-    if (!found) {
-      existingList.unshift(c);
-      added++;
-    }
-  });
-  
-  if (added > 0) {
-    localStorage.setItem('ba_clients_v8', JSON.stringify(existingList));
-    ST.clients = existingList;
-  }
-  return added;
-}
-
 // ═══════════════════════════════════════════════════
 // SYSTÈME DIALOG (remplace prompt/confirm)
 // ═══════════════════════════════════════════════════
