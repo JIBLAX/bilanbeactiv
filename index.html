@@ -5911,6 +5911,14 @@ function restoreBilanDraft() {
   var hasPqRaw = draft['__pq_raw'] && draft['__pq_raw'].trim();
   if (!hasPn && !hasPqRaw) return false;
 
+  // ⚠️ Vérifier d'abord que le brouillon correspond au client en cours
+  // AVANT de toucher le DOM — sinon les champs d'un autre client contaminent le formulaire
+  var draftClientId = draft['__clientId'];
+  if (ST.clientId && draftClientId && draftClientId !== ST.clientId) {
+    return false;
+  }
+  if (draftClientId && !ST.clientId) ST.clientId = draftClientId;
+
   // Restaurer champs texte / number / date / select / textarea
   Object.keys(draft).forEach(function(k) {
     if (k.startsWith('__')) return;
@@ -5937,14 +5945,6 @@ function restoreBilanDraft() {
     var pqEl = document.getElementById('pq-raw');
     if (pqEl) pqEl.value = draft['__pq_raw'];
   }
-  // Client ID — ne restaurer que si le brouillon correspond au client en cours
-  // (évite d'écraser ST.clientId et de corrompre un autre dossier)
-  var draftClientId = draft['__clientId'];
-  if (ST.clientId && draftClientId && draftClientId !== ST.clientId) {
-    // Brouillon d'un AUTRE client — ignorer complètement
-    return false;
-  }
-  if (draftClientId && !ST.clientId) ST.clientId = draftClientId;
   return true;
 }
 
