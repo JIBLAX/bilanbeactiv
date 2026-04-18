@@ -1639,10 +1639,17 @@ function renderProspectModal(id, c, container) {
       actionsDiv.appendChild(sigProBtn);
     }
   } else {
-    // Bouton RDV Bilan
+    // Bouton RDV Bilan — seulement si bilan pas encore fait
+    var hasBilanData = c.bilan_raw && (c.bilan_raw.notesTrain || c.bilan_raw.vision6m || c.bilan_raw.pointA || c.bilan_raw.blocages || c.bilan_raw.attenteCoach || c.bilan_raw.notesAlim);
+    var bilanAlreadyDone = c.bilan_summary || hasBilanData;
     var bilanBtn = document.createElement('button');
-    bilanBtn.className = 'btn btn-bx btn-w';
-    bilanBtn.innerHTML = (c.bilan_summary || c.pq_summary) ? '📝 RDV Bilan' : '📅 RDV Bilan';
+    if (!bilanAlreadyDone) {
+      bilanBtn.className = 'btn btn-bx btn-w';
+      bilanBtn.innerHTML = c.pq_summary ? '📝 RDV Bilan' : '📅 RDV Bilan';
+    } else {
+      bilanBtn.className = 'btn btn-dk btn-w btn-sm';
+      bilanBtn.innerHTML = '📝 Modifier le bilan';
+    }
     bilanBtn.onclick = (function(cid){ return function(){
       closeModal('client');
       startBilanForProspect(cid);
@@ -4142,18 +4149,58 @@ function saveClient(){
   toast('ok','✅ '+client.prenom+' '+client.nom+' sauvegardé');
 }
 
-// Sauvegarde le bilan et redirige vers la fiche prospect
+// Sauvegarde le bilan et demande la décision de closing (obligatoire)
 function saveBilanAndReturn() {
   saveClient();
   var clientId = ST.clientId;
-  if (clientId) {
+  if (!clientId) return;
+
+  showDialog({
+    title: '📋 Décision suite au Bilan',
+    body_html: '<p style="font-size:13px;color:var(--tx3);margin-bottom:12px">Suite au RDV Bilan, quelle est la décision ?</p>',
+    inputs: [{
+      id: 'decision',
+      label: 'Résultat du RDV',
+      type: 'select',
+      options: [
+        'ok|✅ Closé — Démarrer la signature',
+        'relance|🔄 À relancer',
+        'refus|❌ Refusé',
+        'none|⏸ Décider plus tard'
+      ],
+      value: 'ok'
+    }],
+    confirmLabel: 'Confirmer',
+    cancelLabel: 'Fermer'
+  }).then(function(r) {
+    if (r.confirmed) {
+      var c = ST.clients.find(function(x){ return x.id == clientId; });
+      if (c) {
+        var decision = r.values.decision;
+        if (decision === 'ok') {
+          c.statut = 'Closing en cours';
+          toast('ok', '✅ Closing en cours !');
+        } else if (decision === 'relance') {
+          c.statut = 'À relancer';
+          toast('info', '🔄 À relancer');
+        } else if (decision === 'refus') {
+          c.statut = 'Refusé';
+          toast('info', '❌ Marqué comme refusé');
+        }
+        if (decision !== 'none') {
+          c.updated_at = new Date().toISOString();
+          localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+          saveToSupabase(c);
+        }
+      }
+    }
     setTimeout(function() {
       switchClientTab('prospects');
       showPg('clients');
       renderClients();
       setTimeout(function(){ openClient(clientId); }, 350);
-    }, 500);
-  }
+    }, 400);
+  });
 }
 
 function isNewClient(c) {
