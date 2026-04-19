@@ -1959,16 +1959,26 @@ function renderSignatureAccordion(clientId, c, container) {
   acc.appendChild(body);
   container.appendChild(acc);
 
-  // Si toutes les étapes sont faites → proposer de finaliser le closing
-  if (allDone && c.sig_steps[SIG_STEPS.length-1].done && c.statut !== 'Closé') {
-    var closeBtn2 = document.createElement('button');
-    closeBtn2.className = 'btn btn-G btn-w';
-    closeBtn2.style.marginBottom = '12px';
-    closeBtn2.innerHTML = '🎉 Finaliser le Closing → Client ✅';
-    closeBtn2.onclick = (function(cid){ return function(){
-      finalizeClosing(cid);
+  // Panel confirmation signature + paiement — toujours visible tant que pas Closé
+  if (c.statut !== 'Closé') {
+    var sigDiv = document.createElement('div');
+    sigDiv.style.cssText = 'background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:14px;margin-bottom:12px';
+    sigDiv.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📋 Confirmation finale</div>'
+      + '<div style="display:flex;flex-direction:column;gap:7px">'
+      + '<button class="sig-ok-btn btn btn-G btn-w" style="text-align:left;padding:10px 12px"><strong>✅ Signé + Payé</strong><br><span style="font-size:10px;opacity:.7;font-weight:400">Lancer le parcours client</span></button>'
+      + '<button class="sig-ss-btn btn btn-w" style="background:rgba(139,21,32,.05);color:var(--bx);border:1.5px solid rgba(139,21,32,.2);text-align:left;padding:10px 12px"><strong>💬 Sans Suite</strong><br><span style="font-size:10px;opacity:.65;font-weight:400">Disparu après le bilan — toujours relançable</span></button>'
+      + '<button class="sig-nc-btn btn btn-R btn-w" style="text-align:left;padding:10px 12px"><strong>❌ Non Closé</strong><br><span style="font-size:10px;opacity:.75;font-weight:400">Ne signera pas</span></button>'
+      + '</div>';
+    sigDiv.querySelector('.sig-ok-btn').onclick = (function(cid){ return function(){ finalizeClosing(cid); }; })(clientId);
+    sigDiv.querySelector('.sig-ss-btn').onclick = (function(cid){ return function(){
+      var cl=ST.clients.find(function(x){return x.id==cid;});
+      if(cl){cl.statut='Sans Suite';cl.sig_started=false;cl.updated_at=new Date().toISOString();localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));saveToSupabase(cl);renderClients();closeModal('client');toast('info','💬 Sans Suite');}
     }; })(clientId);
-    container.insertBefore(closeBtn2, container.lastChild);
+    sigDiv.querySelector('.sig-nc-btn').onclick = (function(cid){ return function(){
+      var cl=ST.clients.find(function(x){return x.id==cid;});
+      if(cl){cl.statut='Non Closé';cl.sig_started=false;cl.updated_at=new Date().toISOString();localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));saveToSupabase(cl);renderClients();closeModal('client');toast('info','❌ Non Closé');}
+    }; })(clientId);
+    container.appendChild(sigDiv);
   }
 }
 
@@ -2701,12 +2711,12 @@ function onBilanRdvStatutChange() {
       var panel = document.createElement('div');
       panel.id = 'bilan-absent-panel';
       panel.style.cssText = 'margin:14px 0;background:var(--bg2);border:1.5px solid rgba(214,48,49,.3);border-radius:var(--r2);padding:16px';
-      panel.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--R);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">⚠️ Prospect absent — que faire ?</div>'
-        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-        + '<button class="btn btn-w" style="background:rgba(200,130,10,.1);color:var(--Y);border:1.5px solid rgba(200,130,10,.3)" onclick="setBilanAbsentDecision(\'reporter\')">📅 Reporter<br><span style="font-size:10px;font-weight:500;opacity:.8">Attente RDV</span></button>'
-        + '<button class="btn btn-R btn-w" onclick="setBilanAbsentDecision(\'non_close\')">❌ Non Closé<br><span style="font-size:10px;font-weight:500;opacity:.8">La personne ne veut plus</span></button>'
-        + '</div>'
-        + '<p class="note" style="margin-top:10px">Reporter : un nouveau RDV Bilan pourra être planifié.<br>Non Closé : la personne abandonne définitivement.</p>';
+      panel.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--R);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">⚠️ Prospect absent — que faire ?</div>'
+        + '<div style="display:flex;flex-direction:column;gap:7px">'
+        + '<button class="btn btn-w" style="background:rgba(200,130,10,.08);color:var(--Y);border:1.5px solid rgba(200,130,10,.3);text-align:left;padding:10px 12px" onclick="setBilanAbsentDecision(\'reporter\')"><strong>📅 Reporter</strong> <span style="font-size:10px;background:rgba(200,130,10,.15);border-radius:50px;padding:1px 6px;margin-left:4px">Attente RDV</span><br><span style="font-size:10px;opacity:.65;font-weight:400">Un nouveau RDV Bilan pourra être planifié</span></button>'
+        + '<button class="btn btn-w" style="background:rgba(139,21,32,.05);color:var(--bx);border:1.5px solid rgba(139,21,32,.2);text-align:left;padding:10px 12px" onclick="setBilanAbsentDecision(\'sans_suite\')"><strong>💬 Sans Suite</strong><br><span style="font-size:10px;opacity:.65;font-weight:400">Disparu — toujours relançable plus tard</span></button>'
+        + '<button class="btn btn-R btn-w" style="text-align:left;padding:10px 12px" onclick="setBilanAbsentDecision(\'non_close\')"><strong>❌ Non Closé</strong><br><span style="font-size:10px;opacity:.75;font-weight:400">Abandon définitif</span></button>'
+        + '</div>';
       var bf2Sec = container.querySelector('.bilan-sec-wrap[data-sec-id="bf2"]');
       if (bf2Sec) {
         bf2Sec.insertAdjacentElement('afterend', panel);
@@ -2732,17 +2742,17 @@ function setBilanAbsentDecision(decision) {
 
   if (decision === 'reporter') {
     c.statut = 'Attente RDV';
-    c.updated_at = new Date().toISOString();
-    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-    saveToSupabase(c);
     toast('info', '📅 RDV reporté — Attente RDV');
+  } else if (decision === 'sans_suite') {
+    c.statut = 'Sans Suite';
+    toast('info', '💬 Sans Suite');
   } else {
     c.statut = 'Non Closé';
-    c.updated_at = new Date().toISOString();
-    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-    saveToSupabase(c);
     toast('info', '❌ Prospect Non Closé');
   }
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
   renderClients();
   setTimeout(function() {
     switchClientTab('prospects');
@@ -4243,6 +4253,7 @@ function saveBilanAndReturn() {
       options: [
         'ok|✅ OK → Signature en attente',
         'non_close|❌ Non Closé — La personne ne signe pas',
+        'sans_suite|💬 Sans Suite — Plus de nouvelles',
         'attente|📅 Attente RDV — Reporter le bilan',
         'none|⏸ Décider plus tard'
       ],
@@ -4261,6 +4272,9 @@ function saveBilanAndReturn() {
         } else if (decision === 'non_close') {
           c.statut = 'Non Closé';
           toast('info', '❌ Non Closé');
+        } else if (decision === 'sans_suite') {
+          c.statut = 'Sans Suite';
+          toast('info', '💬 Sans Suite');
         } else if (decision === 'attente') {
           c.statut = 'Attente RDV';
           toast('info', '📅 Attente RDV');
@@ -4754,6 +4768,23 @@ function renderModeStages(clientId, c, container) {
     }
     container.appendChild(endDiv);
   }
+}
+
+function relancerAncienClient(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  dlgConfirm('Relancer ' + (c.prenom||c.nom||'ce client') + ' ? Statut → Attente RDV. L\'historique est conservé.', 'Relancer').then(function(r) {
+    if (!r.confirmed) return;
+    c.statut = 'Attente RDV';
+    c.rdvStatut = '';
+    c.sig_started = false;
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    renderClients();
+    closeModal('client');
+    toast('ok', '🔁 ' + (c.prenom||'Client') + ' — Attente RDV');
+  });
 }
 
 function setAncienClient(clientId) {
@@ -5269,6 +5300,7 @@ function renderClientModal(id) {
   clientActions.style.cssText = 'display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap';
   clientActions.innerHTML = '<button class="btn btn-dk btn-sm" onclick="openEditClientModal(\''+id+'\')">✏️ Modifier</button>'
     + '<button class="btn btn-dk btn-sm" onclick="openNewOffreForClient(\''+id+'\')">💼 Nouvelle offre</button>'
+    + (c.statut==='Ancien Client' ? '<button class="btn btn-V btn-sm" onclick="relancerAncienClient(\''+id+'\')">🔁 Relancer</button>' : '')
     + '<button class="btn btn-R btn-sm" onclick="deleteClient(\''+id+'\')">🗑 Supprimer</button>';
   container.appendChild(clientActions);
 
