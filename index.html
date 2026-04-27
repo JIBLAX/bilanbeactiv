@@ -376,6 +376,76 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .pm-fold.open .pm-fold-c{display:block}
 
 /* ═══════════════════════════════════════════════════
+   CLIENT MODAL — COCKPIT PREMIUM
+═══════════════════════════════════════════════════ */
+.cm-head{display:flex;align-items:center;gap:12px;padding:4px 0 14px;border-bottom:1px solid var(--rim3);margin-bottom:14px}
+.cm-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--G),#0c8a52);color:#fff;font-weight:900;font-size:17px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px;flex-shrink:0;box-shadow:0 2px 10px rgba(0,163,98,.22)}
+.cm-avatar.ancien{background:linear-gradient(135deg,var(--V),#5444c8)}
+.cm-name-wrap{flex:1;min-width:0}
+.cm-name{font-weight:800;font-size:18px;color:var(--tx);line-height:1.15;letter-spacing:-.2px}
+.cm-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;align-items:center}
+.cm-cockpit{background:var(--bg2);border:1px solid var(--rim3);border-radius:var(--r2);padding:14px 15px;margin-bottom:14px}
+.cm-cockpit-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px}
+.cm-cockpit-h-lbl{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.7px}
+.cm-cockpit-pct{font-size:18px;font-weight:900;color:var(--bx);letter-spacing:-.4px}
+.cm-cockpit-bar{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-bottom:11px}
+.cm-cockpit-bar-fill{height:100%;background:linear-gradient(90deg,var(--bx),var(--G));border-radius:3px;transition:width .4s}
+.cm-cockpit-meta{font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5}
+.cm-cockpit-meta strong{color:var(--tx);font-weight:700}
+.cm-cockpit-next{display:flex;align-items:center;gap:8px;padding:9px 12px;background:rgba(139,21,32,.05);border:1px solid rgba(139,21,32,.18);border-radius:50px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--bx);transition:all .15s;width:100%;border:1px solid rgba(139,21,32,.18);font-family:inherit;text-align:left}
+.cm-cockpit-next:hover{background:rgba(139,21,32,.1);border-color:rgba(139,21,32,.32);transform:translateY(-1px)}
+.cm-cockpit-next .cm-arrow{margin-left:auto;font-size:13px;opacity:.7}
+.cm-stages{margin:8px 0 12px}
+.cm-stages-h{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin:6px 2px 9px}
+.cm-stage{background:var(--bg2);border:1px solid var(--rim3);border-radius:var(--r2);margin-bottom:8px;overflow:hidden;transition:border-color .15s}
+.cm-stage.past{border-color:rgba(0,163,98,.2);background:linear-gradient(180deg,rgba(0,163,98,.025),var(--bg2))}
+.cm-stage.active{border-color:var(--bx);box-shadow:0 4px 16px rgba(139,21,32,.06)}
+.cm-stage.future{opacity:.65}
+.cm-stage-head{display:flex;align-items:center;gap:11px;padding:12px 14px;cursor:pointer;user-select:none}
+.cm-stage-head:hover{background:rgba(0,0,0,.015)}
+.cm-stage-ico{font-size:19px;line-height:1;flex-shrink:0;width:28px;text-align:center}
+.cm-stage-info{flex:1;min-width:0}
+.cm-stage-title{font-weight:700;font-size:13px;color:var(--tx);letter-spacing:.1px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;line-height:1.25}
+.cm-stage.past .cm-stage-title{color:var(--G)}
+.cm-stage.active .cm-stage-title{color:var(--bx)}
+.cm-stage.future .cm-stage-title{color:var(--tx4)}
+.cm-stage-state{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:50px;line-height:1.4}
+.cm-stage.past .cm-stage-state{background:var(--G);color:#fff}
+.cm-stage.active .cm-stage-state{background:var(--bx);color:#fff}
+.cm-stage.future .cm-stage-state{background:var(--bg4);color:var(--tx4)}
+.cm-stage-meta{font-size:10.5px;color:var(--tx3);margin-top:3px;font-weight:500}
+.cm-stage-bar{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:5px}
+.cm-stage-bar-fill{height:100%;border-radius:2px;transition:width .3s;background:var(--bx)}
+.cm-stage.past .cm-stage-bar-fill{background:var(--G)}
+.cm-stage-arrow{font-size:11px;color:var(--tx4);flex-shrink:0;transition:transform .2s}
+.cm-stage.open .cm-stage-arrow{transform:rotate(90deg)}
+.cm-stage-body{display:none;padding:6px 14px 13px;border-top:1px solid var(--rim3);background:var(--bg)}
+.cm-stage.open .cm-stage-body{display:block}
+.cm-stage.active .cm-stage-body{display:block}
+.cm-step{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px dashed var(--rim3)}
+.cm-step:last-child{border:none}
+.cm-step-check{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--rim2);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#fff;cursor:pointer;transition:all .15s}
+.cm-step-check.done{background:var(--G);border-color:var(--G)}
+.cm-step-check.done::after{content:'✓';color:#fff;font-size:11px;font-weight:800}
+.cm-step-check.locked{background:var(--bg3);border-color:var(--rim3);cursor:not-allowed;opacity:.55}
+.cm-step-lbl{font-size:13px;font-weight:600;color:var(--tx);flex:1;line-height:1.4}
+.cm-step-lbl.done{text-decoration:line-through;color:var(--tx3);font-weight:500}
+.cm-step-lbl.locked{color:var(--tx4);font-weight:500}
+.cm-step-ts{font-size:10px;color:var(--tx4);white-space:nowrap;flex-shrink:0}
+.cm-finale{padding:14px 15px;background:linear-gradient(135deg,rgba(0,163,98,.06),rgba(0,163,98,.02));border:1px solid rgba(0,163,98,.22);border-radius:var(--r2);margin:6px 0 12px}
+.cm-finale-h{font-weight:800;font-size:13.5px;color:var(--G);margin-bottom:4px;letter-spacing:.1px;display:flex;align-items:center;gap:7px}
+.cm-finale-sub{font-size:11.5px;color:var(--tx3);margin-bottom:10px;line-height:1.5}
+.cm-finale-actions{display:flex;flex-wrap:wrap;gap:7px}
+.cm-finale-actions .btn{flex:1 1 auto;min-width:140px;padding:9px 14px;font-size:12.5px;font-weight:700}
+.cm-finale-after{margin-top:9px;padding-top:9px;border-top:1px dashed rgba(0,163,98,.25);display:flex;justify-content:center}
+.cm-finale-after .btn{font-size:11.5px;padding:7px 14px;background:transparent;border:1px solid var(--rim3);color:var(--tx3);font-weight:600;box-shadow:none}
+.cm-finale-after .btn:hover{background:var(--bg3);border-color:var(--rim);color:var(--tx)}
+.cm-empty{text-align:center;padding:28px 18px;background:var(--bg2);border:1px dashed var(--rim2);border-radius:var(--r2);margin-bottom:8px}
+.cm-empty-ico{font-size:34px;margin-bottom:8px;opacity:.6}
+.cm-empty-h{font-weight:800;font-size:14px;color:var(--tx);margin-bottom:5px}
+.cm-empty-sub{font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5}
+
+/* ═══════════════════════════════════════════════════
    RAPPORT
 ═══════════════════════════════════════════════════ */
 .report-hero{background:linear-gradient(135deg,rgba(139,21,32,.06),rgba(26,110,219,.04));border:1.5px solid var(--rim);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
@@ -4687,70 +4757,65 @@ function renderModeStages(clientId, c, container) {
   var activeStageIdx = lastDoneStage + 1;
   if (activeStageIdx >= stagesDef.length) activeStageIdx = stagesDef.length - 1;
 
+  var stagesWrap = document.createElement('div'); stagesWrap.className = 'cm-stages';
+  stagesWrap.innerHTML = '<div class="cm-stages-h">Parcours</div>';
+  container.appendChild(stagesWrap);
+
   stagesDef.forEach(function(stageDef, si){
     var stageData = c.mode_stages[si] || {steps:[]};
     var isActive = si === activeStageIdx;
     var isPast = si < activeStageIdx;
     var isFuture = si > activeStageIdx;
-    var allDone = stageData.steps.every(function(s){return s.done;}) && stageData.steps.length > 0;
     var doneCnt = stageData.steps.filter(function(s){return s.done;}).length;
+    var totalCnt = stageData.steps.length;
+    var pct = totalCnt > 0 ? Math.round(doneCnt/totalCnt*100) : 0;
 
     var acc = document.createElement('div');
-    acc.style.cssText = 'background:var(--bg2);border:1.5px solid '+(isActive?'var(--bx)':isPast?'rgba(0,163,98,.3)':'var(--rim3)')+';border-radius:var(--r2);margin-bottom:10px;overflow:hidden';
+    acc.className = 'cm-stage ' + (isActive?'active':isPast?'past':'future');
+    acc.dataset.stageIdx = si;
+    if (isActive) acc.classList.add('open');
 
-    var hd = document.createElement('div');
-    hd.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;'+(isActive?'background:rgba(139,21,32,.04)':isPast?'background:rgba(0,163,98,.04)':'');
-    hd.onclick = (function(a){ return function(){
-      var b = a.querySelector('.stage-body');
-      if (b) b.style.display = b.style.display==='none'?'block':'none';
-    }; })(acc);
+    var _stageM = stageDef._mode || 'action';
+    var _stageLbl = getPLbl('stage_'+_stageM+'_'+stageDef.id, stageDef.lbl);
+    var stateBadge = isPast ? '<span class="cm-stage-state">✓ Terminé</span>'
+      : isActive ? '<span class="cm-stage-state">En cours</span>'
+      : '<span class="cm-stage-state">🔒 Verrouillé</span>';
 
-    var statusBadge = isPast ? '<span style="font-size:9px;background:var(--G);color:#fff;padding:2px 6px;border-radius:50px;margin-left:6px">✓</span>'
-      : isActive ? '<span style="font-size:9px;background:var(--bx);color:#fff;padding:2px 6px;border-radius:50px;margin-left:6px">EN COURS</span>'
-      : '<span style="font-size:9px;background:var(--bg3);color:var(--tx4);padding:2px 6px;border-radius:50px;margin-left:6px">🔒</span>';
-
-    var pct = stageData.steps.length > 0 ? Math.round(doneCnt/stageData.steps.length*100) : 0;
-    var pbar = '<div style="height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:4px"><div style="height:100%;width:'+pct+'%;background:'+(isPast?'var(--G)':'var(--bx)')+';border-radius:2px;transition:width .3s"></div></div>';
-
-    var _stageM=stageDef._mode||'action';
-    var _stageLbl=getPLbl('stage_'+_stageM+'_'+stageDef.id, stageDef.lbl);
-    hd.innerHTML = '<span style="font-size:20px">'+stageDef.ico+'</span>'
-      + '<div style="flex:1;min-width:0">'
-      + '<div style="font-weight:700;font-size:13.5px;color:'+(isActive?'var(--bx)':isPast?'var(--G)':'var(--tx4)')+'">ÉTAPE : '+_stageLbl+statusBadge+'</div>'
-      + '<div style="font-size:11px;color:var(--tx3);margin-top:1px">'+doneCnt+'/'+stageData.steps.length+' étapes</div>'
-      + pbar + '</div>'
-      + '<span style="color:var(--tx4);font-size:11px">'+(isActive||isPast?'▼':'▶')+'</span>';
+    var hd = document.createElement('div'); hd.className = 'cm-stage-head';
+    hd.innerHTML = '<div class="cm-stage-ico">'+stageDef.ico+'</div>'
+      + '<div class="cm-stage-info">'
+      +   '<div class="cm-stage-title">'+_stageLbl+stateBadge+'</div>'
+      +   '<div class="cm-stage-meta">'+doneCnt+'/'+totalCnt+' étapes'+(isActive&&totalCnt?' · '+pct+'%':'')+'</div>'
+      +   '<div class="cm-stage-bar"><div class="cm-stage-bar-fill" style="width:'+pct+'%"></div></div>'
+      + '</div>'
+      + '<span class="cm-stage-arrow">▸</span>';
+    hd.onclick = (function(a){ return function(){ a.classList.toggle('open'); }; })(acc);
     acc.appendChild(hd);
 
-    // Body (visible si actif ou passé; masqué si futur ou passé)
-    var body = document.createElement('div');
-    body.className = 'stage-body';
-    body.style.cssText = 'padding:12px 14px;border-top:1px solid var(--rim3);display:'+(isPast?'none':isActive?'block':'none');
-
+    var body = document.createElement('div'); body.className = 'cm-stage-body';
     if (isFuture) {
-      body.innerHTML = '<div style="font-size:13px;color:var(--tx4);text-align:center;padding:8px 0">🔒 Déverrouillez l\'étape précédente d\'abord</div>';
+      body.innerHTML = '<div style="font-size:12.5px;color:var(--tx4);text-align:center;padding:8px 0;font-style:italic">🔒 Déverrouillez l\'étape précédente d\'abord</div>';
     } else {
       stageDef.steps.forEach(function(step, stepIdx){
         var st = stageData.steps[stepIdx] || {done:false, doneAt:null};
         var prevDone = stepIdx === 0 || (stageData.steps[stepIdx-1] && stageData.steps[stepIdx-1].done);
         var isLocked = isFuture || (!prevDone && !st.done);
-        var row = document.createElement('div'); row.className = 'sig-step';
+        var row = document.createElement('div'); row.className = 'cm-step';
         var chk = document.createElement('div');
-        chk.className = 'sig-check' + (st.done?' done':isLocked?' locked':'');
+        chk.className = 'cm-step-check' + (st.done?' done':isLocked?' locked':'');
         var lbl = document.createElement('div');
-        lbl.className = 'sig-lbl' + (st.done?' done':isLocked?' locked':'');
+        lbl.className = 'cm-step-lbl' + (st.done?' done':isLocked?' locked':'');
         lbl.innerHTML = getPLbl('step_'+_stageM+'_'+stageDef.id+'_'+step.id+'_'+stepIdx, step.lbl);
         if (!st.done && !isLocked && isActive) {
-          chk.style.cursor = 'pointer';
-          chk.onclick = (function(cid, sIdx, stIdx){ return function(){
+          chk.onclick = (function(cid, sIdx, stIdx){ return function(e){
+            e.stopPropagation();
             validateModeStep(cid, sIdx, stIdx);
           }; })(clientId, si, stepIdx);
         }
         row.appendChild(chk);
         row.appendChild(lbl);
         if (st.done && st.doneAt) {
-          var ts = document.createElement('div');
-          ts.style.cssText = 'font-size:10px;color:var(--tx4);white-space:nowrap';
+          var ts = document.createElement('div'); ts.className = 'cm-step-ts';
           ts.textContent = new Date(st.doneAt).toLocaleDateString('fr-FR');
           row.appendChild(ts);
         }
@@ -4758,112 +4823,103 @@ function renderModeStages(clientId, c, container) {
       });
     }
     acc.appendChild(body);
-    container.appendChild(acc);
+    stagesWrap.appendChild(acc);
   });
 
-  // ── Boutons de continuation après le dernier stage validé
+  // ── Bloc final unifié
   var mode = null;
   if (c.sig_offre_id) { var ooM=loadOffres().find(function(x){return x.id===c.sig_offre_id;}); if(ooM) mode=ooM.modeOffre; }
-
-  // Trouver le dernier stage complété qui est le stage courant actif
   var lastCompletedStageDef = lastDoneStage >= 0 ? stagesDef[lastDoneStage] : null;
   var lastCompletedData = lastDoneStage >= 0 ? (c.mode_stages[lastDoneStage] || {steps:[]}) : null;
   var lastCompletedStageDone = lastCompletedData && lastCompletedData.steps.length > 0 && lastCompletedData.steps.every(function(s){return s.done;});
 
   if (lastCompletedStageDone && lastCompletedStageDef) {
-    var endDiv = document.createElement('div');
-    endDiv.style.cssText = 'padding:14px;background:rgba(0,163,98,.06);border:1.5px solid rgba(0,163,98,.25);border-radius:var(--r2);margin-bottom:12px;text-align:center';
+    var endDiv = document.createElement('div'); endDiv.className = 'cm-finale';
 
     function mkBtn(cls, ico, lbl, fn) {
       var b = document.createElement('button');
-      b.className = cls + ' btn-sm'; b.style.margin = '4px';
-      b.innerHTML = ico + ' ' + lbl;
-      b.onclick = fn;
+      b.className = cls; b.innerHTML = ico + ' ' + lbl; b.onclick = fn;
       return b;
     }
 
     var sid = lastCompletedStageDef.id;
+    var hHtml = '', subHtml = '';
+    var actions = document.createElement('div'); actions.className = 'cm-finale-actions';
 
     if (sid === 'activ_essentiel') {
-      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:6px">✅ ACTIV ESSENTIEL terminé !</div>';
+      hHtml = '✅ ACTIV ESSENTIEL terminé';
       var dStep = lastCompletedData.steps[0];
       if (dStep && dStep.doneAt) {
         var startE = new Date(dStep.doneAt);
         var endE = new Date(startE.getTime() + 56*24*3600*1000);
         var nowE = new Date();
         var daysRemE = Math.ceil((endE - nowE) / (24*3600*1000));
-        if (daysRemE > 0) {
-          endDiv.innerHTML += '<div style="font-size:11px;color:var(--tx4);margin-bottom:8px">⏱ Fin prévue le '+endE.toLocaleDateString('fr-FR')+' (dans '+daysRemE+' j)</div>';
-        }
+        if (daysRemE > 0) subHtml = '⏱ Fin prévue le '+endE.toLocaleDateString('fr-FR')+' (dans '+daysRemE+' j)';
       }
-      endDiv.appendChild(mkBtn('btn btn-dk', '🔂', 'Relancer ACTIV ESSENTIEL', function(){ relancerActivEssentiel(clientId); }));
-      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
-
+      actions.appendChild(mkBtn('btn btn-dk btn-sm', '🔂', 'Relancer ACTIV ESSENTIEL', function(){ relancerActivEssentiel(clientId); }));
+      actions.appendChild(mkBtn('btn btn-bx btn-sm', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
     } else if (sid === 'activ_reset') {
-      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">🚀 GO ACTIV !</div>';
-      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
-      endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — RESET',  function(){ addActivContinue(clientId,'reset'); }));
-      endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — SCULPT', function(){ addActivContinue(clientId,'sculpt'); }));
-      endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — HEALTH', function(){ addActivContinue(clientId,'health'); }));
-
+      hHtml = '🚀 GO ACTIV !';
+      subHtml = 'Le parcours initial est validé. Choisissez la suite.';
+      actions.appendChild(mkBtn('btn btn-bx btn-sm', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
+      actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — RESET',  function(){ addActivContinue(clientId,'reset'); }));
+      actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — SCULPT', function(){ addActivContinue(clientId,'sculpt'); }));
+      actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — HEALTH', function(){ addActivContinue(clientId,'health'); }));
     } else if (sid === 'activ_continue_reset') {
-      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">✅ ACTIV CONTINUE RESET VALIDÉE !</div>';
-      endDiv.appendChild(mkBtn('btn btn-dk', '🔂', 'Relancer',               function(){ relancerActivContinueStage(clientId,'reset'); }));
-      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre',         function(){ openNewOffreForClient(clientId); }));
-      endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — SCULPT',function(){ addActivContinue(clientId,'sculpt'); }));
-
+      hHtml = '✅ ACTIV CONTINUE RESET validée';
+      actions.appendChild(mkBtn('btn btn-dk btn-sm', '🔂', 'Relancer',         function(){ relancerActivContinueStage(clientId,'reset'); }));
+      actions.appendChild(mkBtn('btn btn-bx btn-sm', '💼', 'Nouvelle offre',   function(){ openNewOffreForClient(clientId); }));
+      actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — SCULPT',function(){ addActivContinue(clientId,'sculpt'); }));
     } else if (sid === 'activ_continue_sculpt') {
-      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">✅ ACTIV CONTINUE SCULPT VALIDÉE !</div>';
-      // Option certification (disponible 3 mois après activation)
+      hHtml = '✅ ACTIV CONTINUE SCULPT validée';
       var startDt = lastCompletedData.steps[0] && lastCompletedData.steps[0].doneAt ? new Date(lastCompletedData.steps[0].doneAt) : null;
       var certAvail = startDt && (new Date() - startDt) >= 90*24*3600*1000;
       if (certAvail && !lastCompletedData.certified) {
-        endDiv.innerHTML += '<div style="font-size:11px;color:var(--Y);margin-bottom:8px">🏆 Certification ACTIV SCULPT disponible !</div>';
-        endDiv.appendChild(mkBtn('btn btn-Y', '🏆', 'Certifier ACTIV SCULPT', function(){ certifyActivContinue(clientId,lastDoneStage,'sculpt'); }));
+        subHtml = '🏆 Certification ACTIV SCULPT disponible';
+        actions.appendChild(mkBtn('btn btn-Y btn-sm', '🏆', 'Certifier ACTIV SCULPT', function(){ certifyActivContinue(clientId,lastDoneStage,'sculpt'); }));
       } else if (!certAvail && startDt) {
         var daysLeft = Math.ceil((90*24*3600*1000 - (new Date()-startDt))/(24*3600*1000));
-        endDiv.innerHTML += '<div style="font-size:11px;color:var(--tx4);margin-bottom:8px">🏆 Certification dans '+ daysLeft +' jours</div>';
+        subHtml = '🏆 Certification dans '+ daysLeft +' jours';
       }
-      endDiv.appendChild(mkBtn('btn btn-dk', '🔂', 'Relancer',               function(){ relancerActivContinueStage(clientId,'sculpt'); }));
-      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre',         function(){ openNewOffreForClient(clientId); }));
-      endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'ACTIV CONTINUE — HEALTH',function(){ addActivContinue(clientId,'health'); }));
-
+      actions.appendChild(mkBtn('btn btn-dk btn-sm', '🔂', 'Relancer',         function(){ relancerActivContinueStage(clientId,'sculpt'); }));
+      actions.appendChild(mkBtn('btn btn-bx btn-sm', '💼', 'Nouvelle offre',   function(){ openNewOffreForClient(clientId); }));
+      actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — HEALTH',function(){ addActivContinue(clientId,'health'); }));
     } else if (sid === 'activ_continue_health') {
-      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">✅ ACTIV CONTINUE HEALTH VALIDÉE !</div>';
+      hHtml = '✅ ACTIV CONTINUE HEALTH validée';
       var startDtH = lastCompletedData.steps[0] && lastCompletedData.steps[0].doneAt ? new Date(lastCompletedData.steps[0].doneAt) : null;
       var certAvailH = startDtH && (new Date() - startDtH) >= 90*24*3600*1000;
       if (certAvailH && !lastCompletedData.certified) {
-        endDiv.innerHTML += '<div style="font-size:11px;color:var(--Y);margin-bottom:8px">🏆 Certification ACTIV HEALTH disponible !</div>';
-        endDiv.appendChild(mkBtn('btn btn-Y', '🏆', 'Certifier ACTIV HEALTH', function(){ certifyActivContinue(clientId,lastDoneStage,'health'); }));
+        subHtml = '🏆 Certification ACTIV HEALTH disponible';
+        actions.appendChild(mkBtn('btn btn-Y btn-sm', '🏆', 'Certifier ACTIV HEALTH', function(){ certifyActivContinue(clientId,lastDoneStage,'health'); }));
       } else if (!certAvailH && startDtH) {
         var daysLeftH = Math.ceil((90*24*3600*1000 - (new Date()-startDtH))/(24*3600*1000));
-        endDiv.innerHTML += '<div style="font-size:11px;color:var(--tx4);margin-bottom:8px">🏆 Certification dans '+ daysLeftH +' jours</div>';
+        subHtml = '🏆 Certification dans '+ daysLeftH +' jours';
       }
-      endDiv.appendChild(mkBtn('btn btn-dk', '🔂', 'Relancer',               function(){ relancerActivContinueStage(clientId,'health'); }));
-      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre',         function(){ openNewOffreForClient(clientId); }));
-
+      actions.appendChild(mkBtn('btn btn-dk btn-sm', '🔂', 'Relancer',       function(){ relancerActivContinueStage(clientId,'health'); }));
+      actions.appendChild(mkBtn('btn btn-bx btn-sm', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
     } else if (mode === 'action') {
-      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">🏁 Parcours terminé !</div>';
-      endDiv.appendChild(mkBtn('btn btn-dk', '⏺', 'Relancer l\'étape', function(){ relancerEtapeAction(clientId); }));
-      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre',   function(){ openNewOffreForClient(clientId); }));
-
+      hHtml = '🏁 Parcours terminé';
+      actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'Relancer l\'étape', function(){ relancerEtapeAction(clientId); }));
+      actions.appendChild(mkBtn('btn btn-bx btn-sm', '💼', 'Nouvelle offre',   function(){ openNewOffreForClient(clientId); }));
     } else if (mode === 'collectif') {
       var isMembreCC = (c && c.statut === 'Membre CC');
-      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:6px">🏁 Parcours collectif terminé !</div>'
-        + (isMembreCC ? '<div style="font-size:11px;color:var(--V);margin-bottom:8px">♾️ Statut : Membre CC</div>' : '');
-      if (!isMembreCC) {
-        endDiv.appendChild(mkBtn('btn btn-V', '♾️', 'Basculer → Membre CC', function(){ setMembreCC(clientId); }));
-      }
-      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
-
+      hHtml = '🏁 Parcours collectif terminé';
+      if (isMembreCC) subHtml = '♾️ Statut : Membre CC';
+      if (!isMembreCC) actions.appendChild(mkBtn('btn btn-V btn-sm', '♾️', 'Basculer → Membre CC', function(){ setMembreCC(clientId); }));
+      actions.appendChild(mkBtn('btn btn-bx btn-sm', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
     } else {
-      // Transformation — dernier stage avant ACTIV CONTINUE (onboarding, rapport, etc.)
-      endDiv.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--G);margin-bottom:10px">✅ Étape validée !</div>';
-      endDiv.appendChild(mkBtn('btn btn-bx', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
+      hHtml = '✅ Étape validée';
+      actions.appendChild(mkBtn('btn btn-bx btn-sm', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
     }
 
+    endDiv.innerHTML = '<div class="cm-finale-h">'+hHtml+'</div>'
+      + (subHtml ? '<div class="cm-finale-sub">'+subHtml+'</div>' : '');
+    endDiv.appendChild(actions);
+
     if (c.statut !== 'Ancien Client') {
-      endDiv.appendChild(mkBtn('btn btn-dk', '🏁', 'Fin de coaching → Ancien Client', function(){ setAncienClient(clientId); }));
+      var afterDiv = document.createElement('div'); afterDiv.className = 'cm-finale-after';
+      afterDiv.appendChild(mkBtn('btn', '🏁', 'Fin de coaching → Ancien Client', function(){ setAncienClient(clientId); }));
+      endDiv.appendChild(afterDiv);
     }
     container.appendChild(endDiv);
   }
@@ -5345,78 +5401,153 @@ function renderClientModal(id) {
   if (!container) return;
   container.innerHTML = '';
 
-  // PRO closé → modal client standard (avec parcours Action)
-  // PRO non closé → tombe dans renderProspectModal ci-dessous
-
-  // PROSPECT — Ancien Client affiche le modal client (parcours visible)
+  // PROSPECT non clos / non Ancien Client → fiche prospect premium
   if (c.statut !== 'Closé' && c.statut !== 'Ancien Client') { renderProspectModal(id, c, container); openModal('client'); return; }
 
-  // ── Titre
-  var titleEl = document.createElement('div');
-  titleEl.className = 'mdl-t';
-  titleEl.innerHTML = (c.prenom||'') + ' ' + (c.nom||'');
-  var closeBtn = document.createElement('button');
-  closeBtn.className = 'mdl-x'; closeBtn.textContent = '✕';
+  var isAncien = c.statut === 'Ancien Client';
+  var isNew = isNewClient(c);
+  var offreMode = null, offreName = null;
+  if (c.sig_offre_id) {
+    var _o = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
+    if (_o) { offreMode = _o.modeOffre; offreName = _o.name; }
+  }
+  var fullName = ((c.prenom||'') + ' ' + (c.nom||'')).trim() || 'Client';
+  var initials = c.isPro ? '🏢' : (((c.prenom||'?').charAt(0))+((c.nom||'?').charAt(0))).toUpperCase();
+
+  // ── Title bar (close)
+  var titleEl = document.createElement('div'); titleEl.className = 'mdl-t';
+  titleEl.innerHTML = '<span style="font-size:14px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px">Fiche Client</span>';
+  var closeBtn = document.createElement('button'); closeBtn.className = 'mdl-x'; closeBtn.textContent = '✕';
   closeBtn.onclick = function(){ closeModal('client'); };
   titleEl.appendChild(closeBtn);
   container.appendChild(titleEl);
 
-  // ── Pills
-  var pills = document.createElement('div');
-  pills.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px';
-  var isNew = isNewClient(c);
-  var offreMode = null;
-  if (c.sig_offre_id) { var _o=loadOffres().find(function(x){return x.id===c.sig_offre_id;}); if(_o) offreMode=_o.modeOffre; }
-  var offreName = null;
-  if (c.sig_offre_id) { var _oo=loadOffres().find(function(x){return x.id===c.sig_offre_id;}); if(_oo) offreName=_oo.name; }
-  var _statutLabel = c.statut === 'Ancien Client' ? 'Ancien Client' : 'Closé';
-  var _pillCls = c.statut === 'Ancien Client' ? 'pill-V' : 'pill-G';
-  pills.innerHTML = '<span class="pill '+_pillCls+'">'+(isNew?'🆕 ':'')+_statutLabel+(isNew?' · New':'')+'</span>'
+  // ── Header premium
+  var head = document.createElement('div'); head.className = 'cm-head';
+  var statutLbl = isAncien ? 'Ancien Client' : 'Closé';
+  var statutCls = isAncien ? 'pill-V' : 'pill-G';
+  var meta = '<span class="pill '+statutCls+'">'+(isNew?'🆕 ':'')+statutLbl+'</span>'
     + (offreMode ? '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(offreMode)+'</span>' : '')
     + (offreName ? '<span class="pill pill-Y" style="font-size:10px">'+offreName+'</span>' : '')
-    + (c.profil_code && c.profil_code!=='PRO' ? '<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.profil_code+'</span>' : '');
-  container.appendChild(pills);
+    + (c.profil_code && c.profil_code!=='PRO' ? '<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.profil_code+'</span>' : '')
+    + (c.statut === 'Membre CC' ? '<span class="pill pill-V" style="font-size:10px">♾️ Membre CC</span>' : '');
+  head.innerHTML = '<div class="cm-avatar'+(isAncien?' ancien':'')+'">'+initials+'</div>'
+    + '<div class="cm-name-wrap">'
+    +   '<div class="cm-name">'+fullName+'</div>'
+    +   '<div class="cm-meta">'+meta+'</div>'
+    + '</div>';
+  container.appendChild(head);
 
-  // ── Fiche infos client
-  var clientInfoRows = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">';
-  if (c.ville) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Ville</div><div style="font-weight:600">'+c.ville+'</div></div>';
-  if (c.age)   clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Âge</div><div style="font-weight:600">'+c.age+' ans</div></div>';
-  var _cSexeDisplay = c.sexe || (c.sex==='F'?'Femme':c.sex==='M'?'Homme':'');
-  if (_cSexeDisplay) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Sexe</div><div style="font-weight:600">'+_cSexeDisplay+'</div></div>';
-  if (c.tel)   clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Téléphone</div><div style="font-weight:600">'+c.tel+'</div></div>';
-  if (c.email) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+cleanEmail(c.email)+'</div></div>';
-  if (c.profession) clientInfoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Profession</div><div style="font-weight:600">'+c.profession+'</div></div>';
-  clientInfoRows += '</div>';
-  if (c.ville || c.age || _cSexeDisplay || c.tel || c.email || c.profession) {
-    var clientInfoCard = document.createElement('div');
-    clientInfoCard.className = 'card'; clientInfoCard.style.marginBottom = '12px';
-    clientInfoCard.innerHTML = clientInfoRows;
-    container.appendChild(clientInfoCard);
+  // ── Bloc résumé compact (réutilise pm-summary)
+  var rows = [];
+  if (c.tel)        rows.push(['Téléphone', c.tel]);
+  if (c.email)      rows.push(['Email', '<span style="word-break:break-all">'+cleanEmail(c.email)+'</span>']);
+  if (c.ville)      rows.push(['Ville', c.ville]);
+  if (c.age || c.sexe || c.sex) {
+    var bits = [];
+    if (c.age) bits.push(c.age+' ans');
+    var _sx = c.sexe || (c.sex==='F'?'Femme':c.sex==='M'?'Homme':'');
+    if (_sx) bits.push(_sx);
+    rows.push(['Profil', bits.join(' · ')]);
+  }
+  if (c.profession) rows.push(['Profession', c.profession]);
+  if (c.montant)    rows.push(['Montant', parseFloat(c.montant).toLocaleString('fr-FR')+' €']);
+  if (c.closedAt)   rows.push(['Date de closing', new Date(c.closedAt).toLocaleDateString('fr-FR')]);
+  if (c.last_interaction) rows.push(['Dernière relance', new Date(c.last_interaction).toLocaleDateString('fr-FR')]);
+  if (rows.length) {
+    var summary = document.createElement('div'); summary.className = 'pm-summary';
+    summary.innerHTML = rows.map(function(r){
+      return '<div class="pm-row"><div class="pm-row-lbl">'+r[0]+'</div><div class="pm-row-val">'+r[1]+'</div></div>';
+    }).join('');
+    if (c.notes) summary.innerHTML += '<div class="pm-note">'+c.notes+'</div>';
+    container.appendChild(summary);
   }
 
-  // ── Boutons d'action client
-  var clientActions = document.createElement('div');
-  clientActions.style.cssText = 'display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap';
-  clientActions.innerHTML = '<button class="btn btn-dk btn-sm" onclick="openEditClientModal(\''+id+'\')">✏️ Modifier</button>'
-    + '<button class="btn btn-dk btn-sm" onclick="openNewOffreForClient(\''+id+'\')">💼 Nouvelle offre</button>'
-    + (c.statut==='Ancien Client' ? '<button class="btn btn-V btn-sm" onclick="relancerAncienClient(\''+id+'\')">🔁 Relancer</button>' : '')
-    + '<button class="btn btn-R btn-sm" onclick="deleteClient(\''+id+'\')">🗑 Supprimer</button>';
-  container.appendChild(clientActions);
+  // ── Cockpit progression (si parcours actif)
+  if ((c.sig_offre_id || offreMode) && Array.isArray(c.mode_stages) && c.mode_stages.length) {
+    try {
+      var stagesDef = getActiveStageDefs(c);
+      initModeStages(c, stagesDef);
+      var totalSteps = 0, doneSteps = 0;
+      var activeStageLbl = '—';
+      var nextStepLbl = null;
+      var lastDone = -1;
+      stagesDef.forEach(function(sd, si){
+        var sData = c.mode_stages[si] || {steps:[]};
+        totalSteps += sData.steps.length;
+        var sDone = sData.steps.filter(function(s){return s.done;}).length;
+        doneSteps += sDone;
+        if (sData.steps.length && sData.steps.every(function(s){return s.done;})) lastDone = si;
+      });
+      var activeIdx = Math.min(lastDone + 1, stagesDef.length - 1);
+      var activeDef = stagesDef[activeIdx];
+      var activeData = c.mode_stages[activeIdx] || {steps:[]};
+      if (activeDef) {
+        var _m = activeDef._mode || 'action';
+        activeStageLbl = getPLbl('stage_'+_m+'_'+activeDef.id, activeDef.lbl);
+        for (var i=0;i<(activeDef.steps||[]).length;i++) {
+          var st = activeData.steps[i];
+          if (st && !st.done) { nextStepLbl = getPLbl('step_'+_m+'_'+activeDef.id+'_'+activeDef.steps[i].id+'_'+i, activeDef.steps[i].lbl); break; }
+        }
+      }
+      var pctG = totalSteps ? Math.round(doneSteps/totalSteps*100) : 0;
+      var allDone = totalSteps && doneSteps === totalSteps;
+      var cockpit = document.createElement('div'); cockpit.className = 'cm-cockpit';
+      cockpit.innerHTML = '<div class="cm-cockpit-h">'
+        +   '<span class="cm-cockpit-h-lbl">Progression parcours</span>'
+        +   '<span class="cm-cockpit-pct">'+pctG+'%</span>'
+        + '</div>'
+        + '<div class="cm-cockpit-bar"><div class="cm-cockpit-bar-fill" style="width:'+pctG+'%"></div></div>'
+        + '<div class="cm-cockpit-meta"><strong>'+activeStageLbl+'</strong> · '+doneSteps+'/'+totalSteps+' étapes complétées</div>';
+      if (!allDone && nextStepLbl) {
+        cockpit.innerHTML += '<button class="cm-cockpit-next" data-jump="'+activeIdx+'"><span>→</span><span>Prochaine action : '+nextStepLbl+'</span><span class="cm-arrow">⇲</span></button>';
+      } else if (allDone) {
+        cockpit.innerHTML += '<div style="font-size:12.5px;font-weight:700;color:var(--G);text-align:center;padding:8px 0">🏁 Parcours complet</div>';
+      }
+      container.appendChild(cockpit);
+      var jumpBtn = cockpit.querySelector('[data-jump]');
+      if (jumpBtn) jumpBtn.onclick = function(){
+        var t = container.querySelector('.cm-stage[data-stage-idx="'+activeIdx+'"]');
+        if (t) {
+          t.classList.add('open');
+          t.scrollIntoView({behavior:'smooth', block:'start'});
+        }
+      };
+    } catch(e) { console.warn('cockpit render error', e); }
+  }
 
-  // ── Accordéons étapes par mode d'offre (nouveau système)
+  // ── Stages parcours
   if (c.sig_offre_id || offreMode) {
     renderModeStages(id, c, container);
-    openModal('client');
-    return; // Nouveau système uniquement
+  } else {
+    var empty = document.createElement('div'); empty.className = 'cm-empty';
+    empty.innerHTML = '<div class="cm-empty-ico">💼</div>'
+      + '<div class="cm-empty-h">Aucun parcours actif</div>'
+      + '<div class="cm-empty-sub">Démarrez le parcours client en sélectionnant une nouvelle offre.</div>'
+      + '<button class="btn btn-bx btn-sm" onclick="openNewOffreForClient(\''+id+'\')">💼 Nouvelle offre</button>';
+    container.appendChild(empty);
   }
 
-  // ── Aucune offre sélectionnée — inviter à démarrer
-  var noOffreDiv = document.createElement('div');
-  noOffreDiv.style.cssText = 'text-align:center;padding:20px 16px;background:var(--bg3);border:1.5px dashed var(--rim2);border-radius:var(--r2);color:var(--tx3);font-size:13px;margin-bottom:8px';
-  noOffreDiv.innerHTML = '<div style="font-size:28px;margin-bottom:8px">💼</div>'
-    + '<div style="font-weight:700;color:var(--tx2);margin-bottom:4px">Aucun parcours actif</div>'
-    + '<div>Appuyez sur <strong>Nouvelle offre</strong> pour démarrer le parcours client.</div>';
-  container.appendChild(noOffreDiv);
+  // ── Actions secondaires (en bas, discrètes)
+  var sec = document.createElement('div'); sec.className = 'pm-actions-sec';
+  var editBtn = document.createElement('button'); editBtn.className = 'btn'; editBtn.innerHTML = '✏️ Modifier';
+  editBtn.onclick = function(){ openEditClientModal(id); };
+  sec.appendChild(editBtn);
+  var newOffreBtn = document.createElement('button'); newOffreBtn.className = 'btn'; newOffreBtn.innerHTML = '💼 Nouvelle offre';
+  newOffreBtn.onclick = function(){ openNewOffreForClient(id); };
+  sec.appendChild(newOffreBtn);
+  if (isAncien) {
+    var reactBtn = document.createElement('button'); reactBtn.className = 'btn btn-V';
+    reactBtn.innerHTML = '🔁 Relancer';
+    reactBtn.onclick = function(){ relancerAncienClient(id); };
+    sec.appendChild(reactBtn);
+  }
+  var delBtn = document.createElement('button'); delBtn.className = 'btn btn-R';
+  delBtn.innerHTML = '🗑 Supprimer';
+  delBtn.onclick = function(){ deleteClient(id); };
+  sec.appendChild(delBtn);
+  container.appendChild(sec);
+
   openModal('client');
 }
 
