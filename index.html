@@ -1046,24 +1046,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <div class="pg" id="pg-prospect">
   <div class="page-title">➕ Ajouter un Prospect</div>
 
-  <!-- Option 1 : Pré-qualif Tally (optionnel) -->
-  <div class="card" style="margin-bottom:14px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-      <span style="font-size:20px">📋</span>
-      <div>
-        <div style="font-weight:700;font-size:14px;color:var(--tx)">FORMULAIRE PRÉ-QUALIF (optionnel)</div>
-        <div style="font-size:12px;color:var(--tx3);margin-top:2px">Collez les réponses Calendly pour une analyse IA du profil</div>
-      </div>
-    </div>
-    <div class="f"><label>Réponses questionnaire Calendly</label>
-      <textarea id="pq-new-raw" rows="5" placeholder="Collez ici les réponses du questionnaire Calendly (pré-RDV)…&#10;Ou laissez vide pour créer la fiche manuellement."></textarea>
-    </div>
-    <button class="btn btn-bx btn-w btn-sm" id="btn-pq-new" onclick="analyzePQForNewProspect()">✨ Analyser & remplir le profil</button>
-    <div id="pq-new-loading" style="display:none" class="ldwrap-sm"><div class="ldring"></div><div class="ldmsg"><strong>Analyse IA…</strong></div></div>
-    <div id="pq-new-result" style="display:none;margin-top:10px"></div>
-  </div>
-
-  <!-- Option 2 : Fiche manuelle -->
+  <!-- Identification -->
   <div class="card">
     <div class="sh no-mt">👤 Identification</div>
     <div class="g2">
@@ -1081,25 +1064,30 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
         </select>
       </div>
     </div>
-    <div class="f"><label>Téléphone</label><input id="np-tel" type="tel" placeholder="06 xx xx xx xx"></div>
-    <div class="f"><label>Email</label><input id="np-email" type="email" placeholder="email@exemple.fr"></div>
-    <div class="f"><label>Ville</label><input id="np-ville" type="text" placeholder="Grenoble"></div>
     <div class="g2">
-      <div class="f"><label>Format RDV Bilan</label>
-        <select id="np-rdv-type">
-          <option value="">— Format —</option>
-          <option value="Physique">Physique</option>
-          <option value="Visio">Visio</option>
-          <option value="Appel">Appel</option>
-        </select>
-      </div>
-      <div class="f"><label>Date RDV Bilan</label><input id="np-rdv-date" type="date"></div>
+      <div class="f"><label>Téléphone</label><input id="np-tel" type="tel" placeholder="06 xx xx xx xx"></div>
+      <div class="f"><label>Email</label><input id="np-email" type="email" placeholder="email@exemple.fr"></div>
     </div>
+    <div class="f"><label>Ville</label><input id="np-ville" type="text" placeholder="Grenoble"></div>
   </div>
 
-  <div id="pq-new-summary-card" style="display:none" class="ai-card">
-    <div class="ai-title">✨ Analyse Pré-qualif IA</div>
-    <div id="pq-new-summary-body"></div>
+  <!-- Planification RDV Bilan (optionnel) -->
+  <div class="card" style="margin-top:14px">
+    <div class="sh no-mt">📅 RDV Bilan <span style="font-size:11px;font-weight:500;color:var(--tx3);margin-left:6px">(optionnel)</span></div>
+    <p style="font-size:12px;color:var(--tx3);margin:-2px 0 12px">Vous pouvez créer la fiche sans RDV planifié. La pré-qualif IA reste disponible plus tard depuis la fiche du prospect.</p>
+    <div class="f"><label>Format</label>
+      <select id="np-rdv-type" onchange="onNpRdvTypeChange()">
+        <option value="">— Aucun —</option>
+        <option value="Physique">Physique</option>
+        <option value="Visio">Visio</option>
+        <option value="Appel">Appel</option>
+      </select>
+    </div>
+    <div class="g2">
+      <div class="f"><label>Date</label><input id="np-rdv-date" type="date"></div>
+      <div class="f"><label>Heure</label><input id="np-rdv-time" type="time"></div>
+    </div>
+    <div class="f" id="np-rdv-lieu-row" style="display:none"><label>Lieu / adresse</label><input id="np-rdv-lieu" type="text" placeholder="Adresse du RDV physique"></div>
   </div>
 
   <!-- Section Groupe / Amies -->
@@ -1507,7 +1495,7 @@ function deleteSelected(){
 }
 
 function renderProspectModal(id, c, container) {
-  var sp={'Closé':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Non Closé':'pill-R','Sans Suite':'pill-V','Ancien Client':'pill-V','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R','Closing en cours':'pill-Y'};
+  var sp={'Prospect':'pill-B','Closé':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Non Closé':'pill-R','Sans Suite':'pill-V','Ancien Client':'pill-V','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R','Closing en cours':'pill-Y'};
   var titleEl=document.createElement('div'); titleEl.className='mdl-t';
   titleEl.innerHTML=(c.prenom||'')+' '+(c.nom||'');
   var closeBtn=document.createElement('button'); closeBtn.className='mdl-x'; closeBtn.textContent='✕';
@@ -1539,7 +1527,11 @@ function renderProspectModal(id, c, container) {
   if (_sexeDisplay) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Sexe</div><div style="font-weight:600">'+_sexeDisplay+'</div></div>';
   if (c.tel)   infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Téléphone</div><div style="font-weight:600">'+c.tel+'</div></div>';
   if (c.email) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+cleanEmail(c.email)+'</div></div>';
-  if (c.rdvType || c.date) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">RDV Bilan</div><div style="font-weight:600">'+dateStr+(c.rdvType?' · '+c.rdvType:'')+'</div></div>';
+  if (c.rdvType) {
+    var rdvLine = dateStr + (c.rdvTime ? ' · '+c.rdvTime : '') + ' · ' + c.rdvType;
+    if (c.rdvType === 'Physique' && c.rdvLieu) rdvLine += '<br><span style="font-weight:400;color:var(--tx3);font-size:11px">📍 '+c.rdvLieu+'</span>';
+    infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">RDV Bilan</div><div style="font-weight:600">'+rdvLine+'</div></div>';
+  }
   if (c.profession) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Profession</div><div style="font-weight:600">'+c.profession+'</div></div>';
   infoRows += '</div>';
   if (c.last_interaction) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Dernière relance</div><div style="font-weight:600">'+new Date(c.last_interaction).toLocaleDateString('fr-FR')+'</div></div>';
@@ -1666,7 +1658,7 @@ function renderProspectModal(id, c, container) {
   actionsDiv.appendChild(editBtn);
 
   // ── Bouton Réactiver (statuts inactifs)
-  var inactifStatuts = ['Non Closé','Sans Suite','Contact','Attente RDV','Membre CC','','Refusé','Non closé','À relancer'];
+  var inactifStatuts = ['Prospect','Non Closé','Sans Suite','Contact','Attente RDV','Membre CC','','Refusé','Non closé','À relancer'];
   if (!c.statut || inactifStatuts.indexOf(c.statut) > -1) {
     var reactBtn = document.createElement('button');
     reactBtn.className = 'btn btn-V btn-w btn-sm';
@@ -3223,7 +3215,7 @@ function saveRDV() {
   ST.rdvs.push(rdv); ST.rdvs.sort(function(a,b){return a.date.localeCompare(b.date);});
   localStorage.setItem('ba_rdvs_v8', JSON.stringify(ST.rdvs));
   // Passer automatiquement le prospect en "Attente RDV"
-  if (!c.statut || c.statut === 'Non closé' || c.statut === 'Contact' || c.statut === 'Attente RDV') {
+  if (!c.statut || c.statut === 'Non closé' || c.statut === 'Prospect' || c.statut === 'Contact' || c.statut === 'Attente RDV') {
     c.statut = 'Attente RDV';
     c.updated_at = new Date().toISOString();
     localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
@@ -3245,15 +3237,17 @@ function renderNextRDV() {
     return {date:r.date, name:r.name, time:r.time, type:r.type||'RDV', badge:''};
   });
 
-  // Ajouter les prospects avec un RDV Bilan planifié (date >= aujourd'hui, statut pas Closé/Refusé)
+  // Ajouter les prospects avec un RDV Bilan planifié (rdvType défini, date >= aujourd'hui, statut pas Closé/Refusé)
   ST.clients.forEach(function(c){
+    if (!c.rdvType) return; // on n'inclut que les vrais RDVs planifiés
     if (!c.date || c.date < today) return;
     if (c.statut === 'Closé' || c.statut === 'Non Closé' || c.statut === 'Refusé' || c.statut === 'Ancien Client') return;
     if (c.rdvStatut === 'Présent' || c.rdvStatut === 'Absent') return; // déjà passé
+    var meta = c.rdvTime ? c.rdvTime + ' · ' + c.rdvType : c.rdvType;
     allRdvs.push({
       date: c.date,
       name: (c.prenom||'') + ' ' + (c.nom||''),
-      time: c.rdvType || '',
+      time: meta,
       type: 'RDV Bilan',
       badge: '📋'
     });
@@ -3787,51 +3781,16 @@ function sendEmail(){
 // AJOUTER PROSPECT — NOUVEAU FLUX
 // ═══════════════════════════════════════════════════
 
-var _pqNewSummary = null; // stocke le résultat IA de la pré-qualif pour le nouveau prospect
-
-function analyzePQForNewProspect() {
-  var raw = (document.getElementById('pq-new-raw').value || '').trim();
-  if (!raw) { toast('err', '⚠️ Collez les réponses Calendly avant d\'analyser'); return; }
-  if (!ST.apiKey) { toast('err', '⚠️ Clé API Anthropic requise (Config)'); return; }
-  var btn = document.getElementById('btn-pq-new');
-  var ldg = document.getElementById('pq-new-loading');
-  var res = document.getElementById('pq-new-result');
-  var sumCard = document.getElementById('pq-new-summary-card');
-  if (btn) btn.disabled = true;
-  if (ldg) ldg.style.display = 'flex';
-  if (res) res.style.display = 'none';
-  fetch('/api/prequalif', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ raw: raw, apiKey: ST.apiKey })
-  }).then(function(r){ if(!r.ok) return r.text().then(function(t){throw new Error('Erreur serveur: '+t.slice(0,80));}); return r.json(); }).then(function(data) {
-    _pqNewSummary = data;
-    if (ldg) ldg.style.display = 'none';
-    if (btn) btn.disabled = false;
-    // Pré-remplir les champs si données extraites
-    if (data.prenom && !document.getElementById('np-prenom').value) document.getElementById('np-prenom').value = data.prenom;
-    if (data.nom && !document.getElementById('np-nom').value) document.getElementById('np-nom').value = data.nom;
-    if (data.age && !document.getElementById('np-age').value) document.getElementById('np-age').value = data.age;
-    if (data.ville && !document.getElementById('np-ville').value) document.getElementById('np-ville').value = data.ville;
-    if (data.email && !document.getElementById('np-email').value) document.getElementById('np-email').value = data.email;
-    if (data.tel && !document.getElementById('np-tel').value) document.getElementById('np-tel').value = data.tel;
-    // Afficher la synthèse IA
-    if (sumCard) {
-      sumCard.style.display = 'block';
-      var b = document.getElementById('pq-new-summary-body');
-      if (b) {
-        var profil = data.profilTypeCode ? '<div class="pbadge"><span class="pcode">'+data.profilTypeCode+'</span><span class="plabel">'+(data.profilTypeLabel||'')+'</span></div>' : '';
-        var resume = data.resumeProfil ? '<div class="ai-blk"><div class="ai-blk-t">Profil</div><div class="ai-blk-c">'+data.resumeProfil+'</div></div>' : '';
-        var potentiel = data.potentielClosing != null ? '<div class="ai-blk"><div class="ai-blk-t">Potentiel Closing</div><div class="ai-blk-c" style="font-weight:700;color:var(--G)">'+data.potentielClosing+'/10</div></div>' : '';
-        b.innerHTML = profil + resume + potentiel;
-      }
-    }
-    toast('ok', '✅ Profil analysé');
-  }).catch(function(e) {
-    if (ldg) ldg.style.display = 'none';
-    if (btn) btn.disabled = false;
-    toast('err', '❌ Erreur analyse : ' + e.message);
-  });
+function onNpRdvTypeChange() {
+  var t = (document.getElementById('np-rdv-type')||{}).value || '';
+  var row = document.getElementById('np-rdv-lieu-row');
+  if (!row) return;
+  if (t === 'Physique') {
+    row.style.display = 'block';
+  } else {
+    row.style.display = 'none';
+    var lieu = document.getElementById('np-rdv-lieu'); if (lieu) lieu.value = '';
+  }
 }
 
 // ── Groupe / Amies ──────────────────────────────────
@@ -3880,16 +3839,14 @@ function saveNewProspect() {
   var nom = (document.getElementById('np-nom').value || '').trim();
   if (!prenom) { toast('err', '⚠️ Prénom requis'); return; }
   var ville = (document.getElementById('np-ville').value || '').trim();
-  var date = new Date().toISOString().split('T')[0];
+  var today = new Date().toISOString().split('T')[0];
+  var nowIso = new Date().toISOString();
 
   function makeProspect(p, n, a, s, t, v) {
     return { id: Date.now().toString() + Math.random().toString(36).slice(2),
       prenom:p, nom:n, age:a, sexe:s, tel:t, ville:v||ville,
-      statut:'Contact', pq_summary: _pqNewSummary||null,
-      profil_code: _pqNewSummary?(_pqNewSummary.profilTypeCode||''):'',
-      profil_label: _pqNewSummary?(_pqNewSummary.profilTypeLabel||''):'',
-      score_global: _pqNewSummary?(_pqNewSummary.potentielClosing||null):null,
-      updated_at: new Date().toISOString(), date: date };
+      statut:'Prospect',
+      created_at: nowIso, updated_at: nowIso, date: today };
   }
 
   var mainProspect = makeProspect(prenom, nom,
@@ -3899,8 +3856,14 @@ function saveNewProspect() {
   mainProspect.email = cleanEmail((document.getElementById('np-email').value||'').trim());
   var npRdvType = (document.getElementById('np-rdv-type').value||'').trim();
   var npRdvDate = (document.getElementById('np-rdv-date').value||'').trim();
-  if (npRdvType) mainProspect.rdvType = npRdvType;
-  if (npRdvDate) mainProspect.date = npRdvDate;
+  var npRdvTime = (document.getElementById('np-rdv-time').value||'').trim();
+  var npRdvLieu = (document.getElementById('np-rdv-lieu').value||'').trim();
+  if (npRdvType) {
+    mainProspect.rdvType = npRdvType;
+    if (npRdvDate) mainProspect.date = npRdvDate;
+    if (npRdvTime) mainProspect.rdvTime = npRdvTime;
+    if (npRdvType === 'Physique' && npRdvLieu) mainProspect.rdvLieu = npRdvLieu;
+  }
 
   var allProspects = [mainProspect];
 
@@ -3932,15 +3895,15 @@ function saveNewProspect() {
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
 
   // Reset
-  ['np-prenom','np-nom','np-age','np-tel','np-email','np-ville','np-rdv-date'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; }); var nprt=document.getElementById('np-rdv-type'); if(nprt) nprt.selectedIndex=0;
+  ['np-prenom','np-nom','np-age','np-tel','np-email','np-ville','np-rdv-date','np-rdv-time','np-rdv-lieu'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  var nprt=document.getElementById('np-rdv-type'); if(nprt) nprt.selectedIndex=0;
+  var lieuRow=document.getElementById('np-rdv-lieu-row'); if(lieuRow) lieuRow.style.display='none';
   document.getElementById('np-sexe').value = '';
-  document.getElementById('pq-new-raw').value = '';
-  document.getElementById('pq-new-summary-card').style.display = 'none';
   document.getElementById('groupe-section').style.display = 'none';
   document.getElementById('groupe-persons').innerHTML = '';
   document.getElementById('btn-add-groupe').textContent = '👥 + Ajouter une amie / ami (groupe)';
   var gnEl = document.getElementById('np-group-name'); if (gnEl) gnEl.value = '';
-  _groupeCount = 0; _pqNewSummary = null;
+  _groupeCount = 0;
 
   renderClients();
   var msg = allProspects.length > 1 ? '✅ ' + allProspects.length + ' prospects créés !' : '✅ ' + prenom + ' ' + nom + ' ajouté(e)';
@@ -3951,13 +3914,12 @@ function saveNewProspect() {
 }
 
 function resetProspectForm() {
-  ['np-prenom','np-nom','np-age','np-tel','np-email','np-ville'].forEach(function(id){
+  ['np-prenom','np-nom','np-age','np-tel','np-email','np-ville','np-rdv-date','np-rdv-time','np-rdv-lieu'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = '';
   });
   var sel = document.getElementById('np-sexe'); if (sel) sel.value = '';
-  var ta = document.getElementById('pq-new-raw'); if (ta) ta.value = '';
-  var sc = document.getElementById('pq-new-summary-card'); if (sc) sc.style.display = 'none';
-  _pqNewSummary = null;
+  var rt = document.getElementById('np-rdv-type'); if (rt) rt.selectedIndex = 0;
+  var lieuRow = document.getElementById('np-rdv-lieu-row'); if (lieuRow) lieuRow.style.display = 'none';
 }
 
 // ═══════════════════════════════════════════════════
@@ -4080,7 +4042,7 @@ function renderProClientModal(id, c, container) {
 
   var statutWrap = document.createElement('div');
   statutWrap.style.cssText = 'display:flex;flex-direction:column;gap:7px;margin-bottom:13px';
-  ['Contact','Attente RDV','Non Closé','Sans Suite','Closé','Ancien Client'].forEach(function(s) {
+  ['Prospect','Attente RDV','Non Closé','Sans Suite','Closé','Ancien Client'].forEach(function(s) {
     var btn = document.createElement('button');
     btn.className = 'btn btn-dk btn-w btn-sm';
     btn.textContent = s;
@@ -4306,7 +4268,7 @@ function renderClients(){
   var srch=(srchEl?srchEl.value:'').toLowerCase();
   var isProspectTab=currentClientTab==='prospects';
   // Prospects = tout sauf 'Closé'
-  var prospectStatuts=['Contact','Attente RDV','Non Closé','Sans Suite','Ancien Client','Non closé','En cours','À relancer','Refusé','','Membre CC'];
+  var prospectStatuts=['Prospect','Contact','Attente RDV','Non Closé','Sans Suite','Ancien Client','Non closé','En cours','À relancer','Refusé','','Membre CC'];
   var list=ST.clients.filter(function(c){
     var ms=!srch||((c.prenom||'')+' '+(c.nom||'')+' '+(c.source||'')+' '+(c.ville||'')+' '+(c.structureName||'')).toLowerCase().includes(srch);
     var mv=ST.filterStatut==='all'||c.statut===ST.filterStatut;
