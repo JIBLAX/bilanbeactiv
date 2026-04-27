@@ -445,6 +445,46 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .cm-empty-h{font-weight:800;font-size:14px;color:var(--tx);margin-bottom:5px}
 .cm-empty-sub{font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5}
 
+/* Variante SIGNATURE (accent orange Y, ton sur ton) */
+.cm-stage.signature{border-color:rgba(200,130,10,.32)}
+.cm-stage.signature.active{border-color:var(--Y);box-shadow:0 4px 16px rgba(200,130,10,.07)}
+.cm-stage.signature.active .cm-stage-title{color:var(--Y)}
+.cm-stage.signature.active .cm-stage-state{background:var(--Y);color:#fff}
+.cm-stage.signature .cm-stage-bar-fill{background:var(--Y)}
+.cm-stage.signature.past{border-color:rgba(0,163,98,.22);background:linear-gradient(180deg,rgba(0,163,98,.025),var(--bg2))}
+.cm-stage.signature.past .cm-stage-title{color:var(--G)}
+.cm-stage.signature.past .cm-stage-state{background:var(--G);color:#fff}
+.cm-stage.signature.past .cm-stage-bar-fill{background:var(--G)}
+.cm-sig-form{background:var(--bg);border:1px solid var(--rim3);border-radius:var(--r2);padding:11px 13px;margin-bottom:11px}
+.cm-sig-form-row{margin-bottom:9px}
+.cm-sig-form-row:last-child{margin-bottom:0}
+.cm-sig-form-row > label{display:block;font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px}
+.cm-sig-form-row > select,.cm-sig-form-row > input{width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--rim3);border-radius:var(--r3);background:var(--bg2);color:var(--tx);font-family:inherit}
+.cm-sig-form-row > select:focus,.cm-sig-form-row > input:focus{border-color:var(--Y);outline:none}
+.cm-sig-form-hint{font-size:10.5px;color:var(--tx4);margin-top:3px;font-style:italic}
+.cm-sig-offre-chip{display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--bg);border:1px solid var(--rim3);border-radius:50px;font-size:12px;color:var(--tx2);margin-bottom:11px;flex-wrap:wrap}
+.cm-sig-offre-chip strong{color:var(--tx);font-weight:700}
+.cm-versements{margin:5px 0 8px 30px;background:var(--bg);border:1px solid var(--rim3);border-radius:var(--r3);overflow:hidden}
+.cm-versement{display:flex;align-items:center;gap:10px;padding:8px 11px;border-bottom:1px dashed var(--rim3);font-size:12px}
+.cm-versement:last-child{border-bottom:none}
+.cm-versement-check{width:18px;height:18px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--rim2);background:#fff;cursor:pointer;transition:all .15s}
+.cm-versement-check.done{background:var(--G);border-color:var(--G)}
+.cm-versement-check.done::after{content:'✓';color:#fff;font-size:10px;font-weight:800}
+.cm-versement-lbl{flex:1;color:var(--tx);font-weight:600}
+.cm-versement.done .cm-versement-lbl{color:var(--tx3);font-weight:500}
+.cm-versement-ts{font-size:10px;color:var(--tx4);white-space:nowrap}
+.cm-sig-confirm{background:var(--bg2);border:1px solid var(--rim3);border-radius:var(--r2);padding:13px 14px;margin-bottom:12px}
+.cm-sig-confirm-h{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.cm-sig-confirm-btn{display:flex;align-items:flex-start;gap:9px;width:100%;padding:11px 13px;border-radius:var(--r3);font-family:inherit;cursor:pointer;text-align:left;transition:all .15s;font-size:12.5px;font-weight:700;border:1px solid;line-height:1.35;margin-bottom:7px}
+.cm-sig-confirm-btn:last-child{margin-bottom:0}
+.cm-sig-confirm-btn .cm-sig-confirm-sub{display:block;font-size:10.5px;font-weight:500;opacity:.78;margin-top:2px}
+.cm-sig-confirm-btn.ok{background:linear-gradient(135deg,var(--G),#0c8a52);color:#fff;border-color:var(--G);box-shadow:0 2px 10px rgba(0,163,98,.18)}
+.cm-sig-confirm-btn.ok:hover{box-shadow:0 4px 14px rgba(0,163,98,.28);transform:translateY(-1px)}
+.cm-sig-confirm-btn.ss{background:transparent;color:var(--bx);border-color:rgba(139,21,32,.22)}
+.cm-sig-confirm-btn.ss:hover{background:rgba(139,21,32,.05);border-color:rgba(139,21,32,.4)}
+.cm-sig-confirm-btn.nc{background:transparent;color:var(--R);border-color:rgba(214,48,49,.22)}
+.cm-sig-confirm-btn.nc:hover{background:var(--R-l);border-color:rgba(214,48,49,.4)}
+
 /* ═══════════════════════════════════════════════════
    RAPPORT
 ═══════════════════════════════════════════════════ */
@@ -1992,35 +2032,37 @@ function renderSignatureAccordion(clientId, c, container) {
   initSigSteps(c);
   var allDone = c.sig_steps.every(function(s){ return s.done; });
   var doneCnt = c.sig_steps.filter(function(s){ return s.done; }).length;
+  var pct = SIG_STEPS.length ? Math.round(doneCnt/SIG_STEPS.length*100) : 0;
 
+  // ── Stage signature (variante orange Y, langage cm-stage)
   var acc = document.createElement('div');
-  acc.style.cssText = 'background:var(--bg2);border:1.5px solid rgba(200,130,10,.35);border-radius:var(--r2);margin-bottom:12px;overflow:hidden';
+  acc.className = 'cm-stage signature ' + (allDone ? 'past open' : 'active open');
 
-  var hd = document.createElement('div');
-  hd.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(200,130,10,.05);cursor:pointer';
-  hd.innerHTML = '<span style="font-size:18px">✍️</span>'
-    + '<div style="flex:1"><div style="font-weight:700;font-size:13.5px;color:var(--Y)">ÉTAPE SIGNATURE'+(allDone?' <span style="font-size:9px;background:var(--G);color:#fff;padding:2px 6px;border-radius:50px">✓ VALIDÉE</span>':'')+'</div>'
-    + '<div style="font-size:11px;color:var(--tx3);margin-top:1px">'+doneCnt+'/'+SIG_STEPS.length+' étapes</div>'
-    + '<div style="height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:4px"><div style="height:100%;width:'+Math.round(doneCnt/SIG_STEPS.length*100)+'%;background:var(--Y);border-radius:2px;transition:width .3s"></div></div></div>'
-    + '<span style="color:var(--tx4);font-size:11px">▼</span>';
-  hd.onclick = function(){
-    var b = acc.querySelector('.sig-body');
-    b.style.display = b.style.display === 'none' ? 'block' : 'none';
-  };
+  var stateBadge = allDone
+    ? '<span class="cm-stage-state">✓ Validée</span>'
+    : '<span class="cm-stage-state">En cours</span>';
+
+  var hd = document.createElement('div'); hd.className = 'cm-stage-head';
+  hd.innerHTML = '<div class="cm-stage-ico">✍️</div>'
+    + '<div class="cm-stage-info">'
+    +   '<div class="cm-stage-title">Signature & Paiement'+stateBadge+'</div>'
+    +   '<div class="cm-stage-meta">'+doneCnt+'/'+SIG_STEPS.length+' étapes'+(!allDone?' · '+pct+'%':'')+'</div>'
+    +   '<div class="cm-stage-bar"><div class="cm-stage-bar-fill" style="width:'+pct+'%"></div></div>'
+    + '</div>'
+    + '<span class="cm-stage-arrow">▸</span>';
+  hd.onclick = function(){ acc.classList.toggle('open'); };
   acc.appendChild(hd);
 
-  var body = document.createElement('div');
-  body.className = 'sig-body';
-  body.style.cssText = 'padding:12px 14px;border-top:1px solid rgba(200,130,10,.2)';
+  var body = document.createElement('div'); body.className = 'cm-stage-body';
 
-  // Sélecteur d'offre pour l'étape "Offre choisie"
+  // ── Formulaire offre / montant / moyen de paiement (avant validation 1ère étape)
   if (!c.sig_steps[0].done) {
-    var ofLbl = document.createElement('div');
-    ofLbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px';
-    ofLbl.textContent = 'Sélectionner l\'offre';
-    body.appendChild(ofLbl);
+    var form = document.createElement('div'); form.className = 'cm-sig-form';
+
+    // Sélecteur offre
+    var ofRow = document.createElement('div'); ofRow.className = 'cm-sig-form-row';
+    var ofLbl = document.createElement('label'); ofLbl.textContent = 'Offre sélectionnée';
     var ofSel = document.createElement('select');
-    ofSel.style.marginBottom = '12px';
     ofSel.innerHTML = '<option value="">— Choisir une offre —</option>';
     loadOffres().forEach(function(o){
       var opt = document.createElement('option');
@@ -2030,48 +2072,38 @@ function renderSignatureAccordion(clientId, c, container) {
     });
     ofSel.onchange = (function(cid){ return function(){
       var cl = ST.clients.find(function(x){return x.id==cid;});
-      if(cl){ cl.sig_offre_id = this.value; localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); }
+      if(cl){ cl.sig_offre_id = this.value; localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); renderClientModal(cid); }
     }; })(clientId);
-    body.appendChild(ofSel);
-    // Afficher le mode de l'offre choisie + champ montant réel
+    ofRow.appendChild(ofLbl); ofRow.appendChild(ofSel);
+    form.appendChild(ofRow);
+
     if (c.sig_offre_id) {
       var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
       if (o) {
         if (o.modeOffre) {
-          var modeBadge = document.createElement('div');
-          modeBadge.style.cssText = 'margin-bottom:10px';
-          modeBadge.innerHTML = '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(o.modeOffre)+'</span>';
-          body.appendChild(modeBadge);
+          var modeRow = document.createElement('div'); modeRow.style.marginTop = '6px';
+          modeRow.innerHTML = '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(o.modeOffre)+'</span>';
+          ofRow.appendChild(modeRow);
         }
-        // Montant réel encaissé (peut différer du prix catalogue)
-        var amtWrap = document.createElement('div');
-        amtWrap.style.marginBottom = '10px';
-        var amtLblEl = document.createElement('div');
-        amtLblEl.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px';
-        amtLblEl.textContent = 'Montant réel encaissé (€)';
-        var amtHint = document.createElement('div');
-        amtHint.style.cssText = 'font-size:10px;color:var(--tx4);margin-bottom:4px';
-        amtHint.textContent = 'Prix catalogue : ' + o.price + '€' + (o.paiement > 1 ? ' · ' + o.paiement + 'x' : '');
+        // Montant réel encaissé
+        var amtRow = document.createElement('div'); amtRow.className = 'cm-sig-form-row';
+        var amtLbl = document.createElement('label'); amtLbl.textContent = 'Montant réel encaissé (€)';
         var amtInp = document.createElement('input');
-        amtInp.type = 'number'; amtInp.step = '0.01'; amtInp.style.width = '100%';
+        amtInp.type = 'number'; amtInp.step = '0.01';
         amtInp.value = c.actual_amount || c.montant || o.price;
         amtInp.onchange = (function(cid){ return function(){
           var cl = ST.clients.find(function(x){return x.id==cid;});
           if (cl) { var v = parseFloat(this.value)||null; cl.actual_amount = v; cl.montant = v; localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); }
         }; })(clientId);
-        amtWrap.appendChild(amtLblEl);
-        amtWrap.appendChild(amtHint);
-        amtWrap.appendChild(amtInp);
-        body.appendChild(amtWrap);
+        var amtHint = document.createElement('div'); amtHint.className = 'cm-sig-form-hint';
+        amtHint.textContent = 'Prix catalogue : ' + o.price + '€' + (o.paiement > 1 ? ' · ' + o.paiement + 'x' : '');
+        amtRow.appendChild(amtLbl); amtRow.appendChild(amtInp); amtRow.appendChild(amtHint);
+        form.appendChild(amtRow);
 
         // Moyen de paiement
-        var moyenWrap = document.createElement('div');
-        moyenWrap.style.marginBottom = '12px';
-        var moyenLbl = document.createElement('div');
-        moyenLbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px';
-        moyenLbl.textContent = 'Moyen de paiement';
+        var moyenRow = document.createElement('div'); moyenRow.className = 'cm-sig-form-row';
+        var moyenLbl = document.createElement('label'); moyenLbl.textContent = 'Moyen de paiement';
         var moyenSel = document.createElement('select');
-        moyenSel.style.width = '100%';
         [['','— Choisir —'],['cb','Carte bancaire (CB)'],['virement','Virement bancaire'],['especes','Espèces / Cash'],['plateforme','Plateforme (Stripe, PayPal…)'],['autre','Autre']].forEach(function(pair){
           var opt = document.createElement('option');
           opt.value = pair[0]; opt.textContent = pair[1];
@@ -2082,73 +2114,72 @@ function renderSignatureAccordion(clientId, c, container) {
           var cl = ST.clients.find(function(x){return x.id==cid;});
           if (cl) { cl.moyen_paiement = this.value || null; localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); }
         }; })(clientId);
-        moyenWrap.appendChild(moyenLbl);
-        moyenWrap.appendChild(moyenSel);
-        body.appendChild(moyenWrap);
+        moyenRow.appendChild(moyenLbl); moyenRow.appendChild(moyenSel);
+        form.appendChild(moyenRow);
       }
     }
+    body.appendChild(form);
   } else if (c.sig_offre_id) {
     var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
     if (o) {
-      var ofChosen = document.createElement('div');
-      ofChosen.style.cssText = 'font-size:12px;color:var(--tx3);margin-bottom:10px;padding:6px 10px;background:var(--bg3);border-radius:var(--r3)';
-      ofChosen.innerHTML = '💼 <strong>'+o.name+'</strong>'+(o.modeOffre?' · <span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(o.modeOffre)+'</span>':'');
-      body.appendChild(ofChosen);
+      var chip = document.createElement('div'); chip.className = 'cm-sig-offre-chip';
+      chip.innerHTML = '💼 <strong>'+o.name+'</strong>' + (o.modeOffre ? ' · <span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(o.modeOffre)+'</span>' : '');
+      body.appendChild(chip);
     }
   }
 
+  // ── Étapes signature en cm-step
   SIG_STEPS.forEach(function(step, i){
     var st = c.sig_steps[i];
     var prevDone = i === 0 || c.sig_steps[i-1].done;
     var isLocked = !prevDone && !st.done;
-    var row = document.createElement('div'); row.className = 'sig-step';
-    var chk = document.createElement('div');
-    chk.className = 'sig-check' + (st.done ? ' done' : isLocked ? ' locked' : '');
-    var lbl = document.createElement('div');
-    lbl.className = 'sig-lbl' + (st.done ? ' done' : isLocked ? ' locked' : '');
     var isMultiPay = step.id === 'paiement_valide' && c.versements && c.versements.length > 1;
     var paidCnt = isMultiPay ? c.versements.filter(function(v){return v.done;}).length : 0;
-    var lblTxt = isMultiPay
-      ? '<span style="margin-right:5px">'+step.ico+'</span>'+getPLbl('sig_'+step.id, step.lbl)+' <span style="font-size:10px;color:var(--tx3)">('+paidCnt+'/'+c.versements.length+')</span>'
-      : '<span style="margin-right:5px">'+step.ico+'</span>' + getPLbl('sig_'+step.id, step.lbl);
+
+    var row = document.createElement('div'); row.className = 'cm-step';
+    var chk = document.createElement('div');
+    chk.className = 'cm-step-check' + (st.done?' done':isLocked?' locked':'');
+    var lbl = document.createElement('div');
+    lbl.className = 'cm-step-lbl' + (st.done?' done':isLocked?' locked':'');
+    var lblTxt = '<span style="margin-right:5px">'+step.ico+'</span>'+getPLbl('sig_'+step.id, step.lbl);
+    if (isMultiPay) lblTxt += ' <span style="font-size:10px;color:var(--tx3);font-weight:500">('+paidCnt+'/'+c.versements.length+')</span>';
     lbl.innerHTML = lblTxt;
     if (!st.done && !isLocked && !isMultiPay) {
-      chk.style.cursor = 'pointer';
       chk.title = 'Valider cette étape';
-      chk.onclick = (function(cid, idx){ return function(){
+      chk.onclick = (function(cid, idx){ return function(e){
+        e.stopPropagation();
         validateSigStep(cid, idx);
       }; })(clientId, i);
     }
     row.appendChild(chk);
     row.appendChild(lbl);
     if (st.done && st.doneAt) {
-      var ts = document.createElement('div');
-      ts.style.cssText = 'font-size:10px;color:var(--tx4);white-space:nowrap';
+      var ts = document.createElement('div'); ts.className = 'cm-step-ts';
       ts.textContent = new Date(st.doneAt).toLocaleDateString('fr-FR');
       row.appendChild(ts);
     }
     body.appendChild(row);
-    // Sous-versements pour paiement en plusieurs fois
+
+    // Versements multiples
     if (isMultiPay && !isLocked) {
-      var vBlock = document.createElement('div');
-      vBlock.style.cssText = 'margin:4px 0 8px 28px;background:var(--bg3);border-radius:var(--r3);overflow:hidden;border:1px solid var(--rim3)';
+      var vBlock = document.createElement('div'); vBlock.className = 'cm-versements';
       c.versements.forEach(function(v) {
-        var vRow = document.createElement('div');
-        vRow.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--rim3)';
-        var vChk = document.createElement('div');
-        vChk.style.cssText = 'width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px solid '+(v.done?'var(--G)':'var(--rim)');
-        vChk.style.background = v.done ? 'var(--G)' : 'transparent';
-        vChk.innerHTML = v.done ? '<span style="color:#fff;font-size:11px;font-weight:700">✓</span>' : '';
+        var vRow = document.createElement('div'); vRow.className = 'cm-versement' + (v.done?' done':'');
+        var vChk = document.createElement('div'); vChk.className = 'cm-versement-check' + (v.done?' done':'');
         if (!v.done) {
-          vChk.style.cursor = 'pointer';
-          vChk.onclick = (function(cid, vn){ return function(){ validateVersement(cid, vn); }; })(clientId, v.num);
+          vChk.onclick = (function(cid, vn){ return function(e){ e.stopPropagation(); validateVersement(cid, vn); }; })(clientId, v.num);
+        } else {
+          vChk.style.cursor = 'default';
         }
-        var vLbl = document.createElement('div');
-        vLbl.style.cssText = 'flex:1;font-size:12px;color:'+(v.done?'var(--tx3)':'var(--tx)');
-        vLbl.innerHTML = 'Versement '+v.num+' — <strong>'+v.montant+'€</strong>'
-          + (v.doneAt ? ' <span style="color:var(--tx4);font-size:10px">· '+new Date(v.doneAt).toLocaleDateString('fr-FR')+'</span>' : '');
+        var vLbl = document.createElement('div'); vLbl.className = 'cm-versement-lbl';
+        vLbl.innerHTML = 'Versement '+v.num+' — <strong>'+v.montant+'€</strong>';
         vRow.appendChild(vChk);
         vRow.appendChild(vLbl);
+        if (v.doneAt) {
+          var vTs = document.createElement('div'); vTs.className = 'cm-versement-ts';
+          vTs.textContent = new Date(v.doneAt).toLocaleDateString('fr-FR');
+          vRow.appendChild(vTs);
+        }
         vBlock.appendChild(vRow);
       });
       body.appendChild(vBlock);
@@ -2158,22 +2189,19 @@ function renderSignatureAccordion(clientId, c, container) {
   acc.appendChild(body);
   container.appendChild(acc);
 
-  // Panel confirmation signature + paiement — toujours visible tant que pas Closé
+  // ── Confirmation finale (tant que pas Closé)
   if (c.statut !== 'Closé') {
-    var sigDiv = document.createElement('div');
-    sigDiv.style.cssText = 'background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:14px;margin-bottom:12px';
-    sigDiv.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📋 Confirmation finale</div>'
-      + '<div style="display:flex;flex-direction:column;gap:7px">'
-      + '<button class="sig-ok-btn btn btn-G btn-w" style="text-align:left;padding:10px 12px"><strong>✅ Signé + Payé</strong><br><span style="font-size:10px;opacity:.7;font-weight:400">Lancer le parcours client</span></button>'
-      + '<button class="sig-ss-btn btn btn-w" style="background:rgba(139,21,32,.05);color:var(--bx);border:1.5px solid rgba(139,21,32,.2);text-align:left;padding:10px 12px"><strong>💬 Sans Suite</strong><br><span style="font-size:10px;opacity:.65;font-weight:400">Disparu après le bilan — toujours relançable</span></button>'
-      + '<button class="sig-nc-btn btn btn-R btn-w" style="text-align:left;padding:10px 12px"><strong>❌ Non Closé</strong><br><span style="font-size:10px;opacity:.75;font-weight:400">Ne signera pas</span></button>'
-      + '</div>';
-    sigDiv.querySelector('.sig-ok-btn').onclick = (function(cid){ return function(){ finalizeClosing(cid); }; })(clientId);
-    sigDiv.querySelector('.sig-ss-btn').onclick = (function(cid){ return function(){
+    var sigDiv = document.createElement('div'); sigDiv.className = 'cm-sig-confirm';
+    sigDiv.innerHTML = '<div class="cm-sig-confirm-h">📋 Confirmation finale</div>'
+      + '<button class="cm-sig-confirm-btn ok" data-act="ok">✅ Signé + Payé<span class="cm-sig-confirm-sub">Lancer le parcours client</span></button>'
+      + '<button class="cm-sig-confirm-btn ss" data-act="ss">💬 Sans Suite<span class="cm-sig-confirm-sub">Disparu après le bilan — toujours relançable</span></button>'
+      + '<button class="cm-sig-confirm-btn nc" data-act="nc">❌ Non Closé<span class="cm-sig-confirm-sub">Ne signera pas</span></button>';
+    sigDiv.querySelector('[data-act="ok"]').onclick = (function(cid){ return function(){ finalizeClosing(cid); }; })(clientId);
+    sigDiv.querySelector('[data-act="ss"]').onclick = (function(cid){ return function(){
       var cl=ST.clients.find(function(x){return x.id==cid;});
       if(cl){cl.statut='Sans Suite';cl.sig_started=false;cl.updated_at=new Date().toISOString();localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));saveToSupabase(cl);renderClients();closeModal('client');toast('info','💬 Sans Suite');}
     }; })(clientId);
-    sigDiv.querySelector('.sig-nc-btn').onclick = (function(cid){ return function(){
+    sigDiv.querySelector('[data-act="nc"]').onclick = (function(cid){ return function(){
       var cl=ST.clients.find(function(x){return x.id==cid;});
       if(cl){cl.statut='Non Closé';cl.sig_started=false;cl.updated_at=new Date().toISOString();localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));saveToSupabase(cl);renderClients();closeModal('client');toast('info','❌ Non Closé');}
     }; })(clientId);
