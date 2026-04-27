@@ -324,6 +324,58 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .clbl{font-size:11px;color:var(--tx3)}
 
 /* ═══════════════════════════════════════════════════
+   PROSPECT MODAL — HUB PREMIUM
+═══════════════════════════════════════════════════ */
+.pm-head{display:flex;align-items:center;gap:12px;padding:4px 0 14px;border-bottom:1px solid var(--rim3);margin-bottom:14px}
+.pm-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--bx),var(--bx3));color:#fff;font-weight:900;font-size:17px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px;flex-shrink:0;box-shadow:0 2px 10px rgba(139,21,32,.22)}
+.pm-name-wrap{flex:1;min-width:0}
+.pm-name{font-weight:800;font-size:18px;color:var(--tx);line-height:1.15;letter-spacing:-.2px}
+.pm-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;align-items:center}
+.pm-meta-sep{color:var(--tx4);font-size:11px}
+.pm-rdv-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:50px;background:rgba(26,110,219,.07);color:var(--B);border:1px solid rgba(26,110,219,.22);font-size:11px;font-weight:700;margin-top:8px;letter-spacing:.2px}
+.pm-summary{background:var(--bg2);border:1px solid var(--rim3);border-radius:var(--r2);padding:13px 15px;margin-bottom:14px}
+.pm-row{display:grid;grid-template-columns:88px 1fr;gap:10px;padding:6px 0;border-bottom:1px dashed var(--rim3);align-items:baseline}
+.pm-row:last-child{border-bottom:none}
+.pm-row-lbl{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px}
+.pm-row-val{font-size:13px;color:var(--tx);font-weight:600;word-break:break-word}
+.pm-row-val .pm-sub{display:block;font-size:11px;color:var(--tx3);font-weight:400;margin-top:2px}
+.pm-note{font-size:12px;color:var(--tx3);font-style:italic;background:var(--bg3);border-left:2px solid var(--rim);padding:8px 11px;border-radius:0 8px 8px 0;margin-top:10px;line-height:1.55}
+.pm-tiles-wrap{margin:4px 0 14px}
+.pm-tiles-h{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin:6px 2px 9px}
+.pm-tiles{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.pm-tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px 13px;border-radius:var(--r2);border:1.5px solid var(--rim3);background:var(--bg2);cursor:pointer;transition:all .15s;text-align:left;font-family:inherit;color:var(--tx);min-height:96px;overflow:hidden}
+.pm-tile:hover:not(.locked){border-color:var(--bx);background:var(--bg);transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.pm-tile:active:not(.locked){transform:translateY(0)}
+.pm-tile-ico{font-size:20px;line-height:1}
+.pm-tile-title{font-size:12.5px;font-weight:800;color:var(--tx);letter-spacing:.1px;line-height:1.2}
+.pm-tile-state{font-size:10.5px;font-weight:600;color:var(--tx3);margin-top:2px;line-height:1.3}
+.pm-tile-flag{position:absolute;top:9px;right:9px;font-size:13px;line-height:1}
+.pm-tile.todo{border-color:var(--rim);background:linear-gradient(135deg,rgba(139,21,32,.04),var(--bg2))}
+.pm-tile.todo .pm-tile-title{color:var(--bx)}
+.pm-tile.done{border-color:rgba(0,163,98,.32);background:linear-gradient(135deg,rgba(0,163,98,.05),var(--bg2))}
+.pm-tile.done .pm-tile-title{color:var(--G)}
+.pm-tile.progress{border-color:rgba(200,130,10,.32);background:linear-gradient(135deg,rgba(200,130,10,.06),var(--bg2))}
+.pm-tile.progress .pm-tile-title{color:var(--Y)}
+.pm-tile.locked{cursor:not-allowed;opacity:.72;background:var(--bg3)}
+.pm-tile.locked .pm-tile-ico{filter:grayscale(.5);opacity:.7}
+.pm-tile.locked .pm-tile-title{color:var(--tx3)}
+.pm-tile.locked .pm-tile-state{color:var(--tx4);font-style:italic}
+.pm-actions-sec{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;padding:10px 0 4px;border-top:1px solid var(--rim3);margin-top:6px}
+.pm-actions-sec .btn{flex:1;min-width:0;padding:8px 12px;font-size:12px;font-weight:600;background:transparent;border:1px solid var(--rim3);color:var(--tx3);box-shadow:none}
+.pm-actions-sec .btn:hover{background:var(--bg3);color:var(--tx);border-color:var(--rim)}
+.pm-actions-sec .btn.btn-R{color:var(--R);border-color:rgba(214,48,49,.25)}
+.pm-actions-sec .btn.btn-R:hover{background:var(--R-l);border-color:rgba(214,48,49,.4)}
+.pm-actions-sec .btn.btn-V{color:var(--V);border-color:rgba(108,92,231,.25)}
+.pm-actions-sec .btn.btn-V:hover{background:var(--V-l);border-color:rgba(108,92,231,.4)}
+.pm-fold{margin-top:10px;border:1px solid var(--rim3);border-radius:var(--r2);overflow:hidden;background:var(--bg2)}
+.pm-fold-h{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;cursor:pointer;font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.7px;user-select:none}
+.pm-fold-h:hover{background:var(--bg3)}
+.pm-fold-h .pm-fold-arrow{transition:transform .2s}
+.pm-fold.open .pm-fold-arrow{transform:rotate(180deg)}
+.pm-fold-c{display:none;padding:6px 13px 12px;border-top:1px solid var(--rim3)}
+.pm-fold.open .pm-fold-c{display:block}
+
+/* ═══════════════════════════════════════════════════
    RAPPORT
 ═══════════════════════════════════════════════════ */
 .report-hero{background:linear-gradient(135deg,rgba(139,21,32,.06),rgba(26,110,219,.04));border:1.5px solid var(--rim);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
@@ -1496,72 +1548,81 @@ function deleteSelected(){
 
 function renderProspectModal(id, c, container) {
   var sp={'Prospect':'pill-B','Closé':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Non Closé':'pill-R','Sans Suite':'pill-V','Ancien Client':'pill-V','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R','Closing en cours':'pill-Y'};
+  var isClosingEnCours = (c.sig_started === true);
+  var statutLabel = c.statut || 'Prospect';
+  var inactifStatuts = ['Prospect','Non Closé','Sans Suite','Contact','Attente RDV','Membre CC','','Refusé','Non closé','À relancer'];
+  var fullName = ((c.prenom||'') + ' ' + (c.nom||'')).trim() || 'Prospect';
+  var initials = c.isPro ? '🏢' : (((c.prenom||'?').charAt(0))+((c.nom||'?').charAt(0))).toUpperCase();
+  var hasBilanData = c.bilan_raw && (c.bilan_raw.notesTrain || c.bilan_raw.vision6m || c.bilan_raw.pointA || c.bilan_raw.blocages || c.bilan_raw.attenteCoach || c.bilan_raw.notesAlim);
+  var bilanFilled = !!(c.bilan_summary || hasBilanData);
+  var hasPq = !!(c.pq_summary && (c.pq_summary.resumeProfil || c.pq_summary.closingPotential > 0));
+  var sigDone = isClosingEnCours && c.sig_steps && c.sig_steps.every(function(s){return s.done;});
+  var hasTests = !!(c.tests_data && Object.keys(c.tests_data).length);
+  var hasReport = !!c.final_report;
+
+  // ── Title bar (close)
   var titleEl=document.createElement('div'); titleEl.className='mdl-t';
-  titleEl.innerHTML=(c.prenom||'')+' '+(c.nom||'');
+  titleEl.innerHTML='<span style="font-size:14px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px">Fiche Prospect</span>';
   var closeBtn=document.createElement('button'); closeBtn.className='mdl-x'; closeBtn.textContent='✕';
   closeBtn.onclick=function(){closeModal('client');}; titleEl.appendChild(closeBtn);
   container.appendChild(titleEl);
 
-  // Pills statut + source
-  var pills=document.createElement('div'); pills.style.cssText='display:flex;gap:5px;flex-wrap:wrap;margin-bottom:13px';
-  var statutLabel = c.statut||'Prospect';
-  var isClosingEnCours = (c.sig_started === true);
-  pills.innerHTML='<span class="pill '+(sp[c.statut]||'pill-B')+'">'+statutLabel+'</span>'
+  // ── Header premium (avatar + nom + meta)
+  var head = document.createElement('div'); head.className = 'pm-head';
+  var metaPills = '<span class="pill '+(sp[c.statut]||'pill-B')+'">'+statutLabel+'</span>'
     +(c.source?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.source+'</span>':'')
     +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
     +(c.sap_enabled?'<span class="pill" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">🏠 SAP</span>':'')
-    +(c.group_name?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">👥 '+c.group_name+(c.is_group_leader?' ★':'')+'</span>':'');
-  // Badge "Closing en cours" animé
-  if (isClosingEnCours) {
-    pills.innerHTML += '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(200,130,10,.12);color:var(--Y);border:1.5px solid rgba(200,130,10,.35);animation:pulse-y 1.5s ease-in-out infinite">🔶 Closing en cours</span>';
+    +(c.group_name?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">👥 '+c.group_name+(c.is_group_leader?' ★':'')+'</span>':'')
+    +(isClosingEnCours?'<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(200,130,10,.12);color:var(--Y);border:1.5px solid rgba(200,130,10,.35);animation:pulse-y 1.5s ease-in-out infinite">🔶 Closing en cours</span>':'');
+  var rdvChip = '';
+  if (c.rdvType && c.date) {
+    var dateRdv = new Date(c.date+'T12:00:00');
+    var dRdv = isNaN(dateRdv.getTime()) ? c.date : dateRdv.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+    rdvChip = '<div class="pm-rdv-chip">📅 '+dRdv+(c.rdvTime?' · '+c.rdvTime:'')+' · '+c.rdvType+'</div>';
   }
-  container.appendChild(pills);
+  head.innerHTML = '<div class="pm-avatar">'+initials+'</div>'
+    + '<div class="pm-name-wrap">'
+    +   '<div class="pm-name">'+fullName+'</div>'
+    +   '<div class="pm-meta">'+metaPills+'</div>'
+    +   rdvChip
+    + '</div>';
+  container.appendChild(head);
 
-  // Fiche infos
-  var infoCard=document.createElement('div'); infoCard.className='card'; infoCard.style.marginBottom='12px';
-  var dateStr=c.date?new Date(c.date).toLocaleDateString('fr-FR'):'—';
-  var infoRows = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">';
-  if (c.ville) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Ville</div><div style="font-weight:600">'+c.ville+'</div></div>';
-  if (c.age)   infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Âge</div><div style="font-weight:600">'+c.age+' ans</div></div>';
-  var _sexeDisplay = c.sexe || (c.sex==='F'?'Femme':c.sex==='M'?'Homme':'');
-  if (_sexeDisplay) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Sexe</div><div style="font-weight:600">'+_sexeDisplay+'</div></div>';
-  if (c.tel)   infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Téléphone</div><div style="font-weight:600">'+c.tel+'</div></div>';
-  if (c.email) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600;word-break:break-all">'+cleanEmail(c.email)+'</div></div>';
+  // ── Bloc résumé
+  var summary = document.createElement('div'); summary.className = 'pm-summary';
+  var rows = [];
+  if (c.tel)   rows.push(['Téléphone', c.tel]);
+  if (c.email) rows.push(['Email', '<span style="word-break:break-all">'+cleanEmail(c.email)+'</span>']);
+  if (c.ville) rows.push(['Ville', c.ville]);
+  if (c.age || c.sexe || c.sex) {
+    var ageSexe = [];
+    if (c.age) ageSexe.push(c.age+' ans');
+    var _sx = c.sexe || (c.sex==='F'?'Femme':c.sex==='M'?'Homme':'');
+    if (_sx) ageSexe.push(_sx);
+    rows.push(['Profil', ageSexe.join(' · ')]);
+  }
+  if (c.profession) rows.push(['Profession', c.profession]);
   if (c.rdvType) {
-    var rdvLine = dateStr + (c.rdvTime ? ' · '+c.rdvTime : '') + ' · ' + c.rdvType;
-    if (c.rdvType === 'Physique' && c.rdvLieu) rdvLine += '<br><span style="font-weight:400;color:var(--tx3);font-size:11px">📍 '+c.rdvLieu+'</span>';
-    infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">RDV Bilan</div><div style="font-weight:600">'+rdvLine+'</div></div>';
+    var dStr = c.date ? new Date(c.date).toLocaleDateString('fr-FR') : '—';
+    var rdvVal = dStr + (c.rdvTime?' · '+c.rdvTime:'') + ' · ' + c.rdvType;
+    if (c.rdvType === 'Physique' && c.rdvLieu) rdvVal += '<span class="pm-sub">📍 '+c.rdvLieu+'</span>';
+    rows.push(['RDV Bilan', rdvVal]);
   }
-  if (c.profession) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Profession</div><div style="font-weight:600">'+c.profession+'</div></div>';
-  infoRows += '</div>';
-  if (c.last_interaction) infoRows += '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Dernière relance</div><div style="font-weight:600">'+new Date(c.last_interaction).toLocaleDateString('fr-FR')+'</div></div>';
-  if(c.notes) infoRows+='<div style="font-size:12px;color:var(--tx3);margin-top:8px;font-style:italic;border-top:1px solid var(--rim3);padding-top:8px">'+c.notes+'</div>';
-  infoCard.innerHTML = infoRows;
-  container.appendChild(infoCard);
+  if (c.last_interaction) rows.push(['Dernière relance', new Date(c.last_interaction).toLocaleDateString('fr-FR')]);
+  if (!rows.length) rows.push(['Infos', '<span style="color:var(--tx4);font-style:italic;font-weight:400">Aucune information renseignée</span>']);
+  summary.innerHTML = rows.map(function(r){
+    return '<div class="pm-row"><div class="pm-row-lbl">'+r[0]+'</div><div class="pm-row-val">'+r[1]+'</div></div>';
+  }).join('');
+  if (c.notes) summary.innerHTML += '<div class="pm-note">'+c.notes+'</div>';
+  container.appendChild(summary);
 
-  // Historique des RDVs (si reports)
-  if (c.rdv_history && c.rdv_history.length > 0) {
-    var histCard = document.createElement('div');
-    histCard.style.cssText = 'margin-bottom:12px;background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);overflow:hidden';
-    var histRows = c.rdv_history.slice().reverse().map(function(h) {
-      var dStr = h.date ? new Date(h.date).toLocaleDateString('fr-FR') : '—';
-      var sCls = h.statut === 'Présent' ? 'color:var(--V)' : h.statut === 'Absent' ? 'color:var(--R)' : 'color:var(--tx3)';
-      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--rim3)">'
-        + '<div style="font-size:12px;font-weight:600">'+dStr+(h.type?' · <span style="color:var(--tx3);font-weight:400">'+h.type+'</span>':'')+'</div>'
-        + '<span style="font-size:11px;font-weight:600;'+sCls+'">'+(h.statut||'Reporté')+'</span>'
-        + '</div>';
-    }).join('');
-    histCard.innerHTML = '<div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.7px;padding:8px 12px 4px">🗓 Historique RDVs ('+c.rdv_history.length+')</div>'
-      + histRows;
-    container.appendChild(histCard);
-  }
-
-  // Résumé pré-qualif si disponible et réel (analyse IA effectuée)
-  if (c.pq_summary && (c.pq_summary.resumeProfil || c.pq_summary.closingPotential > 0)) {
+  // ── Pré-qualif IA compact
+  if (hasPq) {
     var pq = c.pq_summary;
     var ucCls = {Critique:'pill-R',Élevé:'pill-Y',Moyen:'pill-B',Faible:'pill-G'}[pq.niveauUrgence]||'';
     var ccCls = {Chaud:'pill-R',Tiède:'pill-Y',Froid:'pill-B','À qualifier':'pill-V'}[pq.closingStatusSuggestion]||'';
-    var pqCard = document.createElement('div'); pqCard.className='ai-card'; pqCard.style.marginBottom='12px';
+    var pqCard = document.createElement('div'); pqCard.className='ai-card'; pqCard.id = 'pm-pq-card';
     pqCard.innerHTML = '<div class="ai-title">🧬 Analyse Pré-qualif IA</div>'
       + (pq.profilTypeCode ? '<div class="pbadge"><span class="pcode">'+pq.profilTypeCode+'</span><span class="plabel">'+(pq.profilTypeLabel||'')+'</span></div>' : '')
       + '<div class="crow" style="margin-bottom:10px"><div><div class="cscore">'+(pq.closingPotential||0)+'%</div><div class="clbl">Potentiel closing</div></div>'
@@ -1571,25 +1632,19 @@ function renderProspectModal(id, c, container) {
       + '</div></div>'
       + (pq.resumeProfil ? '<div class="ai-blk"><div class="ai-blk-c">'+pq.resumeProfil+'</div></div>' : '')
       + (pq.objectifPrincipal ? '<div class="ai-blk"><div class="ai-blk-t" style="color:var(--B)">🎯 Objectif</div><div class="ai-blk-c">'+pq.objectifPrincipal+'</div></div>' : '')
-      + (pq.approcheCoachingRecommandee ? '<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">🧠 Approche</div><div class="ai-blk-c">'+pq.approcheCoachingRecommandee+'</div></div>' : '');
+      + (pq.approcheCoachingRecommandee ? '<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">🧠 Approche</div><div class="ai-blk-c">'+pq.approcheCoachingRecommandee+'</div></div>' : '')
+      + (pq.pointsDeVigilance ? '<div class="ai-blk"><div class="ai-blk-t" style="color:var(--R)">⚠️ Vigilance</div><div class="ai-blk-c">'+pq.pointsDeVigilance+'</div></div>' : '');
     container.appendChild(pqCard);
   }
 
-  // Si "Closing en cours" → afficher l'accordéon SIGNATURE
-  if (isClosingEnCours) {
-    renderSignatureAccordion(id, c, container);
-  }
-
-  // ── Section bilan post-RDV
-  var today2 = new Date().toISOString().split('T')[0];
+  // ── Synthèse Bilan compact + décision (si bilan_summary && !sig_started)
   var bilanDone = c.rdvStatut === 'Présent' || c.rdvStatut === 'Absent';
   if (!c.isPro && bilanDone && !isClosingEnCours) {
     var bilanSection = document.createElement('div');
-    bilanSection.style.cssText = 'margin-bottom:12px';
     if (c.bilan_summary) {
       var bs = c.bilan_summary;
       var rcCls = {'Démarrer maintenant':'pill-G','Envoyer offre':'pill-Y','Relancer dans 1 semaine':'pill-B','Ne pas continuer':'pill-R'}[bs.recommandationSuiteRDV]||'';
-      bilanSection.innerHTML = '<div class="ai-card" style="border-color:rgba(26,110,219,.2);margin-bottom:10px">'
+      bilanSection.innerHTML = '<div class="ai-card" style="border-color:rgba(26,110,219,.2)">'
         + '<div class="ai-title" style="color:var(--B)">🩺 Synthèse Bilan</div>'
         + (bs.profilTypeCodeUpdated ? '<div class="pbadge"><span class="pcode" style="color:var(--B)">'+bs.profilTypeCodeUpdated+'</span><span class="plabel">'+(bs.profilTypeLabelUpdated||'')+'</span></div>' : '')
         + '<div class="crow" style="margin-bottom:8px"><div><div class="cscore" style="color:var(--B)">'+(bs.closingPotentialUpdated||0)+'%</div><div class="clbl">Closing</div></div>'
@@ -1598,102 +1653,184 @@ function renderProspectModal(id, c, container) {
         + (bs.prioritesCoaching ? '<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">🎯 Priorités</div><div class="ai-blk-c">'+bs.prioritesCoaching+'</div></div>' : '')
         + (bs.offreRecommandee ? '<div style="font-size:12px;color:var(--tx3);margin-top:6px">💼 Offre recommandée : <strong style="color:var(--Y)">'+bs.offreRecommandee+'</strong></div>' : '')
         + '</div>'
-        + '<div style="background:var(--bg2);border:1.5px solid var(--rim);border-radius:var(--r2);padding:12px;margin-bottom:8px">'
+        + '<div style="background:var(--bg2);border:1.5px solid var(--rim);border-radius:var(--r2);padding:12px;margin-bottom:10px">'
         + '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">📋 Décision suite au Bilan</div>'
         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
         + '<button class="btn btn-R" onclick="setBilanDecision(\'refus\')">❌ Non Closé</button>'
         + '<button class="btn btn-G" onclick="setBilanDecision(\'ok\')">✅ OK → Closing</button>'
         + '</div></div>'
-        + '<button class="btn btn-bx btn-w" style="width:100%" onclick="partagerBilanSummary(\''+id+'\')">📤 Partager la synthèse</button>';
-    } else {
-      // Bilan formulaire rempli mais synthèse pas encore générée
-      var hasBilanData = c.bilan_raw && (c.bilan_raw.notesTrain || c.bilan_raw.vision6m || c.bilan_raw.pointA || c.bilan_raw.blocages || c.bilan_raw.attenteCoach || c.bilan_raw.notesAlim);
-      if (hasBilanData) {
-        bilanSection.innerHTML = '<button id="btn-synth-bilan-'+id+'" class="btn btn-bx btn-w" onclick="genSyntheseBilanFromClient(\''+id+'\')">🤖 Générer synthèse bilan</button>';
-      }
-      // Sinon : bilan pas encore rempli → rien (bouton RDV Bilan gère la suite)
+        + '<button class="btn btn-dk btn-w btn-sm" onclick="partagerBilanSummary(\''+id+'\')">📤 Partager la synthèse</button>';
+    } else if (hasBilanData) {
+      bilanSection.innerHTML = '<button id="btn-synth-bilan-'+id+'" class="btn btn-bx btn-w" onclick="genSyntheseBilanFromClient(\''+id+'\')">🤖 Générer synthèse bilan</button>';
     }
-    container.appendChild(bilanSection);
+    if (bilanSection.innerHTML) container.appendChild(bilanSection);
   }
 
-  // ── 3 BOUTONS D'ACTION
-  var actionsDiv = document.createElement('div'); actionsDiv.style.cssText='display:flex;flex-direction:column;gap:8px;margin-top:4px';
-
-  if (c.isPro) {
-    // Structure Pro → bouton "Démarrer Signature" (pas de bilan)
-    if (!isClosingEnCours) {
-      var sigProBtn = document.createElement('button');
-      sigProBtn.className = 'btn btn-bx btn-w';
-      sigProBtn.innerHTML = '✍️ Démarrer Signature';
-      sigProBtn.onclick = (function(cid){ return function(){
-        var cl = ST.clients.find(function(x){ return x.id == cid; });
-        if (cl) { cl.statut = 'Attente RDV'; cl.sig_started = true; cl.updated_at = new Date().toISOString(); localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); saveToSupabase(cl); renderClients(); closeModal('client'); setTimeout(function(){ openClient(cid); },300); }
-      }; })(id);
-      actionsDiv.appendChild(sigProBtn);
-    }
-  } else {
-    // Bouton RDV Bilan — masqué si Non Closé (doit réactiver d'abord)
-    if (c.statut !== 'Non Closé' && c.statut !== 'Refusé') {
-      var hasBilanData = c.bilan_raw && (c.bilan_raw.notesTrain || c.bilan_raw.vision6m || c.bilan_raw.pointA || c.bilan_raw.blocages || c.bilan_raw.attenteCoach || c.bilan_raw.notesAlim);
-      var bilanAlreadyDone = c.bilan_summary || hasBilanData;
-      var bilanBtn = document.createElement('button');
-      if (!bilanAlreadyDone) {
-        bilanBtn.className = 'btn btn-bx btn-w';
-        bilanBtn.innerHTML = c.pq_summary ? '📝 RDV Bilan' : '📅 RDV Bilan';
-      } else {
-        bilanBtn.className = 'btn btn-dk btn-w btn-sm';
-        bilanBtn.innerHTML = '📝 Modifier le bilan';
-      }
-      bilanBtn.onclick = (function(cid){ return function(){
-        closeModal('client');
-        startBilanForProspect(cid);
-      }; })(id);
-      actionsDiv.appendChild(bilanBtn);
-    }
+  // ── Closing en cours → accordéon Signature
+  if (isClosingEnCours) {
+    renderSignatureAccordion(id, c, container);
   }
 
-  var editBtn=document.createElement('button'); editBtn.className='btn btn-dk btn-w';
-  editBtn.innerHTML='✏️ Modifier les infos'; editBtn.dataset.cid=id;
-  editBtn.onclick=function(){openEditClientModal(this.dataset.cid);};
-  actionsDiv.appendChild(editBtn);
+  // ── 4 TUILES D'ACTION (ou Démarrer Signature pour Pro)
+  var tilesWrap = document.createElement('div'); tilesWrap.className = 'pm-tiles-wrap';
+  if (c.isPro && !isClosingEnCours) {
+    tilesWrap.innerHTML = '<div class="pm-tiles-h">Action principale</div>'
+      + '<button class="pm-tile todo" data-cid="'+id+'" data-act="sig-pro" style="grid-column:1/-1">'
+      +   '<span class="pm-tile-flag">→</span>'
+      +   '<div class="pm-tile-ico">✍️</div>'
+      +   '<div class="pm-tile-title">Démarrer Signature</div>'
+      +   '<div class="pm-tile-state">Lancer le parcours de signature</div>'
+      + '</button>';
+    tilesWrap.firstElementChild && (tilesWrap.style.display = 'block');
+    container.appendChild(tilesWrap);
+    var sigBtn = tilesWrap.querySelector('[data-act="sig-pro"]');
+    if (sigBtn) sigBtn.onclick = function(){
+      var cl = ST.clients.find(function(x){ return x.id == id; });
+      if (cl) { cl.statut='Attente RDV'; cl.sig_started=true; cl.updated_at=new Date().toISOString(); localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients)); saveToSupabase(cl); renderClients(); closeModal('client'); setTimeout(function(){ openClient(id); },300); }
+    };
+  } else if (!c.isPro) {
+    // Tuile 1 : Pré-qualif IA
+    var t1State, t1Cls, t1Sub, t1Flag;
+    if (hasPq) { t1Cls='done'; t1Sub='Analyse disponible — voir ci-dessus'; t1Flag='✓'; }
+    else       { t1Cls='todo'; t1Sub='Démarrer l\'analyse'; t1Flag='→'; }
+    // Tuile 2 : RDV Bilan
+    var t2Cls, t2Sub, t2Flag, t2Lock=false;
+    if (c.statut === 'Non Closé' || c.statut === 'Refusé') { t2Cls='locked'; t2Sub='Réactiver le prospect d\'abord'; t2Flag='🔒'; t2Lock=true; }
+    else if (c.bilan_summary) { t2Cls='done'; t2Sub='Bilan complété — modifier'; t2Flag='✓'; }
+    else if (hasBilanData)    { t2Cls='progress'; t2Sub='Bilan en cours — synthèse à générer'; t2Flag='⋯'; }
+    else                      { t2Cls='todo'; t2Sub='Démarrer le bilan'; t2Flag='→'; }
+    // Tuile 3 : Tests
+    var t3Cls, t3Sub, t3Flag;
+    if (hasTests)      { t3Cls='done'; t3Sub='Tests effectués'; t3Flag='✓'; }
+    else if (sigDone)  { t3Cls='todo'; t3Sub='Démarrer les tests F3'; t3Flag='→'; }
+    else               { t3Cls='locked'; t3Sub='Disponible après signature'; t3Flag='🔒'; }
+    // Tuile 4 : Analyse complète (PDF)
+    var t4Cls, t4Sub, t4Flag;
+    if (hasReport) { t4Cls='done'; t4Sub='Rapport disponible'; t4Flag='✓'; }
+    else {
+      var miss = [];
+      if (!c.bilan_summary) miss.push('F1 Bilan');
+      if (!sigDone)         miss.push('F2 Signature');
+      if (!hasTests)        miss.push('F3 Tests');
+      t4Cls='locked'; t4Sub='Manque : '+miss.join(' · '); t4Flag='🔒';
+    }
 
-  // ── Bouton Réactiver (statuts inactifs)
-  var inactifStatuts = ['Prospect','Non Closé','Sans Suite','Contact','Attente RDV','Membre CC','','Refusé','Non closé','À relancer'];
+    tilesWrap.innerHTML = '<div class="pm-tiles-h">Actions</div>'
+      + '<div class="pm-tiles">'
+      +   '<button class="pm-tile '+t1Cls+'" data-act="pq">'
+      +     '<span class="pm-tile-flag">'+t1Flag+'</span>'
+      +     '<div class="pm-tile-ico">🧬</div>'
+      +     '<div class="pm-tile-title">Pré-qualif + IA</div>'
+      +     '<div class="pm-tile-state">'+t1Sub+'</div>'
+      +   '</button>'
+      +   '<button class="pm-tile '+t2Cls+'" data-act="bilan"'+(t2Lock?' disabled':'')+'>'
+      +     '<span class="pm-tile-flag">'+t2Flag+'</span>'
+      +     '<div class="pm-tile-ico">📅</div>'
+      +     '<div class="pm-tile-title">RDV Bilan</div>'
+      +     '<div class="pm-tile-state">'+t2Sub+'</div>'
+      +   '</button>'
+      +   '<button class="pm-tile '+t3Cls+'" data-act="tests"'+(t3Cls==='locked'?' disabled':'')+'>'
+      +     '<span class="pm-tile-flag">'+t3Flag+'</span>'
+      +     '<div class="pm-tile-ico">📏</div>'
+      +     '<div class="pm-tile-title">Tests</div>'
+      +     '<div class="pm-tile-state">'+t3Sub+'</div>'
+      +   '</button>'
+      +   '<button class="pm-tile '+t4Cls+'" data-act="report"'+(t4Cls==='locked'?' disabled':'')+'>'
+      +     '<span class="pm-tile-flag">'+t4Flag+'</span>'
+      +     '<div class="pm-tile-ico">📊</div>'
+      +     '<div class="pm-tile-title">Analyse complète</div>'
+      +     '<div class="pm-tile-state">'+t4Sub+'</div>'
+      +   '</button>'
+      + '</div>';
+    container.appendChild(tilesWrap);
+
+    // handlers tuiles
+    var pqTile = tilesWrap.querySelector('[data-act="pq"]');
+    if (pqTile) pqTile.onclick = function(){
+      if (hasPq) {
+        var card = document.getElementById('pm-pq-card');
+        if (card) card.scrollIntoView({behavior:'smooth',block:'start'});
+      }
+      startPrequalifForProspect(id);
+    };
+    var bilanTile = tilesWrap.querySelector('[data-act="bilan"]');
+    if (bilanTile && !t2Lock) bilanTile.onclick = function(){
+      closeModal('client');
+      startBilanForProspect(id);
+    };
+  }
+
+  // ── Actions secondaires
+  var sec = document.createElement('div'); sec.className = 'pm-actions-sec';
+  var editBtn = document.createElement('button'); editBtn.className = 'btn'; editBtn.innerHTML = '✏️ Modifier';
+  editBtn.onclick = function(){ openEditClientModal(id); };
+  sec.appendChild(editBtn);
   if (!c.statut || inactifStatuts.indexOf(c.statut) > -1) {
-    var reactBtn = document.createElement('button');
-    reactBtn.className = 'btn btn-V btn-w btn-sm';
     var nbRelances = (c.relances && c.relances.length) || 0;
-    reactBtn.innerHTML = '🔄 Réactiver le prospect' + (nbRelances > 0 ? ' <span style="font-size:10px;opacity:.7">('+nbRelances+' relance'+(nbRelances>1?'s':'')+')</span>' : '');
-    reactBtn.dataset.cid = id;
-    reactBtn.onclick = function(){ openReactivationModal(this.dataset.cid); };
-    actionsDiv.appendChild(reactBtn);
+    var reactBtn = document.createElement('button'); reactBtn.className = 'btn btn-V';
+    reactBtn.innerHTML = '🔄 Réactiver' + (nbRelances > 0 ? ' <span style="opacity:.7">('+nbRelances+')</span>' : '');
+    reactBtn.onclick = function(){ openReactivationModal(id); };
+    sec.appendChild(reactBtn);
+  }
+  var delBtn = document.createElement('button'); delBtn.className = 'btn btn-R';
+  delBtn.innerHTML = '🗑 Supprimer';
+  delBtn.onclick = function(){ deleteClient(id); };
+  sec.appendChild(delBtn);
+  container.appendChild(sec);
+
+  // ── Historique RDVs (repliable)
+  if (c.rdv_history && c.rdv_history.length > 0) {
+    var fold1 = document.createElement('div'); fold1.className = 'pm-fold';
+    var rows1 = c.rdv_history.slice().reverse().map(function(h) {
+      var dStr = h.date ? new Date(h.date).toLocaleDateString('fr-FR') : '—';
+      var sCls = h.statut === 'Présent' ? 'color:var(--V)' : h.statut === 'Absent' ? 'color:var(--R)' : 'color:var(--tx3)';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--rim3);font-size:12px">'
+        + '<span style="font-weight:600">'+dStr+(h.type?' · <span style="color:var(--tx3);font-weight:400">'+h.type+'</span>':'')+'</span>'
+        + '<span style="font-weight:600;'+sCls+'">'+(h.statut||'Reporté')+'</span>'
+        + '</div>';
+    }).join('');
+    fold1.innerHTML = '<div class="pm-fold-h"><span>🗓 Historique RDVs ('+c.rdv_history.length+')</span><span class="pm-fold-arrow">▾</span></div>'
+      + '<div class="pm-fold-c">'+rows1+'</div>';
+    fold1.querySelector('.pm-fold-h').onclick = function(){ fold1.classList.toggle('open'); };
+    container.appendChild(fold1);
   }
 
-  var delBtn=document.createElement('button'); delBtn.className='btn btn-R btn-w btn-sm';
-  delBtn.innerHTML='🗑 Supprimer ce dossier'; delBtn.dataset.cid=id;
-  delBtn.onclick=function(){deleteClient(this.dataset.cid);};
-  actionsDiv.appendChild(delBtn);
-
-  container.appendChild(actionsDiv);
-
-  // ── Historique des relances
+  // ── Historique relances (repliable)
   if (c.relances && c.relances.length > 0) {
-    var histDiv = document.createElement('div');
-    histDiv.style.cssText = 'margin-top:14px;border-top:1px solid var(--rim3);padding-top:12px';
+    var fold2 = document.createElement('div'); fold2.className = 'pm-fold';
     var typeLabels = {rdv_bilan:'🗓 Nouveau RDV Bilan', choix_offre:'💼 Proposition offre'};
-    histDiv.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">🔄 Historique des relances</div>'
-      + c.relances.slice().reverse().map(function(r) {
-        var dt = r.date ? new Date(r.date).toLocaleDateString('fr-FR') : '—';
-        return '<div style="font-size:12px;background:var(--bg3);border-radius:7px;padding:8px 10px;margin-bottom:6px">'
-          + '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
-          + '<span style="font-weight:600">'+(typeLabels[r.type]||r.type)+'</span>'
-          + '<span style="color:var(--tx4)">'+dt+'</span></div>'
-          + (r.from_statut ? '<span style="font-size:10px;color:var(--tx4)">Était : '+r.from_statut+' → '+r.new_statut+'</span><br>' : '')
-          + (r.note ? '<span style="color:var(--tx2);font-style:italic">'+r.note+'</span>' : '')
-          + '</div>';
-      }).join('');
-    container.appendChild(histDiv);
+    var rows2 = c.relances.slice().reverse().map(function(r) {
+      var dt = r.date ? new Date(r.date).toLocaleDateString('fr-FR') : '—';
+      return '<div style="font-size:12px;background:var(--bg3);border-radius:7px;padding:8px 10px;margin-bottom:6px">'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-weight:600">'+(typeLabels[r.type]||r.type)+'</span><span style="color:var(--tx4)">'+dt+'</span></div>'
+        + (r.from_statut ? '<span style="font-size:10px;color:var(--tx4)">Était : '+r.from_statut+' → '+r.new_statut+'</span><br>' : '')
+        + (r.note ? '<span style="color:var(--tx2);font-style:italic">'+r.note+'</span>' : '')
+        + '</div>';
+    }).join('');
+    fold2.innerHTML = '<div class="pm-fold-h"><span>🔄 Historique relances ('+c.relances.length+')</span><span class="pm-fold-arrow">▾</span></div>'
+      + '<div class="pm-fold-c">'+rows2+'</div>';
+    fold2.querySelector('.pm-fold-h').onclick = function(){ fold2.classList.toggle('open'); };
+    container.appendChild(fold2);
   }
+}
+
+// ═══════════════════════════════════════════════════
+// FLUX PRÉ-QUALIF POUR PROSPECT
+// ═══════════════════════════════════════════════════
+function startPrequalifForProspect(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  ST.clientId = clientId;
+  ST.pqSummary = c.pq_summary || null;
+  closeModal('client');
+  showPg('pq');
+  // Si une analyse existe déjà, afficher son résumé pour relecture/relance
+  setTimeout(function(){
+    if (ST.pqSummary && typeof renderPQResult === 'function') {
+      try { renderPQResult(ST.pqSummary); } catch(e){}
+    }
+  }, 120);
+  toast('info', '🧬 Pré-qualif — ' + ((c.prenom||'') + ' ' + (c.nom||'')).trim());
 }
 
 // ═══════════════════════════════════════════════════
