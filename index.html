@@ -1374,7 +1374,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div style="width:100%;max-width:480px;background:var(--bg);border-radius:var(--r);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.3)">
       <div class="mdl-t">📏 Tests Physiques — F3 <button class="mdl-x" onclick="closeTestsParcours()">✕</button></div>
       <div style="padding:16px 20px 24px">
-        <div style="font-size:12px;color:var(--tx3);background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:16px">Ces tests sont réalisés <strong>après la signature</strong>. Les résultats complètent le Rapport Complet.</div>
+        <div style="font-size:12px;color:var(--tx3);background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:16px">Ces tests sont réalisés <strong>après la signature</strong>. Les résultats complètent le Diagnostique BE ACTIV.</div>
         <div id="tests-parcours-form"></div>
         <div class="brow" style="margin-top:16px">
           <button class="btn btn-dk" onclick="closeTestsParcours()">Annuler</button>
@@ -1389,12 +1389,13 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <div id="mdl-rapport-complet" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.65);overflow-y:auto;-webkit-overflow-scrolling:touch">
   <div style="min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:16px 0 40px">
     <div style="width:100%;max-width:480px;background:var(--bg);border-radius:var(--r);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.3)">
-      <div class="mdl-t">🤖 Rapport Complet — F1+F2+F3 <button class="mdl-x" onclick="document.getElementById('mdl-rapport-complet').style.display='none'">✕</button></div>
+      <div class="mdl-t">🩺 Diagnostique BE ACTIV <button class="mdl-x" onclick="document.getElementById('mdl-rapport-complet').style.display='none'">✕</button></div>
       <div style="padding:16px 20px 24px">
-        <div id="rpt-complet-loading" style="display:none"><div class="ldwrap"><div class="ldring"></div><div class="ldmsg"><strong>Rapport en cours…</strong>Analyse F1+F2+F3</div></div></div>
+        <div id="rpt-complet-loading" style="display:none"><div class="ldwrap"><div class="ldring"></div><div class="ldmsg"><strong>Diagnostique en cours…</strong>Analyse globale du profil</div></div></div>
         <div id="rpt-complet-content"></div>
         <div id="rpt-complet-actions" style="display:none;margin-top:12px">
           <button class="btn btn-bx btn-w" onclick="dlPDF_complet()">📄 Télécharger PDF</button>
+          <button class="btn btn-dk btn-w" style="margin-top:8px" onclick="regenerateDiagnostique()">🔄 Régénérer le diagnostique</button>
           <button class="btn btn-dk btn-w" style="margin-top:8px" onclick="document.getElementById('mdl-rapport-complet').style.display='none'">Fermer</button>
         </div>
       </div>
@@ -1665,7 +1666,7 @@ function renderProspectModal(id, c, container) {
   var initials = c.isPro ? '🏢' : (((c.prenom||'?').charAt(0))+((c.nom||'?').charAt(0))).toUpperCase();
   var hasBilanData = c.bilan_raw && (c.bilan_raw.notesTrain || c.bilan_raw.vision6m || c.bilan_raw.pointA || c.bilan_raw.blocages || c.bilan_raw.attenteCoach || c.bilan_raw.notesAlim);
   var bilanFilled = !!(c.bilan_summary || hasBilanData);
-  var hasPq = !!(c.pq_summary && (c.pq_summary.resumeProfil || c.pq_summary.closingPotential > 0));
+  var hasPq = !!(c.pq_summary && (c.pq_summary.resumeProfil || (parseFloat(c.pq_summary.closingPotential)||0) > 0));
   var sigDone = isClosingEnCours && c.sig_steps && c.sig_steps.every(function(s){return s.done;});
   var hasTests = !!(c.tests_data && Object.keys(c.tests_data).length);
   var hasReport = !!c.final_report;
@@ -1735,7 +1736,7 @@ function renderProspectModal(id, c, container) {
     var pqCard = document.createElement('div'); pqCard.className='ai-card'; pqCard.id = 'pm-pq-card';
     pqCard.innerHTML = '<div class="ai-title">🧬 Analyse Pré-qualif IA</div>'
       + (pq.profilTypeCode ? '<div class="pbadge"><span class="pcode">'+pq.profilTypeCode+'</span><span class="plabel">'+(pq.profilTypeLabel||'')+'</span></div>' : '')
-      + '<div class="crow" style="margin-bottom:10px"><div><div class="cscore">'+(pq.closingPotential||0)+'%</div><div class="clbl">Potentiel closing</div></div>'
+      + '<div class="crow" style="margin-bottom:10px"><div><div class="cscore">'+pctClosing(pq.closingPotential)+'</div><div class="clbl">Potentiel closing</div></div>'
       + '<div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px">'
       + (pq.niveauUrgence ? '<span class="pill '+ucCls+'">'+pq.niveauUrgence+'</span>' : '')
       + (pq.closingStatusSuggestion ? '<span class="pill '+ccCls+'">'+pq.closingStatusSuggestion+'</span>' : '')
@@ -1757,7 +1758,7 @@ function renderProspectModal(id, c, container) {
       bilanSection.innerHTML = '<div class="ai-card" style="border-color:rgba(26,110,219,.2)">'
         + '<div class="ai-title" style="color:var(--B)">🩺 Synthèse Bilan</div>'
         + (bs.profilTypeCodeUpdated ? '<div class="pbadge"><span class="pcode" style="color:var(--B)">'+bs.profilTypeCodeUpdated+'</span><span class="plabel">'+(bs.profilTypeLabelUpdated||'')+'</span></div>' : '')
-        + '<div class="crow" style="margin-bottom:8px"><div><div class="cscore" style="color:var(--B)">'+(bs.closingPotentialUpdated||0)+'%</div><div class="clbl">Closing</div></div>'
+        + '<div class="crow" style="margin-bottom:8px"><div><div class="cscore" style="color:var(--B)">'+pctClosing(bs.closingPotentialUpdated)+'</div><div class="clbl">Closing</div></div>'
         + '<div style="margin-left:auto"><span class="pill '+rcCls+'">'+(bs.recommandationSuiteRDV||'')+'</span></div></div>'
         + (bs.syntheseBilan ? '<div class="ai-blk"><div class="ai-blk-c">'+bs.syntheseBilan+'</div></div>' : '')
         + (bs.prioritesCoaching ? '<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">🎯 Priorités</div><div class="ai-blk-c">'+bs.prioritesCoaching+'</div></div>' : '')
@@ -1814,14 +1815,14 @@ function renderProspectModal(id, c, container) {
     if (hasTests)      { t3Cls='done'; t3Sub='Tests effectués'; t3Flag='✓'; }
     else if (sigDone)  { t3Cls='todo'; t3Sub='Démarrer les tests F3'; t3Flag='→'; }
     else               { t3Cls='locked'; t3Sub='Disponible après signature'; t3Flag='🔒'; }
-    // Tuile 4 : Analyse complète (PDF)
+    // Tuile 4 : Diagnostique BE ACTIV (PDF)
     var t4Cls, t4Sub, t4Flag;
-    if (hasReport) { t4Cls='done'; t4Sub='Rapport disponible'; t4Flag='✓'; }
+    if (hasReport) { t4Cls='done'; t4Sub='Diagnostique disponible'; t4Flag='✓'; }
     else {
       var miss = [];
-      if (!c.bilan_summary) miss.push('F1 Bilan');
-      if (!sigDone)         miss.push('F2 Signature');
-      if (!hasTests)        miss.push('F3 Tests');
+      if (!c.bilan_summary) miss.push('Bilan');
+      if (!sigDone)         miss.push('Signature');
+      if (!hasTests)        miss.push('Tests');
       t4Cls='locked'; t4Sub='Manque : '+miss.join(' · '); t4Flag='🔒';
     }
 
@@ -1848,7 +1849,7 @@ function renderProspectModal(id, c, container) {
       +   '<button class="pm-tile '+t4Cls+'" data-act="report"'+(t4Cls==='locked'?' disabled':'')+'>'
       +     '<span class="pm-tile-flag">'+t4Flag+'</span>'
       +     '<div class="pm-tile-ico">📊</div>'
-      +     '<div class="pm-tile-title">Analyse complète</div>'
+      +     '<div class="pm-tile-title">Diagnostique BE ACTIV</div>'
       +     '<div class="pm-tile-state">'+t4Sub+'</div>'
       +   '</button>'
       + '</div>';
@@ -2299,7 +2300,7 @@ async function genSyntheseBilanFromClient(clientId) {
   try {
     var br = c.bilan_raw || {};
     var pqCtx = c.pq_summary
-      ? 'Pré-bilan : '+c.pq_summary.profilTypeCode+' — '+c.pq_summary.profilTypeLabel+'. Closing: '+c.pq_summary.closingPotential+'%. Vigilances: '+(c.pq_summary.pointsDeVigilance||'aucune')+'.'
+      ? 'Pré-bilan : '+c.pq_summary.profilTypeCode+' — '+c.pq_summary.profilTypeLabel+'. Closing: '+pctClosing(c.pq_summary.closingPotential)+'. Vigilances: '+(c.pq_summary.pointsDeVigilance||'aucune')+'.'
       : '';
     var sys = 'Tu es l\'assistant IA du coach Jonathan (BE ACTIV, Grenoble/Lyon). Analyse les données du bilan coach et produis une synthèse interne professionnelle. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. 4 LEVIERS : BOUGER | MANGER | RÉCUPÉRER | RÉGULER. 3 PHASES : RESET | SCULPT | HEALTH. Jamais de restriction sévère.\n\n'+BA_PROFILS_SYS+'\n\nConfirme ou affine le profil BE ACTIV. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
     var usr = pqCtx
@@ -2349,7 +2350,7 @@ function partagerBilanSummary(clientId) {
     '─────────────────────────────',
   ];
   if (bs.profilTypeCodeUpdated) lines.push('Profil : ' + bs.profilTypeCodeUpdated + ' — ' + (bs.profilTypeLabelUpdated||''));
-  if (bs.closingPotentialUpdated) lines.push('Potentiel closing : ' + bs.closingPotentialUpdated + '%');
+  if (bs.closingPotentialUpdated) lines.push('Potentiel closing : ' + pctClosing(bs.closingPotentialUpdated));
   if (bs.recommandationSuiteRDV) lines.push('Recommandation : ' + bs.recommandationSuiteRDV);
   if (bs.syntheseBilan) lines.push('\n' + bs.syntheseBilan);
   if (bs.prioritesCoaching) lines.push('\n🎯 Priorités coaching :\n' + bs.prioritesCoaching);
@@ -3732,15 +3733,22 @@ function calcIMC2() {
   el.innerHTML='<strong style="font-size:18px;color:'+col+'">'+imc+'</strong>&nbsp;<span class="imc-b" style="background:'+col+'1a;color:'+col+';border:1px solid '+col+'44">'+cat+'</span>';
 }
 function calcIRD() {
+  // Formule Ruffier-Dickson : ((P2-70) + 2*(P3-P1)) / 10 (centralisée dans computeIRD)
   const p1=parseInt(gv('t-p1')),p2=parseInt(gv('t-p2')),p3=parseInt(gv('t-p3'));
-  if(!p1||!p2||!p3)return;
-  const ird=((p2-70+2*(p3-p1))/2).toFixed(1);
-  const el=document.getElementById('t-ird');if(el)el.value=ird;
-  const v=parseFloat(ird);
-  const[cat,col]=v<0?['Excellent','var(--G)']:v<5?['Bon','var(--G)']:v<10?['Moyen','var(--Y)']:v<15?['Insuffisant','var(--R)']:['Mauvais','var(--R)'];
+  const r = computeIRD(p1, p2, p3);
+  if (!r) return;
+  const el=document.getElementById('t-ird');if(el)el.value=r.ird;
   const res=document.getElementById('ird-result');if(res)res.style.display='flex';
-  const valEl=document.getElementById('ird-val');if(valEl){valEl.textContent=ird;valEl.style.color=col;}
-  const catEl=document.getElementById('ird-cat');if(catEl){catEl.textContent=cat;catEl.style.cssText='background:'+col+'1a;color:'+col+';border:1px solid '+col+'44;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700';}
+  const valEl=document.getElementById('ird-val');if(valEl){valEl.textContent=r.ird;valEl.style.color=r.color;}
+  const catEl=document.getElementById('ird-cat');if(catEl){catEl.textContent=r.cat;catEl.style.cssText='background:'+r.color+'1a;color:'+r.color+';border:1px solid '+r.color+'44;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700';}
+  // Zone 2 auto si FCmax saisie ou âge dispo
+  const fcmaxEl = document.getElementById('t-fcmax');
+  const fcmax = fcmaxEl ? parseFloat(fcmaxEl.value) : null;
+  const ageEl = document.getElementById('b-age') || document.getElementById('t-age');
+  const age = ageEl ? parseFloat(ageEl.value) : null;
+  const z2 = computeZone2(fcmax, age);
+  const z2El = document.getElementById('t-zone2');
+  if (z2El && z2 && !z2El.value) z2El.value = z2.label;
 }
 function sbar(id,val) {
   const b=document.getElementById('bar-'+id);if(!b)return;
@@ -3810,6 +3818,85 @@ function collectTests(){
 // ═══════════════════════════════════════════════════
 // AI
 // ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+// HELPERS — closingPotential, IRD/Zone 2, parsing JSON IA
+// ═══════════════════════════════════════════════════
+// Normalise une valeur de potentiel closing (accepte 75, "75", 0.75, "0.75", "75%")
+// et renvoie une chaîne "75%" prête à afficher.
+function pctClosing(v) {
+  if (v === null || v === undefined || v === '') return '0%';
+  var n = typeof v === 'string' ? parseFloat(v.replace('%','').replace(',','.')) : Number(v);
+  if (!isFinite(n)) return '0%';
+  if (n > 0 && n <= 1) n = n * 100;
+  n = Math.round(n);
+  if (n < 0) n = 0;
+  if (n > 100) n = 100;
+  return n + '%';
+}
+
+// Calcule l'indice Ruffier-Dickson : ((P2-70) + 2*(P3-P1)) / 10
+// Renvoie {ird, cat, color, advice}
+function computeIRD(p1, p2, p3) {
+  p1 = parseFloat(p1); p2 = parseFloat(p2); p3 = parseFloat(p3);
+  if (!p1 || !p2 || !p3) return null;
+  var ird = ((p2 - 70) + 2 * (p3 - p1)) / 10;
+  ird = Math.round(ird * 10) / 10;
+  var cat, color, advice;
+  if (ird < 0)       { cat = 'Excellent';    color = 'var(--G)'; advice = 'Excellente capacité de récupération cardiaque. Continue à entretenir ta condition.'; }
+  else if (ird < 5)  { cat = 'Bon';          color = 'var(--G)'; advice = 'Bonne forme cardio. Cap sur la régularité et progresser en intensité.'; }
+  else if (ird < 10) { cat = 'Moyen';        color = 'var(--Y)'; advice = 'Capacité cardio moyenne. Travaille la zone 2 régulièrement pour progresser.'; }
+  else if (ird < 15) { cat = 'Insuffisant';  color = 'var(--R)'; advice = 'Cardio à développer. Privilégier marche rapide / vélo doux 3×/semaine en zone 2.'; }
+  else               { cat = 'Mauvais';      color = 'var(--R)'; advice = 'Capacité cardio faible. Reprise progressive recommandée, suivi attentif.'; }
+  return {ird: ird, cat: cat, color: color, advice: advice};
+}
+
+// Calcule la zone 2 cible (60-70% FCmax) — utilise FCmax fournie sinon fallback Tanaka (208 - 0.7*age)
+function computeZone2(fcmax, age) {
+  var fc = parseFloat(fcmax);
+  if (!fc || fc < 100) {
+    var a = parseFloat(age);
+    if (a && a > 5) fc = Math.round(208 - 0.7 * a);
+    else fc = null;
+  }
+  if (!fc) return null;
+  var lo = Math.round(fc * 0.60);
+  var hi = Math.round(fc * 0.70);
+  return {fcmax: fc, lo: lo, hi: hi, label: lo + '–' + hi + ' bpm'};
+}
+
+// Parsing JSON robuste : nettoie markdown / extrait le 1er bloc JSON / messages d'erreur lisibles
+function parseAIJson(raw) {
+  if (!raw || typeof raw !== 'string') throw new Error('Réponse IA vide');
+  var s = raw.trim();
+  // Retirer balises markdown ``` et ```json
+  s = s.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '');
+  s = s.replace(/```json/gi, '').replace(/```/g, '').trim();
+  // 1ère tentative directe
+  try { return JSON.parse(s); } catch(e) {}
+  // Extraire le premier bloc { ... } équilibré
+  var start = s.indexOf('{');
+  if (start === -1) throw new Error('Réponse IA non-JSON : ' + s.slice(0, 120));
+  var depth = 0, end = -1, inStr = false, esc = false;
+  for (var i = start; i < s.length; i++) {
+    var ch = s[i];
+    if (esc) { esc = false; continue; }
+    if (ch === '\\') { esc = true; continue; }
+    if (ch === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (ch === '{') depth++;
+    else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
+  }
+  if (end === -1) throw new Error('Réponse IA tronquée — bloc JSON incomplet');
+  var slice = s.substring(start, end + 1);
+  try { return JSON.parse(slice); }
+  catch(e) {
+    // Tentative finale : retirer virgules orphelines avant } ou ]
+    var cleaned = slice.replace(/,\s*([}\]])/g, '$1');
+    try { return JSON.parse(cleaned); }
+    catch(e2) { throw new Error('Réponse IA invalide (JSON malformé)'); }
+  }
+}
+
 async function callAI(system,user,model,maxTokens){
   model=model||'claude-haiku-4-5-20251001';maxTokens=maxTokens||1400;
 
@@ -3846,10 +3933,11 @@ async function callAI(system,user,model,maxTokens){
     raw = (data2.content && data2.content[0] && data2.content[0].text) || '';
   }
 
-  try{
-    return JSON.parse(raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim());
-  }catch(e){
-    throw new Error('Réponse IA invalide: '+raw.slice(0,80));
+  try {
+    return parseAIJson(raw);
+  } catch(e) {
+    console.warn('callAI parse error:', e, 'raw:', raw.slice(0, 300));
+    throw new Error(e.message || 'Réponse IA invalide');
   }
 }
 
@@ -3871,7 +3959,7 @@ async function analyzePQ(){
 function renderPQResult(d){
   const uc={Critique:'pill-R',Élevé:'pill-Y',Moyen:'pill-B',Faible:'pill-G'}[d.niveauUrgence]||'';
   const cc={Chaud:'pill-R',Tiède:'pill-Y',Froid:'pill-B','À qualifier':'pill-V'}[d.closingStatusSuggestion]||'';
-  document.getElementById('pq-result').innerHTML='<div class="ai-card"><div class="ai-title">🧬 Synthèse pré-bilan IA</div><div class="pbadge"><span class="pcode">'+d.profilTypeCode+'</span><span class="plabel">'+d.profilTypeLabel+'</span>'+(d.profilTypeCodeSecondaire?'<span class="pill pill-B" style="font-size:10px">'+d.profilTypeCodeSecondaire+'</span>':'')+'</div><div class="crow"><div><div class="cscore">'+d.closingPotential+'%</div><div class="clbl">Potentiel closing</div></div><div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px"><span class="pill '+uc+'">'+d.niveauUrgence+'</span><span class="pill '+cc+'">'+d.closingStatusSuggestion+'</span></div></div><div class="ai-body" style="margin-bottom:11px">'+d.resumeProfil+'</div>'+ab('🎯 Objectif',d.objectifPrincipal)+ab('🚧 Freins',d.freinsProbables)+ab('🔥 Motivations',d.motivationsDominantes)+(d.pointsDeVigilance?ab('⚠️ Vigilances',d.pointsDeVigilance,'Y'):'')+ab('🧠 Approche',d.approcheCoachingRecommandee,'B')+(d.profilTypeReason?'<p class="note" style="margin-top:6px">💬 '+d.profilTypeReason+'</p>':'')+'</div>';
+  document.getElementById('pq-result').innerHTML='<div class="ai-card"><div class="ai-title">🧬 Synthèse pré-bilan IA</div><div class="pbadge"><span class="pcode">'+d.profilTypeCode+'</span><span class="plabel">'+d.profilTypeLabel+'</span>'+(d.profilTypeCodeSecondaire?'<span class="pill pill-B" style="font-size:10px">'+d.profilTypeCodeSecondaire+'</span>':'')+'</div><div class="crow"><div><div class="cscore">'+pctClosing(d.closingPotential)+'</div><div class="clbl">Potentiel closing</div></div><div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px"><span class="pill '+uc+'">'+d.niveauUrgence+'</span><span class="pill '+cc+'">'+d.closingStatusSuggestion+'</span></div></div><div class="ai-body" style="margin-bottom:11px">'+d.resumeProfil+'</div>'+ab('🎯 Objectif',d.objectifPrincipal)+ab('🚧 Freins',d.freinsProbables)+ab('🔥 Motivations',d.motivationsDominantes)+(d.pointsDeVigilance?ab('⚠️ Vigilances',d.pointsDeVigilance,'Y'):'')+ab('🧠 Approche',d.approcheCoachingRecommandee,'B')+(d.profilTypeReason?'<p class="note" style="margin-top:6px">💬 '+d.profilTypeReason+'</p>':'')+'</div>';
 }
 function ab(t,c,col){col=col||'B';if(!c)return'';return'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--'+col+')">'+t+'</div><div class="ai-blk-c">'+c+'</div></div>';}
 
@@ -3879,13 +3967,13 @@ async function analyzeBilan(){
   const btn=document.getElementById('btn-bilan');btn.disabled=true;btn.textContent='⏳ Analyse…';
   try{
     const b=collectBilan();
-    const pqCtx=ST.pqSummary?'Pré-bilan : '+ST.pqSummary.profilTypeCode+' — '+ST.pqSummary.profilTypeLabel+'. Closing: '+ST.pqSummary.closingPotential+'%. Vigilances: '+(ST.pqSummary.pointsDeVigilance||'aucune')+'.'  :'';
+    const pqCtx=ST.pqSummary?'Pré-bilan : '+ST.pqSummary.profilTypeCode+' — '+ST.pqSummary.profilTypeLabel+'. Closing: '+pctClosing(ST.pqSummary.closingPotential)+'. Vigilances: '+(ST.pqSummary.pointsDeVigilance||'aucune')+'.'  :'';
     const sys='Tu es l\'assistant IA du coach Jonathan (BE ACTIV, Grenoble/Lyon). Analyse les données du bilan coach et produis une synthèse interne professionnelle. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. 4 LEVIERS : BOUGER (musculation + NEAT) | MANGER (nourrir sans punir) | RÉCUPÉRER (sommeil prioritaire) | RÉGULER (stress, hormones). 3 PHASES : RESET (reprendre contrôle) | SCULPT (construire/recomposer) | HEALTH (entretenir). Jamais de restriction sévère ou comptage calorique avant les fondations.\n\n'+BA_PROFILS_SYS+'\n\nIdentifie les leviers réels, détermine la phase adaptée, confirme ou affine le profil, recommande l\'offre cohérente. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
     const usr=pqCtx+'\nProspect : '+b.prenom+' '+b.nom+', '+(b.age||'?')+' ans, '+(b.ville||'NC')+'\nSource : '+(b.source||'NC')+' | Profil: '+(b.profilTypeCode||'NC')+'\nVision 6 mois : '+(b.vision6m||'').slice(0,200)+'\nBlocages : '+(b.blocages||'').slice(0,150)+'\nEntraînement : '+(b.notesTrain||'NC')+' | NEAT : '+(b.pas||'NC')+' pas\nAlimentation : '+(b.notesAlim||'NC')+'\nMode de vie : '+(b.notesVie||'NC')+'\nOffres : '+(b.offres||'NC')+' | Montant : '+(b.montant||'NC')+'€\n\nJSON strict :\n{"syntheseBilan":"3-4 phrases","hypotheseCoach":"texte","facteursLimitants":"texte","facteursLeviers":"texte","incoherencesOuVigilances":"texte ou null","prioritesCoaching":"3 priorités","profilTypeCodeUpdated":"P1..P12","profilTypeLabelUpdated":"libellé","closingPotentialUpdated":0,"recommandationSuiteRDV":"Démarrer maintenant|Envoyer offre|Relancer dans 1 semaine|Ne pas continuer","offreRecommandee":"texte"}';
     const r=await callAI(sys,usr,'claude-haiku-4-5-20251001',1300);
     ST.bilanSummary=r;
     const rc={'Démarrer maintenant':'pill-G','Envoyer offre':'pill-R','Relancer dans 1 semaine':'pill-Y','Ne pas continuer':'pill-V'}[r.recommandationSuiteRDV]||'';
-    document.getElementById('bilan-result').innerHTML='<div class="ai-card" style="border-color:rgba(26,110,219,.2)"><div class="ai-title" style="color:var(--B)">🩺 Synthèse bilan coach</div>'+(r.profilTypeCodeUpdated?'<div class="pbadge" style="border-color:rgba(26,110,219,.25)"><span class="pcode" style="color:var(--B)">'+r.profilTypeCodeUpdated+'</span><span class="plabel">'+r.profilTypeLabelUpdated+'</span></div>':'')+'<div class="crow"><div><div class="cscore" style="color:var(--B)">'+r.closingPotentialUpdated+'%</div><div class="clbl">Closing actualisé</div></div><div style="margin-left:auto"><span class="pill '+rc+'">'+r.recommandationSuiteRDV+'</span></div></div><div class="ai-body" style="margin-bottom:11px">'+r.syntheseBilan+'</div>'+ab('💡 Hypothèse',r.hypotheseCoach,'B')+ab('🚀 Leviers',r.facteursLeviers,'G')+ab('⛔ Limitants',r.facteursLimitants,'R')+(r.incoherencesOuVigilances?ab('⚠️ Incohérences',r.incoherencesOuVigilances,'Y'):'')+ab('🎯 Priorités',r.prioritesCoaching,'V')+(r.offreRecommandee?'<div style="margin-top:9px;font-size:12px;color:var(--tx3)">💼 Offre recommandée : <strong style="color:var(--Y)">'+r.offreRecommandee+'</strong></div>':'')+'</div>';
+    document.getElementById('bilan-result').innerHTML='<div class="ai-card" style="border-color:rgba(26,110,219,.2)"><div class="ai-title" style="color:var(--B)">🩺 Synthèse bilan coach</div>'+(r.profilTypeCodeUpdated?'<div class="pbadge" style="border-color:rgba(26,110,219,.25)"><span class="pcode" style="color:var(--B)">'+r.profilTypeCodeUpdated+'</span><span class="plabel">'+r.profilTypeLabelUpdated+'</span></div>':'')+'<div class="crow"><div><div class="cscore" style="color:var(--B)">'+pctClosing(r.closingPotentialUpdated)+'</div><div class="clbl">Closing actualisé</div></div><div style="margin-left:auto"><span class="pill '+rc+'">'+r.recommandationSuiteRDV+'</span></div></div><div class="ai-body" style="margin-bottom:11px">'+r.syntheseBilan+'</div>'+ab('💡 Hypothèse',r.hypotheseCoach,'B')+ab('🚀 Leviers',r.facteursLeviers,'G')+ab('⛔ Limitants',r.facteursLimitants,'R')+(r.incoherencesOuVigilances?ab('⚠️ Incohérences',r.incoherencesOuVigilances,'Y'):'')+ab('🎯 Priorités',r.prioritesCoaching,'V')+(r.offreRecommandee?'<div style="margin-top:9px;font-size:12px;color:var(--tx3)">💼 Offre recommandée : <strong style="color:var(--Y)">'+r.offreRecommandee+'</strong></div>':'')+'</div>';
     document.getElementById('bilan-result').style.display='block';
     document.getElementById('bilan-cta').style.display='block';
     // Afficher la décision bilan si prospect connu
@@ -4678,7 +4766,7 @@ var MODE_STAGE_DEFS = {
   transformation: [
     {id:'rapport', lbl:'1er RAPPORT', ico:'📊', steps:[
       {id:'tests',lbl:'Tests physiques'},
-      {id:'rapport_complet',lbl:'Rapport Complet (F1+F2+F3) généré'},
+      {id:'rapport_complet',lbl:'Diagnostique BE ACTIV généré'},
       {id:'done',lbl:'Terminée ✅',isFinal:true}
     ]},
     {id:'onboarding', lbl:'ONBOARDING', ico:'🚀', steps:[
@@ -4703,7 +4791,7 @@ var MODE_STAGE_DEFS = {
   essentiel: [
     {id:'rapport', lbl:'1er RAPPORT', ico:'📊', steps:[
       {id:'tests',lbl:'Tests physiques'},
-      {id:'rapport_complet',lbl:'Rapport Complet (F1+F2+F3) généré'},
+      {id:'rapport_complet',lbl:'Diagnostique BE ACTIV généré'},
       {id:'done',lbl:'Terminée ✅',isFinal:true}
     ]},
     {id:'onboarding_essentiel', lbl:'ONBOARDING', ico:'🚀', steps:[
@@ -4846,6 +4934,21 @@ function renderModeStages(clientId, c, container) {
           var ts = document.createElement('div'); ts.className = 'cm-step-ts';
           ts.textContent = new Date(st.doneAt).toLocaleDateString('fr-FR');
           row.appendChild(ts);
+        }
+        // Bouton "Modifier" pour les étapes spéciales déjà validées (tests / rapport_complet / rapport_leger)
+        if (st.done && (step.id === 'tests' || step.id === 'rapport_complet' || step.id === 'rapport_leger')) {
+          var editBtn = document.createElement('button');
+          editBtn.className = 'btn btn-dk btn-sm';
+          editBtn.style.cssText = 'padding:4px 10px;font-size:11px;font-weight:600;margin-left:6px';
+          editBtn.title = step.id === 'tests' ? 'Modifier les tests' : 'Régénérer le diagnostique';
+          editBtn.textContent = step.id === 'tests' ? '✏️' : '🔄';
+          editBtn.onclick = (function(cid, sIdx, stIdx, sId){ return function(e){
+            e.stopPropagation();
+            if (sId === 'tests') openTestsParcours(cid, sIdx, stIdx);
+            else if (sId === 'rapport_complet') genReportComplet(cid, sIdx, stIdx);
+            else if (sId === 'rapport_leger') genRapportLeger(cid, sIdx, stIdx);
+          }; })(clientId, si, stepIdx, step.id);
+          row.appendChild(editBtn);
         }
         body.appendChild(row);
       });
@@ -5097,9 +5200,20 @@ function saveTestsParcours() {
       }
     });
   });
-  // Calculer IRD automatiquement si P1/P2/P3 présents
-  if (testsData.p1 && testsData.p2 && testsData.p3) {
-    testsData.ird = ((parseFloat(testsData.p1)+parseFloat(testsData.p2)+parseFloat(testsData.p3)-200)/10).toFixed(1);
+  // Calculer IRD automatiquement (Ruffier-Dickson) si P1/P2/P3 présents
+  var _ird = computeIRD(testsData.p1, testsData.p2, testsData.p3);
+  if (_ird) {
+    testsData.ird = _ird.ird;
+    testsData.ird_cat = _ird.cat;
+    testsData.ird_advice = _ird.advice;
+  }
+  // Calculer Zone 2 auto (FCmax saisie sinon fallback Tanaka via âge client)
+  var _z2 = computeZone2(testsData.fcmax, c.age);
+  if (_z2) {
+    testsData.fcmax = _z2.fcmax;
+    testsData.zone2 = _z2.label;
+    testsData.zone2_lo = _z2.lo;
+    testsData.zone2_hi = _z2.hi;
   }
   // Alias pour compatibilité avec genReportComplet (lit t.mobGlobal)
   if (testsData['mob-global']) testsData.mobGlobal = testsData['mob-global'];
@@ -5111,8 +5225,38 @@ function saveTestsParcours() {
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
   closeTestsParcours();
-  toast('ok', '✅ Tests enregistrés — générez maintenant le Rapport Complet');
+  toast('ok', '✅ Tests enregistrés — générez maintenant le Diagnostique BE ACTIV');
   renderClientModal(ctx.clientId);
+}
+
+var _lastDiagnostiqueClientId = null;
+var _lastDiagnostiqueArgs = null;
+
+// Régénère le diagnostique avec les données actuelles (pré-qualif + bilan + tests éventuellement modifiés)
+function regenerateDiagnostique() {
+  var cid = _lastDiagnostiqueClientId;
+  var args = _lastDiagnostiqueArgs;
+  if (!cid) { toast('err', '⚠️ Aucun diagnostique en cours'); return; }
+  var c = ST.clients.find(function(x){ return x.id == cid; });
+  if (!c) return;
+  // Si on n'a pas le stageIdx/stepIdx d'origine, retrouver l'étape rapport_complet
+  if (!args || args.stageIdx == null) {
+    var found = null;
+    if (Array.isArray(c.mode_stages)) {
+      for (var si = 0; si < c.mode_stages.length; si++) {
+        var sd = c.mode_stages[si];
+        if (!sd || !sd.steps) continue;
+        for (var sti = 0; sti < sd.steps.length; sti++) {
+          var stagesDef = getActiveStageDefs(c);
+          var stepDef = stagesDef[si] && stagesDef[si].steps && stagesDef[si].steps[sti];
+          if (stepDef && stepDef.id === 'rapport_complet') { found = {stageIdx: si, stepIdx: sti}; break; }
+        }
+        if (found) break;
+      }
+    }
+    args = found || {stageIdx: 0, stepIdx: 0};
+  }
+  genReportComplet(cid, args.stageIdx, args.stepIdx);
 }
 
 async function genReportComplet(clientId, stageIdx, stepIdx) {
@@ -5133,11 +5277,11 @@ async function genReportComplet(clientId, stageIdx, stepIdx) {
     var squatObs = Array.isArray(t['mob-squat']) ? t['mob-squat'].join(', ') : (Array.isArray(t.squatObs) ? t.squatObs.join(', ') : (t['mob-squat']||t.squatObs||'NC'));
     var mobScore = t['mob-global']||t.mobGlobal||'NC';
     var mobZones = [t['mob-post']?'Post:'+t['mob-post']:'',t['mob-sh']?'Épaules:'+t['mob-sh']:'',t['mob-hi']?'Hanches:'+t['mob-hi']:'',t['mob-an']?'Chevilles:'+t['mob-an']:''].filter(Boolean).join(' | ')||(t.mobZones||'NC');
-    var sys = 'Tu es Jonathan, coach BE ACTIV. Génère un rapport complet F1+F2+F3 en JSON strict sans backticks. Sois concret, personnalisé, bienveillant. Français uniquement.';
+    var sys = 'Tu es Jonathan, coach BE ACTIV. Génère un Diagnostique BE ACTIV (rapport global du profil intégrant pré-qualif, bilan et tests physiques) en JSON strict sans backticks ni texte hors JSON. Sois concret, personnalisé, bienveillant. Français uniquement.';
     var usr = 'CLIENT: '+(c.prenom||'NC')+' '+(c.nom||'')+', '+(c.age||'?')+' ans, '+(c.ville||'NC')
       +'\nIMC: '+imc+' | Poids: '+(t.poids||'NC')+'kg | Taille: '+(t.taille||'NC')+'cm'
       +'\nMesures: nombril='+(t.tn||'NC')+' taille='+(t.tt||'NC')+' hanche='+(t.th||'NC')+' cuisses='+(t.tc||'NC')+' bras='+(t.tb||'NC')
-      +'\nCardio: P1='+(t.p1||'NC')+' P2='+(t.p2||'NC')+' P3='+(t.p3||'NC')+' IRD='+(t.ird||'NC')+' FCmax='+(t.fcmax||'NC')
+      +'\nCardio: P1='+(t.p1||'NC')+' P2='+(t.p2||'NC')+' P3='+(t.p3||'NC')+' IRD='+(t.ird||'NC')+(t.ird_cat?' ('+t.ird_cat+')':'')+' FCmax='+(t.fcmax||'NC')+(t.zone2?' Zone2='+t.zone2:'')+(t.ird_advice?' Conseil='+t.ird_advice:'')
       +'\nMobilité: '+mobScore+'/100 | Zones: '+mobZones+(t['mob-asy']?' | Asymétries: '+t['mob-asy']:'')
       +'\nSquat: '+squatObs
       +'\nForce: Planche='+(t.planche||t['planche']||'NC')+'s'
@@ -5157,18 +5301,32 @@ async function genReportComplet(clientId, stageIdx, stepIdx) {
     saveToSupabase(c);
     // Afficher le résumé
     document.getElementById('rpt-complet-loading').style.display = 'none';
+    var cardioHdr = '';
+    if (t.ird || t.zone2) {
+      cardioHdr = '<div class="ai-blk" style="background:var(--B-l);border-color:rgba(26,110,219,.2)"><div class="ai-blk-t" style="color:var(--B)">❤️ Cardio (auto)</div><div class="ai-blk-c">'
+        + (t.ird?'IRD : <strong>'+t.ird+'</strong>'+(t.ird_cat?' · '+t.ird_cat:'')+'<br>':'')
+        + (t.zone2?'Zone 2 cible : <strong>'+t.zone2+'</strong>'+(t.fcmax?' · FCmax '+t.fcmax+' bpm':'')+'<br>':'')
+        + (t.ird_advice?'<span style="color:var(--tx3);font-style:italic;font-size:12px">'+t.ird_advice+'</span>':'')
+        + '</div></div>';
+    }
     document.getElementById('rpt-complet-content').innerHTML = '<div class="ai-card">'
-      + '<div class="ai-title">🤖 Rapport Complet généré</div>'
+      + '<div class="ai-title">🩺 Diagnostique BE ACTIV généré</div>'
       + (r.profilGlobal?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--bx)">Profil global</div><div class="ai-blk-c">'+r.profilGlobal+'</div></div>':'')
+      + cardioHdr
+      + (r.analyseCardio?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--B)">Analyse cardio</div><div class="ai-blk-c">'+r.analyseCardio+'</div></div>':'')
       + (r.planAction90J?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--G)">Plan 90 jours</div><div class="ai-blk-c">'+r.planAction90J+'</div></div>':'')
       + (r.messageMotivation?'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--V)">Message</div><div class="ai-blk-c">'+r.messageMotivation+'</div></div>':'')
       + '</div>';
     document.getElementById('rpt-complet-actions').style.display = 'block';
+    _lastDiagnostiqueClientId = clientId;
     renderClientModal(clientId);
-    toast('ok', '✨ Rapport Complet généré !');
+    toast('ok', '✨ Diagnostique BE ACTIV généré !');
   } catch(e) {
     document.getElementById('rpt-complet-loading').style.display = 'none';
-    document.getElementById('rpt-complet-content').innerHTML = '<div style="color:var(--R)">❌ '+e.message+'</div>';
+    document.getElementById('rpt-complet-content').innerHTML = '<div style="color:var(--R);padding:14px;background:var(--R-l);border:1px solid rgba(214,48,49,.25);border-radius:var(--r3)">❌ Échec de génération : '+(e.message||'Erreur inconnue')+'<br><span style="color:var(--tx3);font-size:11px;font-style:italic;font-weight:400">Vérifiez la connexion ou réessayez via le bouton Régénérer.</span></div>';
+    document.getElementById('rpt-complet-actions').style.display = 'block';
+    _lastDiagnostiqueClientId = clientId;
+    _lastDiagnostiqueArgs = {clientId: clientId, stageIdx: stageIdx, stepIdx: stepIdx};
   }
 }
 
@@ -5178,7 +5336,7 @@ function dlPDF_complet() {
   if (!c) { toast('err', '⚠️ Aucun rapport trouvé'); return; }
   var r = c.final_report || c.rapport_leger;
   var isComplet = !!c.final_report;
-  var titre = isComplet ? 'Rapport Complet — F1+F2+F3' : 'Rapport Léger — F1+F2';
+  var titre = isComplet ? 'Diagnostique BE ACTIV' : 'Rapport Léger';
   var t = isComplet ? (c.tests_data || {}) : null;
 
   function sec(title, body) {
@@ -5198,7 +5356,8 @@ function dlPDF_complet() {
 
   if (isComplet && t) {
     var imc = t.poids && t.taille ? (parseFloat(t.poids)/Math.pow(parseFloat(t.taille)/100,2)).toFixed(1) : 'NC';
-    html += sec('Données physiques', 'Taille : '+t.taille+' cm | Poids : '+t.poids+' kg | IMC : '+imc+'<br>Tour nombril : '+t.tn+' cm | Tour taille : '+t.tt+' cm<br>Mobilité : '+t.mobGlobal+'/100 | IRD : '+t.ird+' | Planche : '+t.planche+' s');
+    var cardioLine = 'IRD : '+(t.ird||'NC')+(t.ird_cat?' <em>('+t.ird_cat+')</em>':'')+(t.fcmax?' | FCmax : '+t.fcmax+' bpm':'')+(t.zone2?' | Zone 2 cible : '+t.zone2:'');
+    html += sec('Données physiques', 'Taille : '+(t.taille||'NC')+' cm | Poids : '+(t.poids||'NC')+' kg | IMC : '+imc+'<br>Tour nombril : '+(t.tn||'NC')+' cm | Tour taille : '+(t.tt||'NC')+' cm<br>Mobilité : '+(t.mobGlobal||'NC')+'/100 | Planche : '+(t.planche||'NC')+' s<br>Cardio : '+cardioLine+(t.ird_advice?'<br><span style="color:#555;font-style:italic">'+t.ird_advice+'</span>':''));
     html += sec('Analyse morphologique', r.analyseMorphologique);
     html += sec('Analyse mobilité', r.analyseMobilite);
     html += sec('Plan 90 jours', r.planAction90J);
@@ -5236,7 +5395,7 @@ async function genRapportLeger(clientId, stageIdx, stepIdx) {
   var titleEl = mdl.querySelector('h2');
   if (titleEl) titleEl.textContent = '📋 Rapport Léger (F1+F2)';
   try {
-    var pqCtx = c.pq_summary ? 'PRÉ-BILAN: '+c.pq_summary.resumeProfil+' | Profil: '+c.pq_summary.profilTypeCode+' | Potentiel closing: '+c.pq_summary.closingPotential+'%' : 'Pré-bilan non effectué';
+    var pqCtx = c.pq_summary ? 'PRÉ-BILAN: '+c.pq_summary.resumeProfil+' | Profil: '+c.pq_summary.profilTypeCode+' | Potentiel closing: '+pctClosing(c.pq_summary.closingPotential) : 'Pré-bilan non effectué';
     var bilanCtx = c.bilan_summary ? 'BILAN: '+c.bilan_summary.syntheseBilan+' | Leviers: '+(c.bilan_summary.facteursLeviers||'NC')+' | Objectif: '+(c.bilan_summary.objectifPrincipal||'NC') : 'Bilan non effectué';
     // Détecter le mode pour adapter le rapport
     var offreModeRpt = 'action';
@@ -5541,6 +5700,25 @@ function renderClientModal(id) {
           t.scrollIntoView({behavior:'smooth', block:'start'});
         }
       };
+      // Mini-bloc "Données" pour rouvrir/modifier pré-qualif, bilan ou tests
+      var dataEdit = document.createElement('div');
+      dataEdit.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--rim3)';
+      dataEdit.innerHTML = '<span style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.7px;align-self:center;margin-right:4px">Données</span>';
+      function _editChip(label, fn) {
+        var b = document.createElement('button');
+        b.className = 'btn';
+        b.style.cssText = 'padding:5px 11px;font-size:11px;font-weight:600;background:transparent;border:1px solid var(--rim3);color:var(--tx2);box-shadow:none;border-radius:50px';
+        b.innerHTML = label;
+        b.onclick = fn;
+        dataEdit.appendChild(b);
+      }
+      if (c.pq_summary) _editChip('🧬 Pré-qualif', function(){ closeModal('client'); startPrequalifForProspect(id); });
+      if (c.bilan_summary || c.bilan_raw) _editChip('🩺 Bilan', function(){ closeModal('client'); startBilanForProspect(id); });
+      // Tests : retrouver l'étape "tests" pour rouvrir l'éditeur même si validée
+      var testsLoc = null;
+      stagesDef.forEach(function(sd, si){ (sd.steps||[]).forEach(function(stp, sti){ if (stp.id === 'tests') testsLoc = {stageIdx: si, stepIdx: sti}; }); });
+      if (testsLoc) _editChip('📏 Tests', function(){ openTestsParcours(id, testsLoc.stageIdx, testsLoc.stepIdx); });
+      if (dataEdit.children.length > 1) cockpit.appendChild(dataEdit);
     } catch(e) { console.warn('cockpit render error', e); }
   }
 
