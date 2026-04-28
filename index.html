@@ -3865,6 +3865,8 @@ function computeZone2(fcmax, age) {
 }
 
 // Parsing JSON robuste : nettoie markdown / extrait le 1er bloc JSON / messages d'erreur lisibles
+// Tolère également une troncature : si le JSON est coupé en cours de réponse, on tente de
+// refermer proprement chaînes et accolades pour récupérer un objet partiel exploitable.
 function parseAIJson(raw) {
   if (!raw || typeof raw !== 'string') throw new Error('Réponse IA vide');
   var s = raw.trim();
@@ -3873,7 +3875,7 @@ function parseAIJson(raw) {
   s = s.replace(/```json/gi, '').replace(/```/g, '').trim();
   // 1ère tentative directe
   try { return JSON.parse(s); } catch(e) {}
-  // Extraire le premier bloc { ... } équilibré
+  // Localiser le 1er '{' et tenter d'extraire un bloc équilibré
   var start = s.indexOf('{');
   if (start === -1) throw new Error('Réponse IA non-JSON : ' + s.slice(0, 120));
   var depth = 0, end = -1, inStr = false, esc = false;
@@ -3886,14 +3888,62 @@ function parseAIJson(raw) {
     if (ch === '{') depth++;
     else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
   }
-  if (end === -1) throw new Error('Réponse IA tronquée — bloc JSON incomplet');
-  var slice = s.substring(start, end + 1);
-  try { return JSON.parse(slice); }
-  catch(e) {
-    // Tentative finale : retirer virgules orphelines avant } ou ]
-    var cleaned = slice.replace(/,\s*([}\]])/g, '$1');
-    try { return JSON.parse(cleaned); }
-    catch(e2) { throw new Error('Réponse IA invalide (JSON malformé)'); }
+  // Cas A : bloc équilibré trouvé → parse direct
+  if (end !== -1) {
+    var slice = s.substring(start, end + 1);
+    try { return JSON.parse(slice); }
+    catch(e) {
+      var cleaned = slice.replace(/,\s*([}\]])/g, '$1');
+      try { return JSON.parse(cleaned); } catch(e2) {}
+    }
+  }
+  // Cas B : troncature → tentative de récupération
+  // Couper avant tout fragment incomplet, fermer chaîne ouverte, refermer accolades/crochets
+  var partial = s.substring(start);
+  // Si on est dans une chaîne quand la réponse a été coupée, refermer la chaîne
+  var inStr2 = false, esc2 = false, lastCommaSafe = -1, brackStack = [];
+  for (var j = 0; j < partial.length; j++) {
+    var ch2 = partial[j];
+    if (esc2) { esc2 = false; continue; }
+    if (ch2 === '\\') { esc2 = true; continue; }
+    if (ch2 === '"') { inStr2 = !inStr2; continue; }
+    if (inStr2) continue;
+    if (ch2 === '{' || ch2 === '[') brackStack.push(ch2);
+    else if (ch2 === '}' || ch2 === ']') brackStack.pop();
+    else if (ch2 === ',') lastCommaSafe = j;
+  }
+  var rebuilt = partial;
+  if (inStr2) rebuilt += '"'; // refermer la chaîne ouverte
+  // Si la dernière virgule est dans un état pendant, couper jusqu'à elle pour ne pas avoir une clé sans valeur
+  // (heuristique simple : on tronque au dernier '"' fermant d'une valeur si possible)
+  // Refermer la pile de brackets dans l'ordre inverse
+  for (var k = brackStack.length - 1; k >= 0; k--) {
+    rebuilt += brackStack[k] === '{' ? '}' : ']';
+  }
+  // Nettoyage virgules orphelines
+  rebuilt = rebuilt.replace(/,\s*([}\]])/g, '$1');
+  try { return JSON.parse(rebuilt); }
+  catch(e3) {
+    // Dernière tentative : couper à la dernière virgule connue + fermer
+    if (lastCommaSafe > -1) {
+      var trimmed = partial.substring(0, lastCommaSafe);
+      // Refermer la pile (recalculée depuis trimmed)
+      var bs2 = [];
+      var inStr3 = false, esc3 = false;
+      for (var m = 0; m < trimmed.length; m++) {
+        var ch3 = trimmed[m];
+        if (esc3) { esc3 = false; continue; }
+        if (ch3 === '\\') { esc3 = true; continue; }
+        if (ch3 === '"') { inStr3 = !inStr3; continue; }
+        if (inStr3) continue;
+        if (ch3 === '{' || ch3 === '[') bs2.push(ch3);
+        else if (ch3 === '}' || ch3 === ']') bs2.pop();
+      }
+      if (inStr3) trimmed += '"';
+      for (var n = bs2.length - 1; n >= 0; n--) trimmed += bs2[n] === '{' ? '}' : ']';
+      try { return JSON.parse(trimmed); } catch(e4) {}
+    }
+    throw new Error('Réponse IA tronquée — bloc JSON incomplet');
   }
 }
 
@@ -5277,7 +5327,7 @@ async function genReportComplet(clientId, stageIdx, stepIdx) {
     var squatObs = Array.isArray(t['mob-squat']) ? t['mob-squat'].join(', ') : (Array.isArray(t.squatObs) ? t.squatObs.join(', ') : (t['mob-squat']||t.squatObs||'NC'));
     var mobScore = t['mob-global']||t.mobGlobal||'NC';
     var mobZones = [t['mob-post']?'Post:'+t['mob-post']:'',t['mob-sh']?'Épaules:'+t['mob-sh']:'',t['mob-hi']?'Hanches:'+t['mob-hi']:'',t['mob-an']?'Chevilles:'+t['mob-an']:''].filter(Boolean).join(' | ')||(t.mobZones||'NC');
-    var sys = 'Tu es Jonathan, coach BE ACTIV. Génère un Diagnostique BE ACTIV (rapport global du profil intégrant pré-qualif, bilan et tests physiques) en JSON strict sans backticks ni texte hors JSON. Sois concret, personnalisé, bienveillant. Français uniquement.';
+    var sys = 'Tu es Jonathan, coach BE ACTIV. Génère un Diagnostique BE ACTIV (rapport global du profil intégrant pré-qualif, bilan et tests physiques) en JSON strict sans backticks ni texte hors JSON. Sois concret, personnalisé, bienveillant. Français uniquement. CONSIGNE STRICTE : reste compact (chaque champ texte < 350 caractères, chaque item d\'array < 80 caractères). Le JSON DOIT être complet et bien fermé.';
     var usr = 'CLIENT: '+(c.prenom||'NC')+' '+(c.nom||'')+', '+(c.age||'?')+' ans, '+(c.ville||'NC')
       +'\nIMC: '+imc+' | Poids: '+(t.poids||'NC')+'kg | Taille: '+(t.taille||'NC')+'cm'
       +'\nMesures: nombril='+(t.tn||'NC')+' taille='+(t.tt||'NC')+' hanche='+(t.th||'NC')+' cuisses='+(t.tc||'NC')+' bras='+(t.tb||'NC')
@@ -5290,7 +5340,7 @@ async function genReportComplet(clientId, stageIdx, stepIdx) {
       +'\nBilan: '+bilanCtx
       +'\nOffre: '+(c.offres||'NC')
       +'\n\nJSON:\n{"profilGlobal":"","analyseMorphologique":"","analyseMobilite":"","analyseCardio":"","analyseForce":"","pointsForts":["",""],"freinsPrincipaux":["",""],"planAction90J":"","conseilsTraining":"","conseilsNutrition":"","conseilsRecuperation":"","messageMotivation":"","scoreMobilite":0,"scoreCondition":0,"scoreGlobal":0,"niveauGlobal":""}';
-    var r = await callAI(sys, usr, 'claude-haiku-4-5-20251001', 2000);
+    var r = await callAI(sys, usr, 'claude-haiku-4-5-20251001', 4500);
     c.final_report = r; c.final_report._client = c; c.final_report._tests = t;
     // Valider le step rapport_complet
     var stagesDef = getActiveStageDefs(c);
