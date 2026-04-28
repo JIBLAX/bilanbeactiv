@@ -277,6 +277,8 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .ird-val{font-weight:900;font-size:22px;color:var(--B)}
 .ird-lbl{font-size:12px;color:var(--tx3)}
 .ird-cat{font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px}
+.auto-badge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;background:var(--B-l);color:var(--B);border:1px solid rgba(26,110,219,.2);padding:1px 6px;border-radius:50px;vertical-align:middle;margin-left:5px}
+.calc-field{background:var(--bg3)!important;border-color:var(--rim3)!important;color:var(--tx3)!important;cursor:default!important}
 .sbar{height:5px;border-radius:3px;background:var(--bg4);overflow:hidden;margin-top:5px}
 .sfill{height:100%;border-radius:3px;transition:width .4s,background .4s}
 
@@ -1191,7 +1193,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div id="tests-sections-editor"></div>
   </div>
   <div id="editor-suites" style="display:none">
-    <p style="font-size:13px;color:var(--tx3);margin-bottom:12px">Options proposées au coach après la certification d'un cycle. Modifiez, ajoutez ou supprimez les suites possibles.</p>
+    <div style="background:var(--bg3);border:1px solid var(--rim3);border-radius:var(--r3);padding:12px 14px;margin-bottom:14px">
+      <div style="font-weight:700;font-size:13px;margin-bottom:5px">🔀 Suites proposées après certification</div>
+      <div style="font-size:12px;color:var(--tx3);line-height:1.6">Quand un client <strong>termine un cycle</strong>, le coach voit une liste de continuations possibles à lui proposer. Configurez ici <strong>quelles options apparaissent</strong>, dans quel ordre, et vers quelle <strong>phase</strong> elles orientent le client.</div>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
       <button class="btn btn-bx btn-sm" onclick="addSuiteOption()">＋ Ajouter une suite</button>
       <button class="btn btn-dk btn-sm" onclick="resetSuiteOptions()">↩ Réinitialiser</button>
@@ -3054,8 +3059,8 @@ function renderTestsForm(programmeOverride) {
 
   // Résultats calculés
   html += '<div class="card card-bx"><div style="font-weight:700;font-size:13.5px;margin-bottom:12px">📊 Résultats calculés</div>' +
-    '<div class="f"><label>IMC calculé</label><div class="imc-chip" id="imc2-out">—</div></div>' +
-    '<div class="f"><label>IRD calculé</label><input type="number" id="t-ird" placeholder="auto-calculé" readonly style="background:var(--B-l);border-color:rgba(26,110,219,.2);color:var(--B)"></div>' +
+    '<div class="f"><label>IMC<span class="auto-badge">auto</span></label><div class="imc-chip" id="imc2-out">—</div></div>' +
+    '<div class="f"><label>IRD Ruffier-Dickson<span class="auto-badge">auto</span></label><input type="number" id="t-ird" placeholder="—" readonly style="background:var(--B-l);border-color:rgba(26,110,219,.2);color:var(--B)"></div>' +
     '<div id="ird-result" style="display:none" class="ird-result"><div class="ird-val" id="ird-val">—</div><div><div class="ird-lbl">Indice Ruffier Dickson</div><div class="ird-cat" id="ird-cat"></div></div></div></div>';
 
   container.innerHTML = html;
@@ -3066,6 +3071,35 @@ function renderTestsForm(programmeOverride) {
   if(taille) taille.oninput = calcIMC2;
   if(poids) poids.oninput = calcIMC2;
   ['t-p1','t-p2','t-p3'].forEach(id => { const el=document.getElementById(id); if(el) el.oninput=calcIRD; });
+  // FCmax: auto-fill from age if empty, recalcule zone2 à chaque saisie
+  (function(){
+    const fcEl = document.getElementById('t-fcmax');
+    if (fcEl) {
+      if (!fcEl.value) {
+        const ageEl = document.getElementById('b-age') || document.getElementById('t-age');
+        const age = ageEl ? parseFloat(ageEl.value) : null;
+        if (age && age > 5) fcEl.value = Math.round(208 - 0.7 * age);
+      }
+      fcEl.oninput = calcIRD;
+    }
+    // Zone 2: toujours calculée auto, non éditable
+    const z2El = document.getElementById('t-zone2');
+    if (z2El) {
+      z2El.readOnly = true;
+      z2El.classList.add('calc-field');
+      z2El.placeholder = 'calculé automatiquement';
+      // Badge auto sur le label
+      const lbl = z2El.closest('.f') && z2El.closest('.f').querySelector('label');
+      if (lbl && !lbl.querySelector('.auto-badge')) {
+        const b = document.createElement('span');
+        b.className = 'auto-badge';
+        b.textContent = 'auto';
+        lbl.appendChild(b);
+      }
+    }
+    calcIRD();
+    calcIMC2();
+  })();
   ['t-mob-global','t-mob-post','t-mob-sh','t-mob-hi','t-mob-an'].forEach(id => {
     const el=document.getElementById(id);
     if(el) el.oninput = function(){
@@ -3748,7 +3782,7 @@ function calcIRD() {
   const age = ageEl ? parseFloat(ageEl.value) : null;
   const z2 = computeZone2(fcmax, age);
   const z2El = document.getElementById('t-zone2');
-  if (z2El && z2 && !z2El.value) z2El.value = z2.label;
+  if (z2El && z2) z2El.value = z2.label;
 }
 function sbar(id,val) {
   const b=document.getElementById('bar-'+id);if(!b)return;
@@ -5215,6 +5249,76 @@ function openTestsParcours(clientId, stageIdx, stepIdx) {
   });
 
   document.getElementById('tests-parcours-form').innerHTML = html;
+
+  // Handlers calcul live — IRD / Zone 2 / FCmax
+  (function() {
+    var clientAge = c ? parseFloat(c.age) : null;
+
+    function _calcIRD() {
+      var p1 = parseFloat((document.getElementById('f3-p1')||{}).value||'');
+      var p2 = parseFloat((document.getElementById('f3-p2')||{}).value||'');
+      var p3 = parseFloat((document.getElementById('f3-p3')||{}).value||'');
+      var r = computeIRD(p1, p2, p3);
+      var irdResEl = document.getElementById('f3-ird-result');
+      if (r && irdResEl) {
+        irdResEl.style.display = 'flex';
+        var valEl = irdResEl.querySelector('.ird-val');
+        var catEl = irdResEl.querySelector('.ird-cat');
+        if (valEl) { valEl.textContent = r.ird; valEl.style.color = r.color; }
+        if (catEl) { catEl.textContent = r.cat; catEl.style.cssText = 'background:'+r.color+'1a;color:'+r.color+';border:1px solid '+r.color+'44;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700'; }
+      }
+      // Zone 2 toujours recalculée
+      var fcmaxEl = document.getElementById('f3-fcmax');
+      var fcmax = fcmaxEl ? parseFloat(fcmaxEl.value) : null;
+      var z2 = computeZone2(fcmax, clientAge);
+      var z2El = document.getElementById('f3-zone2');
+      if (z2El && z2) z2El.value = z2.label;
+    }
+
+    // P1/P2/P3 → calc IRD
+    ['f3-p1','f3-p2','f3-p3'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.oninput = _calcIRD;
+    });
+
+    // FCmax: auto-fill depuis âge si vide, recalcule zone2
+    var fcmaxEl = document.getElementById('f3-fcmax');
+    if (fcmaxEl) {
+      if (!fcmaxEl.value && clientAge && clientAge > 5)
+        fcmaxEl.value = Math.round(208 - 0.7 * clientAge);
+      fcmaxEl.oninput = _calcIRD;
+    }
+
+    // Zone 2: non éditable, toujours auto
+    var z2El = document.getElementById('f3-zone2');
+    if (z2El) {
+      z2El.readOnly = true;
+      z2El.classList.add('calc-field');
+      z2El.placeholder = 'calculé automatiquement';
+      var lbl = z2El.closest && z2El.closest('.f') && z2El.closest('.f').querySelector('label');
+      if (lbl && !lbl.querySelector('.auto-badge')) {
+        var b = document.createElement('span'); b.className = 'auto-badge'; b.textContent = 'auto';
+        lbl.appendChild(b);
+      }
+    }
+
+    // Injecter affichage IRD résultat après zone2
+    if (z2El && !document.getElementById('f3-ird-result')) {
+      var irdRes = document.createElement('div');
+      irdRes.id = 'f3-ird-result';
+      irdRes.className = 'ird-result';
+      irdRes.style.display = 'none';
+      irdRes.style.margin = '8px 0 0';
+      irdRes.innerHTML = '<div class="ird-val" style="font-weight:900;font-size:22px">—</div><div><div class="ird-lbl">Indice Ruffier Dickson</div><div class="ird-cat"></div></div>';
+      var z2Field = z2El.closest && z2El.closest('.f');
+      if (z2Field) z2Field.parentNode.insertBefore(irdRes, z2Field.nextSibling);
+      else z2El.parentNode.insertBefore(irdRes, z2El.nextSibling);
+    }
+
+    // Calcul initial si données déjà chargées
+    _calcIRD();
+  })();
+
   document.getElementById('mdl-tests-parcours').style.display = 'block';
 }
 
@@ -5911,52 +6015,61 @@ function renderSuitesEditor() {
   if (!el) return;
   var suites = loadSuiteOptions();
   el.innerHTML = '';
-  suites.forEach(function(s, i) {
-    var row = document.createElement('div');
-    row.className = 'form-field-editor';
-    row.style.cssText = 'display:flex;align-items:center;gap:9px;padding:11px 13px;margin-bottom:8px;background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2)';
 
-    // Emoji
+  var PHASES = {
+    reset: {bg:'var(--R-l)', color:'var(--R)'},
+    sculpt:{bg:'var(--Y-l)', color:'var(--Y)'},
+    health:{bg:'var(--G-l)', color:'var(--G)'},
+    cont:  {bg:'var(--B-l)', color:'var(--B)'},
+    'null':{bg:'var(--bg3)', color:'var(--tx3)'}
+  };
+
+  suites.forEach(function(s, i) {
+    var pk = s.phaseKey || 'null';
+    var ph = PHASES[pk] || PHASES['null'];
+
+    var card = document.createElement('div');
+    card.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;margin-bottom:8px;background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r3)';
+
+    var num = document.createElement('span');
+    num.style.cssText = 'width:22px;height:22px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--rim3);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--tx3);flex-shrink:0';
+    num.textContent = i + 1;
+    card.appendChild(num);
+
     var icoInp = document.createElement('input');
     icoInp.type = 'text';
     icoInp.value = s.ico || '📌';
-    icoInp.style.cssText = 'width:52px;text-align:center;font-size:18px;padding:6px';
+    icoInp.style.cssText = 'width:46px;text-align:center;font-size:20px;padding:5px;border-radius:var(--r2);background:var(--bg3);border:1.5px solid var(--rim3);flex-shrink:0';
+    icoInp.title = 'Emoji / icône';
     icoInp.onchange = function() { suites[i].ico = this.value; saveSuiteOptions(suites); };
-    row.appendChild(icoInp);
+    card.appendChild(icoInp);
 
-    // Label
     var lblInp = document.createElement('input');
     lblInp.type = 'text';
     lblInp.value = s.label;
-    lblInp.style.flex = '1';
+    lblInp.placeholder = 'Nom de la suite…';
+    lblInp.style.cssText = 'flex:1;min-width:120px;font-weight:600;font-size:13px';
     lblInp.onchange = function() { suites[i].label = this.value; saveSuiteOptions(suites); };
-    row.appendChild(lblInp);
+    card.appendChild(lblInp);
 
-    // Phase (badge)
     var phaseSel = document.createElement('select');
-    phaseSel.style.cssText = 'font-size:11px;padding:5px 7px;min-width:80px';
-    [
-      {v:'reset', l:'Reset'},
-      {v:'sculpt', l:'Sculpt'},
-      {v:'health', l:'Health'},
-      {v:'cont', l:'Continue'},
-      {v:'null', l:'Libre'}
-    ].forEach(function(opt) {
+    phaseSel.style.cssText = 'font-size:11px;font-weight:700;padding:4px 10px;border-radius:50px;border:1.5px solid '+ph.color+';background:'+ph.bg+';color:'+ph.color+';cursor:pointer;flex-shrink:0';
+    [{v:'reset',l:'🔴 Reset'},{v:'sculpt',l:'📗 Sculpt'},{v:'health',l:'🟢 Health'},{v:'cont',l:'♾️ Continue'},{v:'null',l:'🔀 Toutes phases'}].forEach(function(opt) {
       var o = document.createElement('option');
       o.value = opt.v;
       o.textContent = opt.l;
-      if ((s.phaseKey||'null') === opt.v) o.selected = true;
+      if (pk === opt.v) o.selected = true;
       phaseSel.appendChild(o);
     });
     phaseSel.onchange = function() {
       suites[i].phaseKey = this.value === 'null' ? null : this.value;
       saveSuiteOptions(suites);
+      renderSuitesEditor();
     };
-    row.appendChild(phaseSel);
+    card.appendChild(phaseSel);
 
-    // Boutons
     var btns = document.createElement('div');
-    btns.style.cssText = 'display:flex;gap:4px';
+    btns.style.cssText = 'display:flex;gap:4px;flex-shrink:0';
     [{t:'↑', fn:function(){if(i>0){var tmp=suites[i-1];suites[i-1]=suites[i];suites[i]=tmp;saveSuiteOptions(suites);renderSuitesEditor();}}},
      {t:'↓', fn:function(){if(i<suites.length-1){var tmp=suites[i+1];suites[i+1]=suites[i];suites[i]=tmp;saveSuiteOptions(suites);renderSuitesEditor();}}},
      {t:'✕', fn:function(){dlgConfirm('Supprimer cette suite ?','Supprimer').then(function(r){if(!r.confirmed)return;suites.splice(i,1);saveSuiteOptions(suites);renderSuitesEditor();});}}
@@ -5967,8 +6080,8 @@ function renderSuitesEditor() {
       b.onclick = item.fn;
       btns.appendChild(b);
     });
-    row.appendChild(btns);
-    el.appendChild(row);
+    card.appendChild(btns);
+    el.appendChild(card);
   });
 }
 
