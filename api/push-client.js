@@ -1,7 +1,6 @@
 // api/push-client.js
 // Vercel Function — Synchro CRM → Business (Supabase)
-// Pousse un prospect closé depuis BE ACTIV BILAN vers BE ACTIV BUSINESS
-// Règle : ne jamais écraser les champs financiers gérés par Business
+// Pousse uniquement les données de fiche client (pas de données financières)
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,8 +22,8 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Champs obligatoires manquants : name, user_id' });
   }
 
-  // Champs autorisés à pousser depuis BILAN CRM → Business
-  // Règle : ne jamais écraser les champs financiers gérés en autonomie par Business
+  // Contrat volontairement minimal :
+  // BILAN envoie uniquement la fiche client utile au nommage/rattachement.
   const payload = {
     id:                     prospect.id,
     user_id:                prospect.user_id,
@@ -35,21 +34,10 @@ module.exports = async function handler(req, res) {
     source:                 prospect.source         || null,
     statut:                 prospect.statut         || 'CLIENT',
     closing:                prospect.closing        || 'OUI',
-    offre:                  prospect.offre          || null,
-    offer_type:             prospect.offer_type     || null,  // 'session' | 'programme'
     date:                   prospect.date           || new Date().toISOString().split('T')[0],
-    objectif:               prospect.objectif       || null,
+    offre:                  prospect.offre          || null,
     notes:                  prospect.notes          || null,
     profile:                prospect.profile        || null,
-    // Champs commerciaux (snapshot closing)
-    catalog_price_snapshot: prospect.catalog_price_snapshot ?? null,
-    actual_amount:          prospect.actual_amount          ?? null,
-    montant:                prospect.montant                ?? null,
-    moyen_paiement:         prospect.moyen_paiement         || null,  // cb|virement|especes|plateforme|autre
-    canal_finance:          prospect.canal_finance          || null,  // banque|especes|autre
-    paiement_mode:          prospect.paiement_mode          ?? null,
-    installments_planned:   prospect.installments_planned   ?? null,
-    versements_recus:       prospect.versements_recus       ?? null,
   };
 
   try {
@@ -69,7 +57,7 @@ module.exports = async function handler(req, res) {
       if (checkRes.ok) {
         const existing = await checkRes.json();
         if (existing.length > 0 && !existing[0].id.startsWith('bcrm_')) {
-          // Client existe déjà dans Business (créé manuellement) — on met juste à jour closing + offre
+          // Client existe déjà dans Business (créé manuellement) — on met à jour la fiche client uniquement
           const existingId = existing[0].id;
           await fetch(
             `${supabaseUrl}/rest/v1/prospects?id=eq.${existingId}`,
@@ -84,17 +72,13 @@ module.exports = async function handler(req, res) {
               body: JSON.stringify({
                 closing:                payload.closing,
                 offre:                  payload.offre,
-                offer_type:             payload.offer_type,
                 profile:                payload.profile,
                 statut:                 payload.statut,
-                catalog_price_snapshot: payload.catalog_price_snapshot,
-                actual_amount:          payload.actual_amount,
-                montant:                payload.montant,
-                moyen_paiement:         payload.moyen_paiement,
-                canal_finance:          payload.canal_finance,
-                paiement_mode:          payload.paiement_mode,
-                installments_planned:   payload.installments_planned,
-                versements_recus:       payload.versements_recus,
+                source:                 payload.source,
+                sex:                    payload.sex,
+                age:                    payload.age,
+                contact:                payload.contact,
+                notes:                  payload.notes,
               }),
             }
           );
