@@ -6005,8 +6005,29 @@ async function saveToSupabase(c){
   // Ne pas sauvegarder un prospect sans nom (évite les enregistrements vides)
   if(!c.prenom && !c.nom) return;
   // Champs lus par Finance JM (useBAClients) : id, nom, prenom, name, offre, montant, profil_code, date_rdv, is_client
+  // offre enrichi avec étape active ex: "ACTIV RESET HYBRIDE · Optimisation"
+  var _offreLabel = c.offres || '';
+  try {
+    var _stageDefs = getActiveStageDefs(c);
+    if (_stageDefs && _stageDefs.length && c.mode_stages && c.mode_stages.length) {
+      var _lastDone = -1;
+      _stageDefs.forEach(function(sd, si) {
+        var sdata = c.mode_stages[si];
+        if (sdata && sdata.steps && sdata.steps.every(function(s){return s.done;})) _lastDone = si;
+      });
+      var _actIdx = Math.min(_lastDone + 1, _stageDefs.length - 1);
+      var _aStage = _stageDefs[_actIdx];
+      var _aData = c.mode_stages[_actIdx] || {steps:[]};
+      var _stepLbl = null;
+      for (var _si = 0; _si < _aStage.steps.length; _si++) {
+        var _s = _aData.steps[_si];
+        if (!_s || !_s.done) { _stepLbl = _aStage.steps[_si].lbl; break; }
+      }
+      if (_stepLbl && !_stepLbl.includes('✅')) _offreLabel = (_offreLabel ? _offreLabel + ' · ' : '') + _stepLbl;
+    }
+  } catch(e) {}
   try{
-    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,name:(c.prenom+' '+c.nom).trim(),age:parseInt(c.age)||null,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offre:c.offres,montant:c.montant?parseFloat(c.montant):null,is_client:c.statut==='Closé',score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report,bilan_raw:c.bilan_raw||null,rdv_history:c.rdv_history||null}),updated_at:c.updated_at,group_id:c.groupId||null,group_name:c.group_name||null,is_group_leader:c.is_group_leader||false})});
+    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,name:(c.prenom+' '+c.nom).trim(),age:parseInt(c.age)||null,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offre:_offreLabel,montant:c.montant?parseFloat(c.montant):null,is_client:c.statut==='Closé',score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report,bilan_raw:c.bilan_raw||null,rdv_history:c.rdv_history||null}),updated_at:c.updated_at,group_id:c.groupId||null,group_name:c.group_name||null,is_group_leader:c.is_group_leader||false})});
   }catch(e){}
 }
 
