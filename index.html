@@ -1043,9 +1043,9 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <div class="pg" id="pg-offres">
   <div class="page-title" style="justify-content:space-between">
     <span>💼 Catalogue des Offres</span>
-    <button class="btn btn-dk btn-sm" onclick="pullOffresFromFinances()" style="font-size:12px;padding:7px 12px">📥 Importer ← BE ACTIV BUSINESS</button>
+    <button class="btn btn-dk btn-sm" onclick="pullOffresFromFinances()" style="font-size:12px;padding:7px 12px">📥 Actualiser le catalogue</button>
   </div>
-  <p style="font-size:13px;color:var(--tx3);margin-bottom:16px">Les offres sont créées et gérées dans <strong>BE ACTIV BUSINESS</strong>. Seul le <strong>Mode</strong> est modifiable ici.</p>
+  <p style="font-size:13px;color:var(--tx3);margin-bottom:16px">Catalogue synchronisé. Seul le <strong>Mode</strong> est modifiable ici.</p>
   <div id="offres-list"></div>
 </div>
 
@@ -1479,10 +1479,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
       <div style="font-size:11px;font-weight:700;color:var(--B);text-transform:uppercase;letter-spacing:.8px;margin-bottom:9px">🔗 Synchronisation</div>
       <div style="display:flex;flex-direction:column;gap:7px">
         <button class="btn btn-B btn-sm btn-w" onclick="pullOffresFromFinances()" style="text-align:left;justify-content:flex-start;font-size:12px">
-          📥 Importer offres ← BE ACTIV BUSINESS
+          📥 Actualiser les offres
         </button>
         <button class="btn btn-bx btn-sm btn-w" onclick="syncAllClientsToFinances()" style="text-align:left;justify-content:flex-start;font-size:12px">
-          📤 Pousser TOUS les clients → BE ACTIV BUSINESS
+          📤 Synchroniser tous les clients
         </button>
       </div>
     </div>
@@ -7167,7 +7167,7 @@ async function syncAllClientsToFinances() {
     await syncClientToFinances(clients[i]);
     done++;
   }
-  toast('ok', '🔗 ' + done + ' clients poussés → BE ACTIV BUSINESS');
+  toast('ok', '🔗 ' + done + ' clients synchronisés');
 }
 
 // ═══════════════════════════════════════════════════
@@ -7298,7 +7298,7 @@ async function pullOffresFromFinances() {
   var anon   = BIZ_ANON_DEFAULT;
   // Service Role Key obligatoire pour bypasser le RLS user_id de Business
   var useKey = srKey || anon;
-  if (!url) { toast('err', '⚠️ URL BE ACTIV BUSINESS manquante (Config)'); return; }
+  if (!url) { toast('err', '⚠️ URL de synchronisation manquante (Config)'); return; }
   if (!srKey) {
     console.warn('pullOffresFromFinances: bizSrKey non configurée, tentative avec anon key (peut échouer si RLS actif)');
   }
@@ -7310,15 +7310,15 @@ async function pullOffresFromFinances() {
       var errText = await res.text();
       console.error('pullOffresFromFinances error:', res.status, errText);
       if (res.status === 401 || res.status === 403) {
-        toast('err', '🔑 Accès refusé — renseigne la Service Role Key de BUSINESS dans Config');
+        toast('err', '🔑 Accès refusé — vérifie la clé de synchronisation dans Config');
       } else {
-        toast('err', '⚠️ Erreur lecture offres Business (' + res.status + ')');
+        toast('err', '⚠️ Erreur lecture du catalogue (' + res.status + ')');
       }
       return;
     }
     var rows = await res.json();
     if (!rows || rows.length === 0) {
-      toast('info', 'ℹ️ Aucune offre active dans BE ACTIV BUSINESS');
+      toast('info', 'ℹ️ Aucune offre active trouvée');
       return;
     }
     // Mapper les champs Business → BILAN CRM
@@ -7366,7 +7366,7 @@ async function pullOffresFromFinances() {
     localStorage.setItem('ba_offres_from_business', '1');
     renderOffresPage();
     renderBilanOffresList();
-    toast('ok', '✅ ' + offres.length + ' offre(s) chargée(s) depuis BE ACTIV BUSINESS');
+    toast('ok', '✅ ' + offres.length + ' offre(s) synchronisée(s)');
   } catch(e) {
     toast('err', '❌ Erreur sync offres : ' + e.message);
     console.error(e);
