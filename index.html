@@ -967,6 +967,13 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div class="sh sh-B">📅 Prochain RDV Bilan</div>
   <div id="home-rdv"><div class="rdv-empty">Aucun RDV — ajoutez en via le bouton ci-dessous</div></div>
   <button class="btn btn-dk btn-sm" onclick="openRDVModal()" style="margin-bottom:14px">📅 + Ajouter un RDV</button>
+  <div class="sh" style="color:var(--V)">🔔 Alertes prioritaires <span id="home-alerts-count" style="font-size:10px;color:var(--tx3);font-weight:500"></span></div>
+  <div class="chips" id="home-alerts-filters" style="margin:-4px 0 8px">
+    <div class="chip on" data-f="all" onclick="setHomeAlertsFilter('all')">Toutes</div>
+    <div class="chip" data-f="urgent" onclick="setHomeAlertsFilter('urgent')">Urgentes</div>
+    <div class="chip" data-f="suivi" onclick="setHomeAlertsFilter('suivi')">Suivi</div>
+  </div>
+  <div id="home-alerts"><div class="rdv-empty">Aucune alerte prioritaire pour le moment</div></div>
 </div>
 
 <!-- ══════ PAGE STATS ══════ -->
@@ -2681,9 +2688,14 @@ const ST = {
   bizSrKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlZWNjaXd3YnFzdm1uYWlhaHB3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzEzMTUzNiwiZXhwIjoyMDg4NzA3NTM2fQ.a1YwFPZpGkCGI9-vBbfp9ehynIl7ZVMB9s2rUw_xVmA',
   clientId:null, pqSummary:null, bilanSummary:null, finalReport:null,
   clients:[], rdvs:[], statsYear:null,
+  homeAlertsFilter:'all',
   filterStatut:'all', filterProfil:'all',
   selectMode:false, selectedIds:[]
 };
+try {
+  var _haf = localStorage.getItem('ba_home_alerts_filter_v1');
+  if (_haf === 'all' || _haf === 'urgent' || _haf === 'suivi') ST.homeAlertsFilter = _haf;
+} catch(e) {}
 
 const PROFILS = {
   P1:'Sait mais n\'y arrive pas',
@@ -3399,7 +3411,7 @@ function showPg(name) {
   document.getElementById('scroller').scrollTop=0;
   if(name==='clients') { renderClients(); loadFromSupabase(); }
   if(name==='stats'){renderStats();setTimeout(renderGraph,80);}
-  if(name==='home'){updateKPIs();renderNextRDV();}
+  if(name==='home'){updateKPIs();renderNextRDV();renderHomeAlerts();}
   if(name==='offres') renderOffresPage();
   if(name==='pq') {
     // Restaurer la pré-qualif uniquement pour un nouveau dossier (ST.clientId null)
@@ -3533,6 +3545,251 @@ function renderNextRDV() {
   const d=new Date(next.date+'T12:00:00');
   if(isNaN(d.getTime())){el.innerHTML='<div class="rdv-empty">Prochain RDV : '+next.name+' — '+next.date+'</div>';return;}
   el.innerHTML='<div class="rdv-card"><div class="rdv-date"><div class="rdv-day">'+d.getDate()+'</div><div class="rdv-month">'+months[d.getMonth()]+'</div></div><div class="rdv-info"><div class="rdv-name">'+(next.badge?next.badge+' ':'')+next.name+'</div><div class="rdv-meta">'+days[d.getDay()]+(next.time?' · '+next.time:'')+'</div><div class="rdv-badge">'+next.type+'</div></div></div>';
+}
+
+function _homeAlertSnoozeMap() {
+  try { return JSON.parse(localStorage.getItem('ba_home_alert_snooze_v1') || '{}') || {}; } catch(e) { return {}; }
+}
+function _saveHomeAlertSnoozeMap(map) {
+  localStorage.setItem('ba_home_alert_snooze_v1', JSON.stringify(map || {}));
+}
+function _addDaysIso(baseIso, n) {
+  if (!baseIso) return '';
+  var d = new Date(baseIso + 'T12:00:00');
+  if (isNaN(d.getTime())) return '';
+  d.setDate(d.getDate() + (n || 0));
+  return d.toISOString().slice(0, 10);
+}
+function _diffDaysFromToday(isoDate) {
+  if (!isoDate) return null;
+  var t = new Date();
+  var today = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  var d = new Date(isoDate + 'T12:00:00');
+  if (isNaN(d.getTime())) return null;
+  var dd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return Math.round((dd - today) / 86400000);
+}
+function _relDaysLabel(diff) {
+  if (diff == null) return '';
+  if (diff === 0) return "aujourd'hui";
+  if (diff === 1) return 'demain';
+  if (diff > 1) return 'dans ' + diff + ' jours';
+  if (diff === -1) return 'hier';
+  return 'il y a ' + Math.abs(diff) + ' jours';
+}
+function _escHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+}
+function _clientName(c) {
+  return ((c.prenom || '') + ' ' + (c.nom || '')).trim() || 'Client';
+}
+function _offerForClient(c) {
+  if (!c || !c.sig_offre_id) return null;
+  return loadOffres().find(function(o) { return o.id === c.sig_offre_id; }) || null;
+}
+function _activeCycleForClient(c) {
+  if (!c) return null;
+  migrateClientSessionCycles(c);
+  var list = (c.session_cycles || []).filter(function(x) { return !x.completedAt; });
+  return list.length ? list[list.length - 1] : null;
+}
+function _homeAlertShouldShow(alert, snoozeMap, todayIso) {
+  if (!alert || !alert.key) return false;
+  var until = snoozeMap[alert.key];
+  if (!until) return true;
+  return until <= todayIso;
+}
+function _buildHomeAlerts() {
+  var alerts = [];
+  var todayIso = new Date().toISOString().slice(0, 10);
+  var snoozeMap = _homeAlertSnoozeMap();
+  var windowDays = 7;
+  var remainingThreshold = 2;
+  var seenRdv = {};
+
+  // 1) RDV dans 7 jours
+  if (!ST.rdvs) ST.rdvs = [];
+  ST.rdvs.forEach(function(r) {
+    if (!r || !r.clientId || !r.date) return;
+    var d = _diffDaysFromToday(r.date);
+    if (d == null || d < 0 || d > windowDays) return;
+    var cl = ST.clients.find(function(x) { return x.id === r.clientId; });
+    var nm = cl ? _clientName(cl) : (r.name || 'Client');
+    var rdvSig = String(r.clientId || '') + '|' + String(r.date || '') + '|' + String(r.time || '');
+    seenRdv[rdvSig] = true;
+    var key = 'rdv:' + (r.id || (r.clientId + ':' + r.date + ':' + (r.time || '')));
+    var a = {
+      key: key,
+      priority: 1,
+      dueDate: r.date,
+      clientId: r.clientId,
+      title: '📅 RDV BILAN avec ' + nm,
+      meta: _relDaysLabel(d) + (r.time ? ' · ' + r.time : '')
+    };
+    if (_homeAlertShouldShow(a, snoozeMap, todayIso)) alerts.push(a);
+  });
+  ST.clients.forEach(function(c) {
+    if (!c || !c.rdvType || !c.date) return;
+    if (c.statut === 'Closé' || c.statut === 'Non Closé' || c.statut === 'Refusé' || c.statut === 'Ancien Client') return;
+    if (c.rdvStatut === 'Présent' || c.rdvStatut === 'Absent') return;
+    var rdvSig2 = String(c.id || '') + '|' + String(c.date || '') + '|' + String(c.rdvTime || '');
+    if (seenRdv[rdvSig2]) return;
+    var dc = _diffDaysFromToday(c.date);
+    if (dc == null || dc < 0 || dc > windowDays) return;
+    var k2 = 'rdv-client:' + c.id + ':' + c.date + ':' + (c.rdvTime || '');
+    var a2 = {
+      key: k2,
+      priority: 1,
+      dueDate: c.date,
+      clientId: c.id,
+      title: '📋 RDV BILAN avec ' + _clientName(c),
+      meta: _relDaysLabel(dc) + (c.rdvTime ? ' · ' + c.rdvTime : '')
+    };
+    if (_homeAlertShouldShow(a2, snoozeMap, todayIso)) alerts.push(a2);
+  });
+
+  // 2) Séances restantes (cycle actif uniquement)
+  ST.clients.forEach(function(c) {
+    if (!c || !c.sig_offre_id) return;
+    var off = _offerForClient(c);
+    if (!off || !(off.sessionTracking === true || off.session_tracking === true)) return;
+    var cy = _activeCycleForClient(c);
+    if (!cy) return;
+    var prev = Number(cy.seancesPrevues) || 0;
+    var eff = Number(cy.seancesEffectuees) || 0;
+    var rest = Math.max(0, prev - eff);
+    if (rest > remainingThreshold) return;
+    var key = 'sessions:' + c.id + ':' + (cy.id || 'active') + ':' + prev + ':' + eff;
+    var a = {
+      key: key,
+      priority: 2,
+      dueDate: cy.periodeFin || todayIso,
+      clientId: c.id,
+      title: '🎯 Il reste ' + rest + ' séance' + (rest > 1 ? 's' : '') + ' pour ' + _clientName(c),
+      meta: (off.name || 'Offre') + ' · ' + eff + '/' + prev + ' effectuées'
+    };
+    if (_homeAlertShouldShow(a, snoozeMap, todayIso)) alerts.push(a);
+  });
+
+  // 3) Bilans hebdo/mensuel saisis manuellement
+  ST.clients.forEach(function(c) {
+    if (!c || !c.important_dates) return;
+    var imp = c.important_dates || {};
+    if (imp.next_weekly_bilan) {
+      var dw = _diffDaysFromToday(imp.next_weekly_bilan);
+      if (dw != null && dw <= 0) {
+        var kw = 'weekly:' + c.id + ':' + imp.next_weekly_bilan;
+        var aw = {
+          key: kw,
+          priority: 3,
+          dueDate: imp.next_weekly_bilan,
+          clientId: c.id,
+          title: '🗓️ Bilan hebdomadaire à faire pour ' + _clientName(c),
+          meta: 'Échéance ' + _relDaysLabel(dw)
+        };
+        if (_homeAlertShouldShow(aw, snoozeMap, todayIso)) alerts.push(aw);
+      }
+    }
+    if (imp.next_monthly_bilan) {
+      var dm = _diffDaysFromToday(imp.next_monthly_bilan);
+      if (dm != null && dm <= 0) {
+        var km = 'monthly:' + c.id + ':' + imp.next_monthly_bilan;
+        var am = {
+          key: km,
+          priority: 3,
+          dueDate: imp.next_monthly_bilan,
+          clientId: c.id,
+          title: '📆 Bilan mensuel à faire pour ' + _clientName(c),
+          meta: 'Échéance ' + _relDaysLabel(dm)
+        };
+        if (_homeAlertShouldShow(am, snoozeMap, todayIso)) alerts.push(am);
+      }
+    }
+  });
+
+  // 4) Fin de programme (info utile)
+  ST.clients.forEach(function(c) {
+    var cy = _activeCycleForClient(c);
+    if (!cy || !cy.periodeFin) return;
+    var de = _diffDaysFromToday(cy.periodeFin);
+    if (de == null || de < 0 || de > 14) return;
+    var key = 'end:' + c.id + ':' + (cy.id || 'active') + ':' + cy.periodeFin;
+    var a = {
+      key: key,
+      priority: 4,
+      dueDate: cy.periodeFin,
+      clientId: c.id,
+      title: '⏳ ' + _clientName(c) + ' finit son programme ' + _relDaysLabel(de),
+      meta: 'Fin prévue le ' + cy.periodeFin
+    };
+    if (_homeAlertShouldShow(a, snoozeMap, todayIso)) alerts.push(a);
+  });
+
+  alerts.sort(function(a, b) {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    return String(a.dueDate || '').localeCompare(String(b.dueDate || ''));
+  });
+  return alerts.slice(0, 6);
+}
+function snoozeHomeAlert(key) {
+  if (!key) return;
+  var map = _homeAlertSnoozeMap();
+  var nowIso = new Date().toISOString().slice(0, 10);
+  map[key] = _addDaysIso(nowIso, 7);
+  _saveHomeAlertSnoozeMap(map);
+  renderHomeAlerts();
+  toast('info', '🔕 Alerte masquée 7 jours');
+}
+function renderHomeAlerts() {
+  var el = document.getElementById('home-alerts');
+  var countEl = document.getElementById('home-alerts-count');
+  if (!el) return;
+  var alerts = _buildHomeAlerts();
+  var filter = ST.homeAlertsFilter || 'all';
+  var filtered = alerts.filter(function(a) {
+    if (filter === 'urgent') return a.priority === 1;
+    if (filter === 'suivi') return a.priority === 2 || a.priority === 3;
+    return true;
+  });
+  if (countEl) countEl.textContent = filtered.length ? '(' + filtered.length + ')' : '(0)';
+  if (!alerts.length) {
+    el.innerHTML = '<div class="rdv-empty">Aucune alerte prioritaire pour le moment</div>';
+    return;
+  }
+  if (!filtered.length) {
+    el.innerHTML = '<div class="rdv-empty">Aucune alerte pour ce filtre</div>';
+    return;
+  }
+  el.innerHTML = filtered.map(function(a) {
+    var level = a.priority === 1 ? { txt: 'Urgent', bg: 'var(--R-l)', col: 'var(--R)' }
+      : a.priority === 2 ? { txt: 'Attention', bg: 'var(--Y-l)', col: 'var(--Y)' }
+      : a.priority === 3 ? { txt: 'Suivi', bg: 'var(--B-l)', col: 'var(--B)' }
+      : { txt: 'Info', bg: 'var(--bg3)', col: 'var(--tx3)' };
+    return '<div class="rdv-card" style="cursor:default;align-items:flex-start">'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      + '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:50px;background:' + level.bg + ';color:' + level.col + ';border:1px solid var(--rim3)">' + level.txt + '</span>'
+      + '<div class="rdv-name" style="font-size:13px">' + _escHtml(a.title) + '</div>'
+      + '</div>'
+      + '<div class="rdv-meta" style="margin-top:4px">' + _escHtml(a.meta || '') + '</div>'
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'
+      + '<button class="btn btn-dk btn-sm" style="padding:5px 9px;font-size:10px" onclick="openClient(\'' + _escHtml(a.clientId) + '\')">Ouvrir</button>'
+      + '<button class="btn btn-sm" style="padding:5px 9px;font-size:10px" onclick="snoozeHomeAlert(\'' + _escHtml(a.key) + '\')">Masquer 7j</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+function setHomeAlertsFilter(next) {
+  ST.homeAlertsFilter = next || 'all';
+  try { localStorage.setItem('ba_home_alerts_filter_v1', ST.homeAlertsFilter); } catch(e) {}
+  var box = document.getElementById('home-alerts-filters');
+  if (box) {
+    box.querySelectorAll('.chip').forEach(function(ch) {
+      ch.classList.toggle('on', ch.getAttribute('data-f') === ST.homeAlertsFilter);
+    });
+  }
+  renderHomeAlerts();
 }
 
 // ═══════════════════════════════════════════════════
@@ -5956,6 +6213,67 @@ function appendSessionTrackingCRM(container, clientId) {
   if (elPd) elPd.onchange = function() { patchSessionCycle(clientId, cid, { periodeDebut: this.value || '' }); };
   if (elPf) elPf.onchange = function() { patchSessionCycle(clientId, cid, { periodeFin: this.value || '' }); };
 }
+function saveClientImportantDates(clientId, patch) {
+  var c = ST.clients.find(function(x) { return x.id == clientId; });
+  if (!c) return;
+  if (!c.important_dates) c.important_dates = {};
+  if (patch.next_weekly_bilan !== undefined) c.important_dates.next_weekly_bilan = patch.next_weekly_bilan || '';
+  if (patch.next_monthly_bilan !== undefined) c.important_dates.next_monthly_bilan = patch.next_monthly_bilan || '';
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+}
+function appendClientImportantDates(container, clientId) {
+  var c = ST.clients.find(function(x) { return x.id == clientId; });
+  if (!c) return;
+  if (!c.important_dates) c.important_dates = {};
+  var weekly = c.important_dates.next_weekly_bilan || '';
+  var monthly = c.important_dates.next_monthly_bilan || '';
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'margin:12px 0;padding:14px;background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2)';
+  wrap.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Dates importantes</div>'
+    + '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;margin-bottom:10px">'
+    + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Prochain bilan hebdomadaire</div><input type="date" id="imp-weekly-' + clientId + '" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px" value="' + weekly + '"></div>'
+    + '<button type="button" class="btn btn-sm" id="imp-weekly-plus7-' + clientId + '" style="padding:7px 10px">+7j</button>'
+    + '<button type="button" class="btn btn-dk btn-sm" id="imp-weekly-save-' + clientId + '" style="padding:7px 10px">Valider</button>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end">'
+    + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Prochain bilan mensuel</div><input type="date" id="imp-monthly-' + clientId + '" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px" value="' + monthly + '"></div>'
+    + '<button type="button" class="btn btn-sm" id="imp-monthly-plus30-' + clientId + '" style="padding:7px 10px">+30j</button>'
+    + '<button type="button" class="btn btn-dk btn-sm" id="imp-monthly-save-' + clientId + '" style="padding:7px 10px">Valider</button>'
+    + '</div>';
+  container.appendChild(wrap);
+
+  var wEl = document.getElementById('imp-weekly-' + clientId);
+  var mEl = document.getElementById('imp-monthly-' + clientId);
+  var wSave = document.getElementById('imp-weekly-save-' + clientId);
+  var mSave = document.getElementById('imp-monthly-save-' + clientId);
+  var wP7 = document.getElementById('imp-weekly-plus7-' + clientId);
+  var mP30 = document.getElementById('imp-monthly-plus30-' + clientId);
+
+  if (wSave) wSave.onclick = function() {
+    saveClientImportantDates(clientId, { next_weekly_bilan: wEl ? wEl.value : '' });
+    toast('ok', '✅ Date hebdomadaire enregistrée');
+  };
+  if (mSave) mSave.onclick = function() {
+    saveClientImportantDates(clientId, { next_monthly_bilan: mEl ? mEl.value : '' });
+    toast('ok', '✅ Date mensuelle enregistrée');
+  };
+  if (wP7) wP7.onclick = function() {
+    var base = wEl && wEl.value ? wEl.value : new Date().toISOString().slice(0, 10);
+    var next = _addDaysIso(base, 7);
+    if (wEl) wEl.value = next;
+    saveClientImportantDates(clientId, { next_weekly_bilan: next });
+    toast('ok', '🗓️ Hebdo décalé de 7 jours');
+  };
+  if (mP30) mP30.onclick = function() {
+    var base = mEl && mEl.value ? mEl.value : new Date().toISOString().slice(0, 10);
+    var next = _addDaysIso(base, 30);
+    if (mEl) mEl.value = next;
+    saveClientImportantDates(clientId, { next_monthly_bilan: next });
+    toast('ok', '📆 Mensuel décalé de 30 jours');
+  };
+}
 
 function renderClientModal(id) {
   var c = ST.clients.find(function(x){ return x.id == id; });
@@ -6028,6 +6346,7 @@ function renderClientModal(id) {
   }
 
   appendSessionTrackingCRM(container, id);
+  appendClientImportantDates(container, id);
 
   // ── Cockpit progression (si parcours actif)
   if ((c.sig_offre_id || offreMode) && Array.isArray(c.mode_stages) && c.mode_stages.length) {
@@ -6216,10 +6535,11 @@ async function loadFromSupabase(){
     rows.forEach(row=>{
       // Ignorer les enregistrements sans nom (prospects vides/incomplets)
       if(!row.prenom && !row.nom) return;
-      let pq=null,bilan=null,final=null,bilanRaw=null,rdvHistory=null,sess=null,sessionCycles=null;
-      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;rdvHistory=j.rdv_history||null;sess=j.session_tracking||null;if(Array.isArray(j.session_cycles))sessionCycles=j.session_cycles;}catch(e){}
+      let pq=null,bilan=null,final=null,bilanRaw=null,rdvHistory=null,sess=null,sessionCycles=null,importantDates=null;
+      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;rdvHistory=j.rdv_history||null;sess=j.session_tracking||null;if(Array.isArray(j.session_cycles))sessionCycles=j.session_cycles;if(j.important_dates&&typeof j.important_dates==='object')importantDates=j.important_dates;}catch(e){}
       const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,rdv_history:rdvHistory,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offre,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,bilan_raw:bilanRaw,updated_at:row.updated_at,groupId:row.group_id||null,group_name:row.group_name||null,is_group_leader:row.is_group_leader||false,sap_enabled:row.sap_enabled||false};
       if(sessionCycles) sc.session_cycles = sessionCycles;
+      if(importantDates) sc.important_dates = importantDates;
       if(sess){if(sess.seancesPrevues!=null)sc.seancesPrevues=sess.seancesPrevues;if(sess.seancesEffectuees!=null)sc.seancesEffectuees=sess.seancesEffectuees;if(sess.periodeDebut)sc.periodeDebut=sess.periodeDebut;if(sess.periodeFin)sc.periodeFin=sess.periodeFin;}
       const i=ST.clients.findIndex(c=>c.id===sc.id);if(i>=0)ST.clients[i]=sc;else ST.clients.unshift(sc);
     });
@@ -6261,7 +6581,7 @@ async function saveToSupabase(c){
     var legacySess = cur
       ? { seancesPrevues: cur.seancesPrevues != null ? cur.seancesPrevues : null, seancesEffectuees: cur.seancesEffectuees != null ? cur.seancesEffectuees : null, periodeDebut: cur.periodeDebut || null, periodeFin: cur.periodeFin || null }
       : { seancesPrevues: c.seancesPrevues != null ? c.seancesPrevues : null, seancesEffectuees: c.seancesEffectuees != null ? c.seancesEffectuees : null, periodeDebut: c.periodeDebut || null, periodeFin: c.periodeFin || null };
-    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,name:(c.prenom+' '+c.nom).trim(),age:parseInt(c.age)||null,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offre:_offreLabel,montant:c.montant?parseFloat(c.montant):null,is_client:c.statut==='Closé',score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report,bilan_raw:c.bilan_raw||null,rdv_history:c.rdv_history||null,session_tracking:legacySess,session_cycles:cycles}),updated_at:c.updated_at,group_id:c.groupId||null,group_name:c.group_name||null,is_group_leader:c.is_group_leader||false})});
+    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,name:(c.prenom+' '+c.nom).trim(),age:parseInt(c.age)||null,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offre:_offreLabel,montant:c.montant?parseFloat(c.montant):null,is_client:c.statut==='Closé',score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report,bilan_raw:c.bilan_raw||null,rdv_history:c.rdv_history||null,session_tracking:legacySess,session_cycles:cycles,important_dates:c.important_dates||null}),updated_at:c.updated_at,group_id:c.groupId||null,group_name:c.group_name||null,is_group_leader:c.is_group_leader||false})});
   }catch(e){}
 }
 
