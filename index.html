@@ -6059,6 +6059,13 @@ function offerHasSessionTrackingBilan(offerId) {
   var o = loadOffres().find(function(x) { return x.id === offerId; });
   return !!(o && (o.sessionTracking === true || o.session_tracking === true));
 }
+/** Option B CRM : suivi séances visible seulement si offre + flag offre + parcours/signature démarré (sig_started). */
+function clientQualifiesForSessionTrackingCRM(c) {
+  if (!c) return false;
+  if (c.sig_started !== true) return false;
+  if (!c.sig_offre_id) return false;
+  return offerHasSessionTrackingBilan(c.sig_offre_id);
+}
 function migrateClientSessionCycles(c) {
   if (!c.session_cycles) c.session_cycles = [];
   if (c.session_cycles.length) return;
@@ -6088,6 +6095,7 @@ function getActiveSessionCycleForOffer(c, offerId) {
 }
 function ensureActiveSessionCycle(c) {
   migrateClientSessionCycles(c);
+  if (c.sig_started !== true) return null;
   if (!c.sig_offre_id || !offerHasSessionTrackingBilan(c.sig_offre_id)) return null;
   var ex = getActiveSessionCycleForOffer(c, c.sig_offre_id);
   if (ex) return ex;
@@ -6168,6 +6176,7 @@ function appendClientSessionStatsCorner(container, clientId) {
 function appendSessionTrackingCRM(container, clientId) {
   var c = ST.clients.find(function(x) { return x.id == clientId; });
   if (!c) return;
+  if (!clientQualifiesForSessionTrackingCRM(c)) return;
   migrateClientSessionCycles(c);
   appendClientSessionStatsCorner(container, clientId);
 
@@ -6186,7 +6195,6 @@ function appendSessionTrackingCRM(container, clientId) {
     container.appendChild(hEl);
   }
 
-  if (!c.sig_offre_id || !offerHasSessionTrackingBilan(c.sig_offre_id)) return;
   var cy = ensureActiveSessionCycle(c);
   if (!cy || cy.completedAt) return;
 
