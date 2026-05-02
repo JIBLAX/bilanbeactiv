@@ -7344,12 +7344,11 @@ window.addEventListener('beforeunload', function() {
 
 
 // ═══════════════════════════════════════════════════
-// PULL OFFRES ← BE ACTIV BUSINESS (table: offres)
-// Importe les offres depuis la table partagée Supabase
+// PULL OFFRES ← BE ACTIV BUSINESS (tables: offres puis repli offres_pro)
+// Source catalogue : Business écrit dans offres_pro + miroir offres ; JM/Bilan lisaient surtout offres.
 // ═══════════════════════════════════════════════════
 async function pullOffresFromFinances() {
-  // Lit la table 'offres' du Supabase de BE ACTIV BUSINESS
-  // Nécessite : ST.bizUrl (URL Business) + ST.bizSrKey (service_role Business)
+  // Lit la table 'offres' du Supabase de BE ACTIV BUSINESS ; si vide → offres_pro (même compte que FINANCES_USER_ID)
   var url    = ST.bizUrl    || BIZ_URL_DEFAULT;
   var srKey  = ST.bizSrKey  || '';
   var anon   = BIZ_ANON_DEFAULT;
@@ -7374,6 +7373,33 @@ async function pullOffresFromFinances() {
       return;
     }
     var rows = await res.json();
+    if (!rows || rows.length === 0) {
+      var bizUid = (typeof FINANCES_USER_ID !== 'undefined' && FINANCES_USER_ID) ? FINANCES_USER_ID : '';
+      if (bizUid) {
+        var sel = 'external_ref,name,price,active,duration,max_installments,theme,offer_type,session_tracking_enabled,min_sessions_to_validate,is_draft';
+        var resPro = await fetch(url + '/rest/v1/offres_pro?user_id=eq.' + encodeURIComponent(bizUid) + '&active=eq.true&is_draft=eq.false&select=' + encodeURIComponent(sel) + '&order=name.asc', {
+          headers: { 'apikey': useKey, 'Authorization': 'Bearer ' + useKey }
+        });
+        if (resPro.ok) {
+          var rawPro = await resPro.json();
+          rows = (rawPro || []).map(function(r) {
+            return {
+              id: r.external_ref || r.id,
+              name: r.name,
+              price: r.price,
+              active: r.active,
+              is_ala_carte: false,
+              duration: r.duration,
+              max_installments: r.max_installments,
+              theme: r.theme,
+              offer_type: r.offer_type,
+              session_tracking_enabled: r.session_tracking_enabled,
+              min_sessions_to_validate: r.min_sessions_to_validate
+            };
+          });
+        }
+      }
+    }
     if (!rows || rows.length === 0) {
       toast('info', 'ℹ️ Aucune offre active trouvée');
       return;
