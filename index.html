@@ -1707,6 +1707,7 @@ function renderProspectModal(id, c, container) {
   var sigDone = isClosingEnCours && c.sig_steps && c.sig_steps.every(function(s){return s.done;});
   var hasTests = !!(c.tests_data && Object.keys(c.tests_data).length);
   var hasReport = !!c.final_report;
+  var bilanReady = !!(c.bilan_summary || hasBilanData);
 
   // ── Title bar (close)
   var titleEl=document.createElement('div'); titleEl.className='mdl-t';
@@ -1764,8 +1765,6 @@ function renderProspectModal(id, c, container) {
   }).join('');
   if (c.notes) summary.innerHTML += '<div class="pm-note">'+c.notes+'</div>';
   container.appendChild(summary);
-
-  appendSessionTrackingCRM(container, id);
 
   // ── Pré-qualif IA compact
   if (hasPq) {
@@ -1854,15 +1853,15 @@ function renderProspectModal(id, c, container) {
     if (hasTests)      { t3Cls='done'; t3Sub='Tests effectués'; t3Flag='✓'; }
     else if (sigDone)  { t3Cls='todo'; t3Sub='Démarrer les tests F3'; t3Flag='→'; }
     else               { t3Cls='locked'; t3Sub='Disponible après signature'; t3Flag='🔒'; }
-    // Tuile 4 : Diagnostique BE ACTIV (PDF)
+    // Tuile 4 : Diagnostique BE ACTIV (PDF) — débloqué dès bilan RDV validé (sans obligation préqualif / tests / signature)
     var t4Cls, t4Sub, t4Flag;
     if (hasReport) { t4Cls='done'; t4Sub='Diagnostique disponible'; t4Flag='✓'; }
-    else {
-      var miss = [];
-      if (!c.bilan_summary) miss.push('Bilan');
-      if (!sigDone)         miss.push('Signature');
-      if (!hasTests)        miss.push('Tests');
-      t4Cls='locked'; t4Sub='Manque : '+miss.join(' · '); t4Flag='🔒';
+    else if (bilanReady) {
+      t4Cls = 'todo';
+      t4Sub = (!sigDone || !hasTests) ? 'Générer le diagnostique (tests recommandés)' : 'Générer le diagnostique';
+      t4Flag = '→';
+    } else {
+      t4Cls='locked'; t4Sub='Complétez d\'abord le bilan RDV'; t4Flag='🔒';
     }
 
     tilesWrap.innerHTML = '<div class="pm-tiles-h">Actions</div>'
@@ -1907,6 +1906,33 @@ function renderProspectModal(id, c, container) {
     if (bilanTile && !t2Lock) bilanTile.onclick = function(){
       closeModal('client');
       startBilanForProspect(id);
+    };
+    var testsTile = tilesWrap.querySelector('[data-act="tests"]');
+    if (testsTile && t3Cls !== 'locked') testsTile.onclick = function(){
+      closeModal('client');
+      ST.clientId = id;
+      ST.pqSummary = c.pq_summary || null;
+      ST.bilanSummary = c.bilan_summary || null;
+      ST.finalReport = c.final_report || null;
+      showPg('bilan');
+      setTimeout(function(){ renderTestsForm(); showPg('tests'); }, 80);
+    };
+    var reportTile = tilesWrap.querySelector('[data-act="report"]');
+    if (reportTile && t4Cls !== 'locked') reportTile.onclick = function(){
+      closeModal('client');
+      ST.clientId = id;
+      ST.pqSummary = c.pq_summary || null;
+      ST.bilanSummary = c.bilan_summary || null;
+      ST.finalReport = c.final_report || null;
+      showPg('bilan');
+      setTimeout(function(){
+        var cl = ST.clients.find(function(x){ return x.id === id; });
+        if (cl && cl.final_report) {
+          ST.finalReport = cl.final_report;
+          if (!ST.finalReport._client) ST.finalReport._client = cl;
+        }
+        showPg('rapport');
+      }, 80);
     };
   }
 
@@ -1990,12 +2016,16 @@ function startBilanForProspect(clientId) {
   var c = ST.clients.find(function(x){ return x.id == clientId; });
   if (!c) return;
 
-  // Supprimer immédiatement tout brouillon d'un autre client
-  var existingDraft = localStorage.getItem('ba_bilan_draft');
-  if (existingDraft) {
+  // Ancienne clé globale : ne garder que si elle correspond à ce client
+  var legacyDraft = localStorage.getItem('ba_bilan_draft');
+  if (legacyDraft) {
     try {
-      var d = JSON.parse(existingDraft);
-      if (!d['__clientId'] || d['__clientId'] !== clientId) {
+      var ld = JSON.parse(legacyDraft);
+      var lk = bilanDraftStorageKey(clientId);
+      if (!ld['__clientId'] || ld['__clientId'] !== clientId) {
+        localStorage.removeItem('ba_bilan_draft');
+      } else if (!localStorage.getItem(lk)) {
+        localStorage.setItem(lk, legacyDraft);
         localStorage.removeItem('ba_bilan_draft');
       }
     } catch(e) { localStorage.removeItem('ba_bilan_draft'); }
@@ -3439,7 +3469,16 @@ function showPg(name) {
     // Restaurer la pré-qualif uniquement pour un nouveau dossier (ST.clientId null)
     // Un client existant ne doit jamais voir le brouillon d'un autre
     if (!ST.clientId) {
-      var pqDraft = localStorage.getItem('ba_bilan_draft');
+      var pqDraft = localStorage.getItem(bilanDraftStorageKey(null));
+      if (!pqDraft) {
+        var legPq = localStorage.getItem('ba_bilan_draft');
+        if (legPq) {
+          try {
+            var dq = JSON.parse(legPq);
+            if (!dq.__clientId) pqDraft = legPq;
+          } catch(e) {}
+        }
+      }
       if (pqDraft) {
         try {
           var d = JSON.parse(pqDraft);
@@ -3462,6 +3501,19 @@ function showPg(name) {
     setupBilanDraftAutosave();
   }
   if(name==='tests') renderTestsForm();
+  if(name==='rapport') {
+    var fr = ST.finalReport;
+    var cli = fr && fr._client ? fr._client : (ST.clientId ? ST.clients.find(function(x){ return x.id === ST.clientId; }) : null);
+    if (fr && cli) {
+      if (!fr._client) fr._client = cli;
+      renderReport(fr, cli);
+      var rE = document.getElementById('rpt-empty'), rL = document.getElementById('rpt-loading'), rC = document.getElementById('rpt-content'), rA = document.getElementById('rpt-actions');
+      if (rE) rE.style.display='none';
+      if (rL) rL.style.display='none';
+      if (rC) rC.style.display='block';
+      if (rA) rA.style.display='block';
+    }
+  }
   if(name==='form-editor'){ renderSectionsEditor('bilan'); switchEditor('bilan', document.querySelector('#pg-form-editor .chip')); renderSuitesEditor(); }
   if(name==='prospect') {
     // Reset le formulaire prospect à chaque navigation
@@ -3682,20 +3734,29 @@ function _buildHomeAlerts() {
     var rest = Math.max(0, prev - eff);
     if (rest > remainingThreshold) return;
     var key = 'sessions:' + c.id + ':' + (cy.id || 'active') + ':' + prev + ':' + eff;
+    var titleSess, metaSess;
+    if (prev > 0 && rest === 0) {
+      titleSess = '✅ ' + _clientName(c) + ' — parcours séances complété (' + eff + '/' + prev + ')';
+      metaSess = (off.name || 'Offre') + ' · quota atteint';
+    } else {
+      titleSess = '🎯 Il reste ' + rest + ' séance' + (rest > 1 ? 's' : '') + ' pour ' + _clientName(c);
+      metaSess = (off.name || 'Offre') + ' · ' + eff + '/' + prev + ' effectuées';
+    }
     var a = {
       key: key,
       priority: 2,
       dueDate: cy.periodeFin || todayIso,
       clientId: c.id,
-      title: '🎯 Il reste ' + rest + ' séance' + (rest > 1 ? 's' : '') + ' pour ' + _clientName(c),
-      meta: (off.name || 'Offre') + ' · ' + eff + '/' + prev + ' effectuées'
+      title: titleSess,
+      meta: metaSess
     };
     if (_homeAlertShouldShow(a, snoozeMap, todayIso)) alerts.push(a);
   });
 
-  // 3) Bilans hebdo/mensuel saisis manuellement
+  // 3) Bilans hebdo/mensuel saisis manuellement (offres programmes ciblées)
   ST.clients.forEach(function(c) {
     if (!c || !c.important_dates) return;
+    if (!clientQualifiesForImportantDatesCRM(c)) return;
     var imp = c.important_dates || {};
     if (imp.next_weekly_bilan) {
       var dw = _diffDaysFromToday(imp.next_weekly_bilan);
@@ -3729,10 +3790,12 @@ function _buildHomeAlerts() {
     }
   });
 
-  // 4) Fin de programme (info utile)
+  // 4) Fin de programme (info utile) — pas pour offres one-shot / à la carte
   ST.clients.forEach(function(c) {
     var cy = _activeCycleForClient(c);
     if (!cy || !cy.periodeFin) return;
+    var off4 = _offerForClient(c);
+    if (off4 && offerSessionTrackingHideCalendarPeriods(off4)) return;
     var de = _diffDaysFromToday(cy.periodeFin);
     if (de == null || de < 0 || de > 14) return;
     var key = 'end:' + c.id + ':' + (cy.id || 'active') + ':' + cy.periodeFin;
@@ -5839,8 +5902,8 @@ function dlPDF_complet() {
 async function genRapportLeger(clientId, stageIdx, stepIdx) {
   var c = ST.clients.find(function(x){ return x.id == clientId; });
   if (!c) return;
-  if (!c.bilan_summary && !c.pq_summary) {
-    toast('err', '⚠️ Effectuez au moins F1 (Préqualif) avant de générer le rapport');
+  if (!clientHasBilanContentForReport(c) && !c.pq_summary) {
+    toast('err', '⚠️ Complétez le bilan RDV ou la pré-qualif avant de générer le rapport');
     return;
   }
   var mdl = document.getElementById('mdl-rapport-complet');
@@ -6062,6 +6125,42 @@ function clientQualifiesForSessionTrackingCRM(c) {
   if (!c.sig_offre_id) return false;
   return offerHasSessionTrackingBilan(c.sig_offre_id);
 }
+/** Clé localStorage brouillon bilan : par client ou dossier nouveau (__nouveau). */
+function bilanDraftStorageKey(clientId) {
+  return clientId ? ('ba_bilan_draft_' + String(clientId)) : 'ba_bilan_draft___nouveau';
+}
+/** Dates importantes (bilans hebdo/mensuel) : offres programmes ciblées uniquement. */
+function clientQualifiesForImportantDatesCRM(c) {
+  var o = _offerForClient(c);
+  if (!o) return false;
+  var ids = ['o1', 'o2', 'o3', 'o_ac'];
+  if (ids.indexOf(o.id) >= 0) return true;
+  var nm = (o.name || '').toUpperCase();
+  if (nm.indexOf('RESET') >= 0 && (nm.indexOf('ONLINE') >= 0 || nm.indexOf('HYBRIDE') >= 0 || nm.indexOf('HYBRID') >= 0)) return true;
+  if (nm.indexOf('ESSENTIEL') >= 0 && nm.indexOf('PROGRAM') >= 0) return true;
+  if (nm.indexOf('ACTIV CONTINUE') >= 0 || nm.indexOf('ACTIV CONTINU') >= 0) return true;
+  return false;
+}
+/** Offres « à la carte » / one-shot : pas de ligne début/fin de période dans le suivi séances. */
+function offerSessionTrackingHideCalendarPeriods(off) {
+  if (!off) return false;
+  if (off.alaCarte === true || off.ala_carte === true) return true;
+  var du = String(off.durUnit || off.dur_unit || '').toLowerCase();
+  if (du.indexOf('séance') >= 0 || du.indexOf('seance') >= 0) return true;
+  var ids = ['o9', 'o_vis', 'o10', 'o11'];
+  if (ids.indexOf(off.id) >= 0) return true;
+  var nm = (off.name || '').toUpperCase();
+  if (/À LA CARTE|A LA CARTE|COACHING.*CARTE|VISIO|ONE[\s-]?SHOT|ACTIV TRAINING/i.test(nm)) return true;
+  return false;
+}
+/** Bilan RDV exploitable pour rapport léger sans préqualif Tally. */
+function clientHasBilanContentForReport(c) {
+  if (!c) return false;
+  if (c.bilan_summary) return true;
+  var br = c.bilan_raw;
+  if (!br || typeof br !== 'object') return false;
+  return !!(br.notesTrain || br.vision6m || br.pointA || br.blocages || br.attenteCoach || br.notesAlim);
+}
 function migrateClientSessionCycles(c) {
   if (!c.session_cycles) c.session_cycles = [];
   if (c.session_cycles.length) return;
@@ -6203,6 +6302,15 @@ function appendSessionTrackingCRM(container, clientId) {
   var offLbl = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
   var minLab = offLbl && (offLbl.minSessionsToValidate != null || offLbl.min_sessions_to_validate != null)
     ? ' · objectif min ' + (offLbl.minSessionsToValidate != null ? offLbl.minSessionsToValidate : offLbl.min_sessions_to_validate) : '';
+  var hidePeriod = offerSessionTrackingHideCalendarPeriods(offLbl);
+  var periodGrid = hidePeriod ? '' : (
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">'
+    + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Début période</div>'
+    + '<input type="date" id="st-pd-' + clientId + '" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px" value="' + pd + '"></div>'
+    + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Fin période</div>'
+    + '<input type="date" id="st-pf-' + clientId + '" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px" value="' + pf + '"></div>'
+    + '</div>'
+  );
 
   var wrap = document.createElement('div');
   wrap.style.cssText = 'margin:14px 0;padding:14px;background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2)';
@@ -6217,12 +6325,7 @@ function appendSessionTrackingCRM(container, clientId) {
     + '<span id="st-eff-val-' + clientId + '" style="font-weight:700;min-width:24px;text-align:center">' + eff + '</span>'
     + '<button type="button" class="btn" id="st-eff-plus-' + clientId + '" style="padding:6px 12px">+1</button>'
     + '</div></div></div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">'
-    + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Début période</div>'
-    + '<input type="date" id="st-pd-' + clientId + '" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px" value="' + pd + '"></div>'
-    + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Fin période</div>'
-    + '<input type="date" id="st-pf-' + clientId + '" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px" value="' + pf + '"></div>'
-    + '</div>'
+    + periodGrid
     + '<div style="font-size:12.5px;color:var(--tx2);margin-top:6px"><strong>' + eff + '</strong> effectuées · <strong>' + rest + '</strong> restantes</div>'
     + (overrun ? '<div style="font-size:11px;color:var(--Y);margin-top:6px">Séances effectuées au-delà du prévu</div>' : '');
   container.appendChild(wrap);
@@ -6240,10 +6343,12 @@ function appendSessionTrackingCRM(container, clientId) {
   if (vplus) vplus.onclick = function() {
     patchSessionCycle(clientId, cid, { seancesEffectuees: eff + 1 });
   };
-  var elPd = document.getElementById('st-pd-' + clientId);
-  var elPf = document.getElementById('st-pf-' + clientId);
-  if (elPd) elPd.onchange = function() { patchSessionCycle(clientId, cid, { periodeDebut: this.value || '' }); };
-  if (elPf) elPf.onchange = function() { patchSessionCycle(clientId, cid, { periodeFin: this.value || '' }); };
+  if (!hidePeriod) {
+    var elPd = document.getElementById('st-pd-' + clientId);
+    var elPf = document.getElementById('st-pf-' + clientId);
+    if (elPd) elPd.onchange = function() { patchSessionCycle(clientId, cid, { periodeDebut: this.value || '' }); };
+    if (elPf) elPf.onchange = function() { patchSessionCycle(clientId, cid, { periodeFin: this.value || '' }); };
+  }
 }
 function saveClientImportantDates(clientId, patch) {
   var c = ST.clients.find(function(x) { return x.id == clientId; });
@@ -6258,12 +6363,14 @@ function saveClientImportantDates(clientId, patch) {
 function appendClientImportantDates(container, clientId) {
   var c = ST.clients.find(function(x) { return x.id == clientId; });
   if (!c) return;
+  if (!clientQualifiesForImportantDatesCRM(c)) return;
   if (!c.important_dates) c.important_dates = {};
   var weekly = c.important_dates.next_weekly_bilan || '';
   var monthly = c.important_dates.next_monthly_bilan || '';
   var wrap = document.createElement('div');
   wrap.style.cssText = 'margin:12px 0;padding:14px;background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2)';
-  wrap.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Dates importantes</div>'
+  wrap.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Dates importantes</div>'
+    + '<div style="font-size:10px;color:var(--tx4);line-height:1.35;margin-bottom:10px">+7j et +30j : raccourcis à partir de la date affichée (ou d\'aujourd\'hui si le champ est vide).</div>'
     + '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;margin-bottom:10px">'
     + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Prochain bilan hebdomadaire</div><input type="date" id="imp-weekly-' + clientId + '" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px" value="' + weekly + '"></div>'
     + '<button type="button" class="btn btn-sm" id="imp-weekly-plus7-' + clientId + '" style="padding:7px 10px">+7j</button>'
@@ -6990,8 +7097,17 @@ function skipPQ() {
 }
 
 function newClient(){
-  // Vérifier si un brouillon existe
-  var s = localStorage.getItem('ba_bilan_draft');
+  // Vérifier si un brouillon existe (nouveau dossier : clé dédiée + migration ancienne clé globale)
+  var s = localStorage.getItem(bilanDraftStorageKey(null));
+  if (!s) {
+    var legNc = localStorage.getItem('ba_bilan_draft');
+    if (legNc) {
+      try {
+        var dn = JSON.parse(legNc);
+        if (!dn.__clientId) s = legNc;
+      } catch(e) {}
+    }
+  }
   if (s) {
     try {
       var draft = JSON.parse(s);
@@ -7250,17 +7366,34 @@ function saveBilanDraft() {
   // Client ID en cours
   if (ST.clientId) draft['__clientId'] = ST.clientId;
   draft['__ts'] = Date.now();
-  localStorage.setItem('ba_bilan_draft', JSON.stringify(draft));
+  var storageKey = bilanDraftStorageKey(ST.clientId);
+  localStorage.setItem(storageKey, JSON.stringify(draft));
+  localStorage.removeItem('ba_bilan_draft');
 }
 
 function restoreBilanDraft() {
-  var s = localStorage.getItem('ba_bilan_draft');
+  var storageKey = bilanDraftStorageKey(ST.clientId);
+  var s = localStorage.getItem(storageKey);
+  if (!s) {
+    var leg = localStorage.getItem('ba_bilan_draft');
+    if (leg) {
+      try {
+        var dm = JSON.parse(leg);
+        var dcid = dm.__clientId;
+        if (ST.clientId) {
+          if (dcid === ST.clientId) { s = leg; localStorage.setItem(storageKey, leg); localStorage.removeItem('ba_bilan_draft'); }
+        } else {
+          if (!dcid) { s = leg; localStorage.setItem(storageKey, leg); localStorage.removeItem('ba_bilan_draft'); }
+        }
+      } catch(e) {}
+    }
+  }
   if (!s) return false;
   var draft;
   try { draft = JSON.parse(s); } catch(e) { return false; }
   // Ne restaurer que si le brouillon a moins de 24h et qu'il y a un prénom ou nom
   var age = Date.now() - (draft.__ts || 0);
-  if (age > 86400000) { localStorage.removeItem('ba_bilan_draft'); return false; }
+  if (age > 86400000) { localStorage.removeItem(storageKey); localStorage.removeItem('ba_bilan_draft'); return false; }
   // Vérifier qu'il y a du contenu
   var hasPn = draft['b-pn'] && draft['b-pn'].trim();
   var hasPqRaw = draft['__pq_raw'] && draft['__pq_raw'].trim();
@@ -7307,6 +7440,7 @@ function restoreBilanDraft() {
 }
 
 function clearBilanDraft() {
+  localStorage.removeItem(bilanDraftStorageKey(ST.clientId));
   localStorage.removeItem('ba_bilan_draft');
 }
 
