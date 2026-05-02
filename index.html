@@ -2755,20 +2755,16 @@ P11 "Cas médical / clinique" — TCA actifs, dépression sévère, troubles anx
 // OFFRES
 // ═══════════════════════════════════════════════════
 const OFFRES_DEFAULT = [
-  // ── TRANSFORMATION ──
-  {id:'o1', name:'ACTIV RESET ONLINE',     price:1350,durVal:12,durUnit:'semaines',paiement:3,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation',offer_type:'programme'},
-  {id:'o2', name:'ACTIV RESET HYBRIDE',    price:525, durVal:12,durUnit:'semaines',paiement:2,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation',offer_type:'programme'},
-  {id:'o3', name:"ACTIV PROGRAM'",         price:160, durVal:8, durUnit:'semaines',paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'transformation',offer_type:'programme'},
+  {id:'o3', name:'ACTIV PROGRAM ESSENTIEL', price:160, durVal:8, durUnit:'semaines',paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'transformation',offer_type:'programme'},
+  {id:'o1', name:'ACTIV RESET ONLINE',     price:525, durVal:12,durUnit:'semaines',paiement:3,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation',offer_type:'programme'},
+  {id:'o2', name:'ACTIV RESET HYBRIDE',    price:1350,durVal:12,durUnit:'semaines',paiement:3,test:'360',parcours:true, alaCarte:false,modeOffre:'transformation',offer_type:'programme'},
   {id:'o_ac',name:'ACTIV CONTINUE',        price:150, durVal:1, durUnit:'mois',    paiement:1,test:'none',parcours:true,alaCarte:false,isAbonnement:true,modeOffre:'transformation',offer_type:'programme'},
-  // ── ACTION ──
   {id:'o4', name:'JM PASS',               price:240, durVal:1, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action',offer_type:'session'},
-  {id:'o5', name:'JM PASS COACHING',      price:250, durVal:1, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action',offer_type:'session'},
-  {id:'o6', name:'JM PASS COACHING+',     price:240, durVal:3, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action',offer_type:'session'},
+  {id:'o_sap', name:'JM PASS (SAP)',      price:240, durVal:1, durUnit:'mois',    paiement:1,test:'90', parcours:true, alaCarte:false,modeOffre:'action',offer_type:'session'},
   {id:'o9', name:'COACHING À LA CARTE',   price:65,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'action',offer_type:'session'},
-  // ── COURS COLLECTIFS ──
+  {id:'o_vis', name:'VISIO COACHING',    price:25,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'action',offer_type:'session'},
   {id:'o7', name:'CARDIO MOUV PASS 4',    price:45,  durVal:4, durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'collectif',offer_type:'session'},
   {id:'o8', name:'CARDIO MOUV PACK 10',   price:130, durVal:10,durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'collectif',offer_type:'session'},
-  {id:'o10',name:'CARDIO MOUV ONE SHOT',  price:15,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'collectif',offer_type:'session'},
   {id:'o11',name:'ACTIV TRAINING',        price:10,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'collectif',offer_type:'session'}
 ];
 function loadOffres() {
@@ -5082,7 +5078,7 @@ var SUITE_OPTIONS_DEFAULT = [
   {key:'activ_continue_sculpt',label:'ACTIV CONTINUE — SCULPT', ico:'🟡♾️', phaseKey:'sculpt'},
   {key:'activ_continue_health',label:'ACTIV CONTINUE — HEALTH', ico:'🟢♾️', phaseKey:'health'},
   {key:'activ_continue_reset', label:'ACTIV CONTINUE — RESET',  ico:'🔴♾️', phaseKey:'reset'},
-  {key:'jm_pass_coaching',     label:'JM PASS COACHING',     ico:'💪', phaseKey:null},
+  {key:'jm_pass_sap',          label:'JM PASS (SAP)',        ico:'💪', phaseKey:null},
   {key:'cardio_mouv',          label:'CARDIO MOUV Pass/Pack', ico:'🎵', phaseKey:null},
   {key:'activ_training',       label:'ACTIV TRAINING',       ico:'⚡', phaseKey:null}
 ];
