@@ -1139,13 +1139,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
 <!-- ══════ PAGE RAPPORT ══════ -->
 <div class="pg" id="pg-rapport">
-  <div class="page-title">🤖 Rapport IA Final</div>
-  <div class="steps">
-    <div class="step done" id="r-s1"><div class="step-c">1</div><div class="step-l">Pré-qualif</div></div>
-    <div class="step done" id="r-s2"><div class="step-c">2</div><div class="step-l">Bilan</div></div>
-    <div class="step act" id="r-s4"><div class="step-c">3</div><div class="step-l">Rapport</div></div>
-  </div>
-  <div id="rpt-empty"><div class="empty"><div class="empty-ico">🤖</div><div class="empty-t">Rapport IA final</div><div class="empty-s">Complétez le bilan (F1+F2),<br>puis générez le rapport.</div><button class="btn btn-bx" style="margin-top:16px" onclick="genReport()">✨ Générer le rapport</button></div></div>
+  <div class="page-title">🤖 Atelier rapport — Diagnostique BE ACTIV</div>
+  <p style="font-size:12.5px;color:var(--tx3);max-width:720px;line-height:1.55;margin-bottom:14px">Remplissez les blocs <strong>quand vous voulez</strong>, dans l’ordre qui vous arrange. Le rapport complet s’appuie sur ce qui est disponible (préqualif et bilan RDV au minimum ; tests si offre transformation). Le parcours signé <strong>DÉMARRAGE / GO</strong> sur la fiche client marque la suite du programme après paiement — indépendamment de ce formulaire.</p>
+  <div id="rpt-hub-root"></div>
+  <div id="rpt-empty" style="display:none"></div>
   <div id="rpt-loading" style="display:none"><div class="ldwrap"><div class="ldring"></div><div class="ldmsg"><strong>Rapport en cours…</strong>L'IA analyse toutes les données</div></div></div>
   <div id="rpt-content" style="display:none"></div>
   <div id="rpt-actions" style="display:none;margin-bottom:28px">
@@ -1156,6 +1153,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="g2" style="gap:9px;margin-top:8px">
       <button class="btn btn-B btn-w" id="btn-mail" onclick="openEmailModal()">📧 Email</button>
     </div>
+    <button class="btn btn-dk btn-w" style="margin-top:8px" onclick="showReportHubAgain()">← Retour à l’atelier</button>
     <button class="btn btn-dk btn-w" style="margin-top:8px" onclick="saveClient()">💾 Sauvegarder client</button>
     <button class="btn btn-dk btn-w" style="margin-top:8px" onclick="genReport()">🔄 Régénérer</button>
   </div>
@@ -1196,6 +1194,16 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     </div>
     <p class="note" style="margin-top:8px">Cette action est irréversible. Exportez d'abord vos données.</p>
   </div>
+  <div class="io-card" style="border-color:rgba(26,110,219,.35)">
+    <div class="io-title">🎛️ Contrôle maximal — règles, exports &amp; backup</div>
+    <p style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:12px">Paramétrez quand afficher le bloc <strong>Tests</strong> dans l’atelier rapport, ce qui est synchronisé dans Supabase, et exportez tout votre système (formulaires + localStorage CRM).</p>
+    <div id="max-control-root"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--rim3)">
+      <button type="button" class="btn btn-bx btn-sm" onclick="exportFormDefsBundle()">📋 Export définitions Bilan + Tests (JSON)</button>
+      <button type="button" class="btn btn-dk btn-sm" onclick="exportBaStorageBackup()">🗃️ Backup tout localStorage <code style="font-size:10px">ba_*</code></button>
+      <button type="button" class="btn btn-dk btn-sm" onclick="copyBaStorageKeysList()">📑 Copier la liste des clés <code style="font-size:10px">ba_*</code></button>
+    </div>
+  </div>
 </div>
 
 <!-- ══════ PAGE ÉDITEUR FORMULAIRES ══════ -->
@@ -1204,8 +1212,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div class="chips" id="editor-tabs" style="margin-bottom:16px">
     <div class="chip on" onclick="switchEditor('bilan',this)">📋 Bilan</div>
     <div class="chip" onclick="switchEditor('tests',this)">📏 Tests</div>
-    <div class="chip" onclick="switchEditor('parcours',this)">🗺️ Parcours</div>
-    <div class="chip" onclick="switchEditor('suites',this)">🔀 Suites</div>
+    <div class="chip" onclick="switchEditor('parcours',this)">🗺️ Parcours &amp; suites</div>
   </div>
   <div id="editor-bilan">
     <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
@@ -1224,20 +1231,22 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <p style="font-size:12px;color:var(--tx3);margin-bottom:12px">Badges <strong>90°</strong> / <strong>360°</strong> sur chaque section = choisir dans quel test elle apparaît.</p>
     <div id="tests-sections-editor"></div>
   </div>
-  <div id="editor-suites" style="display:none">
-    <div style="background:var(--bg3);border:1px solid var(--rim3);border-radius:var(--r3);padding:12px 14px;margin-bottom:14px">
-      <div style="font-weight:700;font-size:13px;margin-bottom:5px">🔀 Suites proposées après certification</div>
-      <div style="font-size:12px;color:var(--tx3);line-height:1.6">Quand un client <strong>termine un cycle</strong>, le coach voit une liste de continuations possibles à lui proposer. Configurez ici <strong>quelles options apparaissent</strong>, dans quel ordre, et vers quelle <strong>phase</strong> elles orientent le client.</div>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-      <button class="btn btn-bx btn-sm" onclick="addSuiteOption()">＋ Ajouter une suite</button>
-      <button class="btn btn-dk btn-sm" onclick="resetSuiteOptions()">↩ Réinitialiser</button>
-    </div>
-    <div id="suites-editor-list"></div>
-  </div>
   <div id="editor-parcours" style="display:none">
-    <p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Les étapes sont automatiquement choisies selon le mode de l'offre du client (Action / Transformation / Collectif). Toutes les étapes démarrent après la <strong>Signature</strong>.</p>
+    <div style="background:linear-gradient(135deg,rgba(139,21,32,.06),rgba(26,110,219,.05));border:1.5px solid var(--rim3);border-radius:var(--r3);padding:14px 16px;margin-bottom:16px">
+      <div style="font-weight:800;font-size:14px;color:var(--tx);margin-bottom:8px">🗺️ Parcours client &amp; suites après certification</div>
+      <div style="font-size:12.5px;color:var(--tx2);line-height:1.65"><strong>Bloc A — Étapes du programme</strong> (signature → bilan → offre → livraison / RESET / etc.) : paramétrez les libellés et micro-étapes par <em>mode d’offre</em>. <strong>Bloc B — Suites</strong> : liste des continuations proposées au client à la fin d’un cycle (ACTIV CONTINUE, nouvelle offre…). Les deux vont ensemble dans votre système : même écran pour tout piloter.</div>
+    </div>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Les étapes affichées chez le client suivent le <strong>mode de l’offre</strong> (Action / Transformation / Essentiel / Collectif). La <strong>signature</strong> reste la porte d’entrée commune.</p>
     <div id="parcours-modes-view"></div>
+    <div style="margin:22px 0 12px;padding-top:16px;border-top:2px dashed var(--rim3)">
+      <div style="font-weight:800;font-size:13px;color:var(--bx);margin-bottom:8px">🔀 Suites proposées après certification</div>
+      <div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Options affichées quand un client <strong>termine un cycle</strong> — ordre, libellé et phase cible.</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn btn-bx btn-sm" onclick="addSuiteOption()">＋ Ajouter une suite</button>
+        <button class="btn btn-dk btn-sm" onclick="resetSuiteOptions()">↩ Réinitialiser</button>
+      </div>
+      <div id="suites-editor-list"></div>
+    </div>
   </div>
 </div>
 
@@ -2009,6 +2018,132 @@ function startPrequalifForProspect(clientId) {
   toast('info', '🧬 Pré-qualif — ' + ((c.prenom||'') + ' ' + (c.nom||'')).trim());
 }
 
+/** Échappe une valeur pour sélecteur CSS [attr="…"] (fallback sans CSS.escape). */
+function cssEscAttr(s) {
+  try {
+    if (typeof CSS !== 'undefined' && CSS.escape) return CSS.escape(String(s));
+  } catch(e) {}
+  return String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+function escapeHtmlAttr(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+/** Pré-remplit le formulaire bilan depuis le client (éditeur = source des champs). */
+function hydrateBilanFormFromClient(clientId, opts) {
+  opts = opts || {};
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  if (document.getElementById('b-pn')) document.getElementById('b-pn').value = c.prenom || '';
+  if (document.getElementById('b-nn')) document.getElementById('b-nn').value = c.nom || '';
+  if (document.getElementById('b-age')) document.getElementById('b-age').value = c.age || '';
+  if (document.getElementById('b-ville')) document.getElementById('b-ville').value = c.ville || '';
+  if (document.getElementById('b-prof')) document.getElementById('b-prof').value = c.profession || '';
+  if (c.rdvStatut && document.getElementById('b-rdv-statut')) { document.getElementById('b-rdv-statut').value = c.rdvStatut; if (typeof onBilanRdvStatutChange === 'function') onBilanRdvStatutChange(); }
+  if (c.date && document.getElementById('b-date')) document.getElementById('b-date').value = c.date;
+  if (c.rdvType && document.getElementById('b-rdv-type')) document.getElementById('b-rdv-type').value = c.rdvType;
+  if (c.bilan_raw) {
+    var br = c.bilan_raw;
+    ['b-relation-train','b-faille-train','b-relation-neat','b-relation-alim','b-intol','b-relation-vie','b-faille-vie'].forEach(function(fid){
+      var vals = br[fid] || [];
+      vals.forEach(function(v){
+        var el = document.querySelector('input[type=checkbox][data-fid="'+fid+'"][value="'+cssEscAttr(v)+'"]');
+        if (el) el.checked = true;
+      });
+    });
+      if (br.materiel && document.getElementById('b-materiel')) document.getElementById('b-materiel').value = br.materiel;
+    }
+  hydrateBilanDynamicFieldsFromRaw(c);
+  if (opts.hideKnownRows) {
+    ['b-pn','b-nn','b-age','b-ville'].forEach(function(fid){
+      var el = document.getElementById(fid);
+      if (el) { var row = el.closest('.f'); if (row) row.style.display = 'none'; }
+    });
+    var profEl = document.getElementById('b-prof');
+    if (profEl) {
+      var profRow = profEl.closest('.f');
+      if (profRow) setTimeout(function(){ profRow.scrollIntoView({behavior:'smooth',block:'start'}); }, 200);
+    }
+  }
+}
+
+function hydrateTestsFormFromClient(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c || !c.tests_data) return;
+  var td = c.tests_data;
+  var formDef = loadFormDef('tests');
+  formDef.forEach(function(section) {
+    if (section.type !== 'group' || !section.fields) return;
+    section.fields.forEach(function(f) {
+      if (!f.id) return;
+      var shortKey = f.id.replace(/^t-/, '');
+      var val = td[shortKey];
+      if (val === undefined && shortKey === 'mob-global') {
+        val = td.mobGlobal != null ? td.mobGlobal : td['mob-global'];
+      }
+      if (f.type === 'checkboxes') {
+        var vals = Array.isArray(val) ? val : [];
+        vals.forEach(function(v) {
+          var el = document.querySelector('input[type=checkbox][data-fid="' + f.id + '"][value="' + CSS.escape(v) + '"]');
+          if (el) el.checked = true;
+        });
+      } else if (f.type === 'radio') {
+        var nm = f.name || shortKey;
+        if (val != null && val !== '') {
+          var r = document.querySelector('input[type=radio][name="' + cssEscAttr(nm) + '"][value="' + cssEscAttr(String(val)) + '"]');
+          if (r) r.checked = true;
+        }
+      } else {
+        var el = document.getElementById(f.id);
+        if (el && val != null && 'value' in el) el.value = val;
+      }
+    });
+  });
+  Object.keys(td).forEach(function(k) {
+    if (Array.isArray(td[k])) return;
+    var el = document.getElementById('t-' + k);
+    if (el && el.value === '' && td[k] != null && typeof td[k] !== 'object') el.value = td[k];
+  });
+  if (typeof calcIMC2 === 'function') calcIMC2();
+  if (typeof calcIRD === 'function') calcIRD();
+}
+
+/** Clef bilan_raw (camelCase) depuis id champ b-xxx-yyy */
+function bilanRawKeyFromFieldId(fid) {
+  if (!fid || fid.indexOf('b-') !== 0) return null;
+  var tail = fid.slice(2);
+  return tail.replace(/-([a-z])/g, function(_, ch) { return ch.toUpperCase(); });
+}
+
+/** Hydrate tous les champs texte/radio/select du bilan depuis bilan_raw selon la définition du formulaire. */
+function hydrateBilanDynamicFieldsFromRaw(c) {
+  var br = c.bilan_raw || {};
+  loadFormDef('bilan').forEach(function(sec) {
+    (sec.fields || []).forEach(function(f) {
+      if (!f.id || f.type === 'checkboxes' || f.type === 'days' || f.type === 'offres') return;
+      var k = bilanRawKeyFromFieldId(f.id);
+      if (!k) return;
+      var val = br[k];
+      if (val === undefined || val === null) return;
+      if (f.type === 'radio') {
+        var nm = f.name || k;
+        var r = document.querySelector('input[type=radio][name="' + cssEscAttr(nm) + '"][value="' + cssEscAttr(String(val)) + '"]');
+        if (r) r.checked = true;
+      } else {
+        var el = document.getElementById(f.id);
+        if (el && 'value' in el) el.value = val;
+      }
+    });
+  });
+  var dj = br.dispoJours || br.dispo;
+  if (dj && typeof dj === 'string') {
+    dj.split(',').map(function(s){ return s.trim(); }).filter(Boolean).forEach(function(d) {
+      var cb = document.querySelector('input[name="dispo"][value="' + cssEscAttr(d) + '"]');
+      if (cb) cb.checked = true;
+    });
+  }
+}
+
 // ═══════════════════════════════════════════════════
 // FLUX BILAN POUR PROSPECT
 // ═══════════════════════════════════════════════════
@@ -2035,41 +2170,9 @@ function startBilanForProspect(clientId) {
   ST.pqSummary = c.pq_summary || null;
   ST.bilanSummary = c.bilan_summary || null;
   ST.finalReport = c.final_report || null;
-  // Pré-remplir les champs du bilan avec les infos déjà connues
   setTimeout(function(){
-    // Guard : si le client a changé entre temps, ne rien écrire
     if (ST.clientId !== clientId) return;
-    if (document.getElementById('b-pn')) document.getElementById('b-pn').value = c.prenom || '';
-    if (document.getElementById('b-nn')) document.getElementById('b-nn').value = c.nom || '';
-    if (document.getElementById('b-age')) document.getElementById('b-age').value = c.age || '';
-    if (document.getElementById('b-ville')) document.getElementById('b-ville').value = c.ville || '';
-    if (document.getElementById('b-prof')) document.getElementById('b-prof').value = c.profession || '';
-    // Pré-remplir rdvStatut et date
-    if (c.rdvStatut && document.getElementById('b-rdv-statut')) { document.getElementById('b-rdv-statut').value = c.rdvStatut; onBilanRdvStatutChange(); }
-    if (c.date && document.getElementById('b-date')) document.getElementById('b-date').value = c.date;
-    if (c.rdvType && document.getElementById('b-rdv-type')) document.getElementById('b-rdv-type').value = c.rdvType;
-    // Pré-remplir les checkboxes du bilan depuis bilan_raw si client déjà vu
-    if (c.bilan_raw) {
-      var br = c.bilan_raw;
-      ['b-relation-train','b-faille-train','b-relation-neat','b-relation-alim','b-intol','b-relation-vie','b-faille-vie'].forEach(function(fid){
-        var vals = br[fid] || [];
-        vals.forEach(function(v){
-          var el = document.querySelector('input[type=checkbox][data-fid="'+fid+'"][value="'+CSS.escape(v)+'"]');
-          if (el) el.checked = true;
-        });
-      });
-      if (br.materiel && document.getElementById('b-materiel')) document.getElementById('b-materiel').value = br.materiel;
-    }
-    // Masquer les champs déjà connus (nom, prénom, âge, ville)
-    ['b-pn','b-nn','b-age','b-ville'].forEach(function(fid){
-      var el = document.getElementById(fid);
-      if (el) { var row = el.closest('.f'); if (row) row.style.display = 'none'; }
-    });
-    var profEl = document.getElementById('b-prof');
-    if (profEl) {
-      var profRow = profEl.closest('.f');
-      if (profRow) setTimeout(function(){ profRow.scrollIntoView({behavior:'smooth',block:'start'}); }, 200);
-    }
+    hydrateBilanFormFromClient(clientId, { hideKnownRows: true });
   }, 120);
   // Marquer pré-qualif comme faite si pq_summary existe
   if (ST.pqSummary) {
@@ -3502,19 +3605,23 @@ function showPg(name) {
   }
   if(name==='tests') renderTestsForm();
   if(name==='rapport') {
+    renderReportHub();
     var fr = ST.finalReport;
     var cli = fr && fr._client ? fr._client : (ST.clientId ? ST.clients.find(function(x){ return x.id === ST.clientId; }) : null);
     if (fr && cli) {
       if (!fr._client) fr._client = cli;
       renderReport(fr, cli);
       var rE = document.getElementById('rpt-empty'), rL = document.getElementById('rpt-loading'), rC = document.getElementById('rpt-content'), rA = document.getElementById('rpt-actions');
+      var hubR = document.getElementById('rpt-hub-root');
+      if (hubR) hubR.style.display='none';
       if (rE) rE.style.display='none';
       if (rL) rL.style.display='none';
       if (rC) rC.style.display='block';
       if (rA) rA.style.display='block';
     }
   }
-  if(name==='form-editor'){ renderSectionsEditor('bilan'); switchEditor('bilan', document.querySelector('#pg-form-editor .chip')); renderSuitesEditor(); }
+  if(name==='form-editor'){ renderSectionsEditor('bilan'); switchEditor('bilan', document.querySelector('#pg-form-editor .chip')); }
+  if(name==='io') renderMaxControlPanel();
   if(name==='prospect') {
     // Reset le formulaire prospect à chaque navigation
     resetProspectForm();
@@ -4435,8 +4542,305 @@ async function analyzeBilan(){
   btn.disabled=false;btn.textContent='💡 Générer synthèse';
 }
 
+function mergeMaxConfigDefaults(cfg) {
+  var d = {
+    reportHub: {
+      modesNeedTests: ['transformation', 'essentiel'],
+      hideTestsOfferIds: [],
+      forceTestsOfferIds: [],
+      namePatternsNeedTests: [],
+      namePatternsHideTests: []
+    },
+    sync: { tests_data: true, rapport_leger: true, mode_stages: true },
+    __updated_at: null
+  };
+  if (!cfg || typeof cfg !== 'object') return d;
+  var out = JSON.parse(JSON.stringify(d));
+  if (cfg.reportHub) {
+    var rh = cfg.reportHub;
+    if (Array.isArray(rh.modesNeedTests)) out.reportHub.modesNeedTests = rh.modesNeedTests.slice();
+    if (Array.isArray(rh.hideTestsOfferIds)) out.reportHub.hideTestsOfferIds = rh.hideTestsOfferIds.slice();
+    if (Array.isArray(rh.forceTestsOfferIds)) out.reportHub.forceTestsOfferIds = rh.forceTestsOfferIds.slice();
+    if (Array.isArray(rh.namePatternsNeedTests)) out.reportHub.namePatternsNeedTests = rh.namePatternsNeedTests.slice();
+    if (Array.isArray(rh.namePatternsHideTests)) out.reportHub.namePatternsHideTests = rh.namePatternsHideTests.slice();
+  }
+  if (cfg.sync) {
+    if (typeof cfg.sync.tests_data === 'boolean') out.sync.tests_data = cfg.sync.tests_data;
+    if (typeof cfg.sync.rapport_leger === 'boolean') out.sync.rapport_leger = cfg.sync.rapport_leger;
+    if (typeof cfg.sync.mode_stages === 'boolean') out.sync.mode_stages = cfg.sync.mode_stages;
+  }
+  if (cfg.__updated_at) out.__updated_at = cfg.__updated_at;
+  return out;
+}
+function loadMaxConfig() {
+  try {
+    var raw = localStorage.getItem('ba_max_config');
+    if (raw) return mergeMaxConfigDefaults(JSON.parse(raw));
+  } catch(e) {}
+  return mergeMaxConfigDefaults(null);
+}
+function saveMaxConfig(cfg) {
+  cfg.__updated_at = new Date().toISOString();
+  try {
+    localStorage.setItem('ba_max_config', JSON.stringify(cfg));
+    saveSettingRemote('ba_max_config', cfg);
+  } catch(e) {}
+}
+function splitCommaList(el) {
+  if (!el || !el.value) return [];
+  return el.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+}
+function saveMaxControlFromUI() {
+  var mc = loadMaxConfig();
+  mc.reportHub.modesNeedTests = splitCommaList(document.getElementById('max-rh-modes'));
+  mc.reportHub.hideTestsOfferIds = splitCommaList(document.getElementById('max-rh-hide-ids'));
+  mc.reportHub.forceTestsOfferIds = splitCommaList(document.getElementById('max-rh-force-ids'));
+  mc.reportHub.namePatternsNeedTests = splitCommaList(document.getElementById('max-rh-pat-need'));
+  mc.reportHub.namePatternsHideTests = splitCommaList(document.getElementById('max-rh-pat-hide'));
+  var tEl = document.getElementById('max-sync-tests');
+  var rEl = document.getElementById('max-sync-rl');
+  var mEl = document.getElementById('max-sync-ms');
+  if (tEl) mc.sync.tests_data = tEl.checked;
+  if (rEl) mc.sync.rapport_leger = rEl.checked;
+  if (mEl) mc.sync.mode_stages = mEl.checked;
+  saveMaxConfig(mc);
+  toast('ok', 'Réglages maximal enregistrés');
+}
+function resetMaxConfigDefaults() {
+  saveMaxConfig(mergeMaxConfigDefaults(null));
+  renderMaxControlPanel();
+  toast('ok', 'Réglages maximal réinitialisés');
+}
+function renderMaxControlPanel() {
+  var root = document.getElementById('max-control-root');
+  if (!root) return;
+  var mc = loadMaxConfig();
+  var rh = mc.reportHub;
+  var sy = mc.sync;
+  root.innerHTML =
+    '<div style="display:grid;gap:14px;font-size:12px">' +
+    '<div><div style="font-weight:700;margin-bottom:6px;color:var(--tx2)">Bloc Tests (atelier rapport)</div>' +
+    '<label style="display:block;margin-bottom:4px;color:var(--tx3)">Modes offre (codes séparés par virgule)</label>' +
+    '<input type="text" id="max-rh-modes" style="width:100%;max-width:520px;padding:8px;border-radius:var(--r2);border:1.5px solid var(--rim3);background:var(--bg2);color:var(--tx)" value="' + escapeHtmlAttr(rh.modesNeedTests.join(', ')) + '" placeholder="transformation, essentiel">' +
+    '<label style="display:block;margin-top:10px;margin-bottom:4px;color:var(--tx3)">Masquer le bloc Tests — IDs offre</label>' +
+    '<input type="text" id="max-rh-hide-ids" style="width:100%;max-width:520px;padding:8px;border-radius:var(--r2);border:1.5px solid var(--rim3);background:var(--bg2);color:var(--tx)" value="' + escapeHtmlAttr(rh.hideTestsOfferIds.join(', ')) + '">' +
+    '<label style="display:block;margin-top:10px;margin-bottom:4px;color:var(--tx3)">Forcer le bloc Tests — IDs offre</label>' +
+    '<input type="text" id="max-rh-force-ids" style="width:100%;max-width:520px;padding:8px;border-radius:var(--r2);border:1.5px solid var(--rim3);background:var(--bg2);color:var(--tx)" value="' + escapeHtmlAttr(rh.forceTestsOfferIds.join(', ')) + '">' +
+    '<label style="display:block;margin-top:10px;margin-bottom:4px;color:var(--tx3)">Si le nom d’offre contient (virgules)</label>' +
+    '<input type="text" id="max-rh-pat-need" style="width:100%;max-width:520px;padding:8px;border-radius:var(--r2);border:1.5px solid var(--rim3);background:var(--bg2);color:var(--tx)" value="' + escapeHtmlAttr(rh.namePatternsNeedTests.join(', ')) + '">' +
+    '<label style="display:block;margin-top:10px;margin-bottom:4px;color:var(--tx3)">Masquer si le nom contient</label>' +
+    '<input type="text" id="max-rh-pat-hide" style="width:100%;max-width:520px;padding:8px;border-radius:var(--r2);border:1.5px solid var(--rim3);background:var(--bg2);color:var(--tx)" value="' + escapeHtmlAttr(rh.namePatternsHideTests.join(', ')) + '">' +
+    '</div>' +
+    '<div><div style="font-weight:700;margin-bottom:6px;color:var(--tx2)">Sync Supabase (report_json)</div>' +
+    '<label style="display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer"><input type="checkbox" id="max-sync-tests" ' + (sy.tests_data ? 'checked' : '') + '> Inclure tests_data</label>' +
+    '<label style="display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer"><input type="checkbox" id="max-sync-rl" ' + (sy.rapport_leger ? 'checked' : '') + '> Inclure rapport_leger</label>' +
+    '<label style="display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer"><input type="checkbox" id="max-sync-ms" ' + (sy.mode_stages ? 'checked' : '') + '> Inclure mode_stages</label>' +
+    '</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+    '<button type="button" class="btn btn-bx btn-sm" onclick="saveMaxControlFromUI()">💾 Enregistrer ces réglages</button>' +
+    '<button type="button" class="btn btn-dk btn-sm" onclick="resetMaxConfigDefaults()">↩ Réinitialiser</button>' +
+    '</div></div>';
+}
+function exportFormDefsBundle() {
+  try {
+    var bundle = { bilan: loadFormDef('bilan'), tests: loadFormDef('tests'), exported_at: new Date().toISOString() };
+    var blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'ba_form_defs_bundle_' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('ok', 'Export définitions Bilan + Tests');
+  } catch(e) { toast('err', 'Export impossible'); }
+}
+function exportBaStorageBackup() {
+  try {
+    var backup = { exported_at: new Date().toISOString(), keys: {} };
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf('ba_') === 0) backup.keys[k] = localStorage.getItem(k);
+    }
+    var blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'ba_localStorage_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('ok', 'Backup localStorage ba_*');
+  } catch(e) { toast('err', 'Backup impossible'); }
+}
+function copyBaStorageKeysList() {
+  var keys = [];
+  for (var i = 0; i < localStorage.length; i++) {
+    var k = localStorage.key(i);
+    if (k && k.indexOf('ba_') === 0) keys.push(k);
+  }
+  keys.sort();
+  var text = keys.join('\n');
+  function done() { toast('ok', keys.length + ' clés copiées'); }
+  function fail() { toast('err', 'Copie impossible'); }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(function() {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        done();
+      } catch(e2) { fail(); }
+    });
+  } else {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      done();
+    } catch(e) { fail(); }
+  }
+}
+
+function reportHubOfferNeedsTestsBlock(c) {
+  if (!c || !c.sig_offre_id) return false;
+  var mc = loadMaxConfig().reportHub;
+  var o = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
+  if (!o) return false;
+  if (mc.forceTestsOfferIds && mc.forceTestsOfferIds.indexOf(c.sig_offre_id) !== -1) return true;
+  if (mc.hideTestsOfferIds && mc.hideTestsOfferIds.indexOf(c.sig_offre_id) !== -1) return false;
+  var nameLower = (o.name || '').toLowerCase();
+  if (mc.namePatternsHideTests && mc.namePatternsHideTests.some(function(p){ return p && nameLower.indexOf(String(p).toLowerCase()) !== -1; })) return false;
+  if (mc.namePatternsNeedTests && mc.namePatternsNeedTests.some(function(p){ return p && nameLower.indexOf(String(p).toLowerCase()) !== -1; })) return true;
+  var m = o.modeOffre || 'action';
+  var modes = mc.modesNeedTests && mc.modesNeedTests.length ? mc.modesNeedTests : ['transformation', 'essentiel'];
+  return modes.indexOf(m) !== -1;
+}
+
+function renderReportHub() {
+  var root = document.getElementById('rpt-hub-root');
+  if (!root) return;
+  if (!ST.clientId) {
+    root.innerHTML = '<div class="card" style="padding:22px;text-align:center;max-width:560px;margin:0 auto"><div style="font-size:15px;font-weight:800;margin-bottom:10px">Choisissez un dossier client</div><p style="font-size:13px;color:var(--tx3);line-height:1.55">Ouvrez un contact dans <strong>Contacts</strong> puis utilisez la tuile Diagnostique, ou sélectionnez un client avant de venir ici.</p><button class="btn btn-bx" onclick="showPg(\'clients\')">👥 Contacts</button></div>';
+    return;
+  }
+  var c = ST.clients.find(function(x){ return x.id === ST.clientId; });
+  if (!c) {
+    root.innerHTML = '<div class="card" style="padding:16px;color:var(--R)">Client introuvable.</div>';
+    return;
+  }
+  ST.pqSummary = c.pq_summary || ST.pqSummary;
+  ST.bilanSummary = c.bilan_summary || ST.bilanSummary;
+  ST.finalReport = c.final_report || ST.finalReport;
+  var pqOk = !!(c.pq_summary && (c.pq_summary.resumeProfil || c.pq_summary.profilTypeCode));
+  var br = c.bilan_raw;
+  var bilanDataOk = !!(br && (br.notesTrain || br.vision6m || br.pointA || br.blocages || br.attenteCoach || br.notesAlim));
+  var bilanOk = !!(c.bilan_summary || bilanDataOk);
+  var testsOk = !!(c.tests_data && Object.keys(c.tests_data).length);
+  var showTests = reportHubOfferNeedsTestsBlock(c);
+  var startedNote = c.parcours_started_at
+    ? '<div style="font-size:11px;color:var(--tx3);margin-top:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r2)">✅ Parcours coaching démarré le <strong>' + String(c.parcours_started_at).slice(0, 10) + '</strong> (étape GO / DÉMARRAGE validée sur la fiche client).</div>'
+    : '<div style="font-size:11px;color:var(--tx4);margin-top:10px">💡 Le <strong>DÉMARRAGE</strong> ou le <strong>GO</strong> sur la fiche client indiquent le début du programme après signature et paiement — distinct de la génération du rapport.</div>';
+
+  var rows = [
+    { id:'pq', title:'Préqualif (F1)', icon:'🧬', ok:pqOk, desc:'Réponses Calendly / analyse IA — utile mais pas obligatoire pour générer.', btn:'Ouvrir préqualif' },
+    { id:'bil', title:'RDV Bilan coach (F2)', icon:'📋', ok:bilanOk, desc:'Notes de séance, vision, cases à cocher — base du diagnostic.', btn:'Ouvrir bilan' }
+  ];
+  if (showTests) {
+    rows.push({ id:'tst', title:'Tests physiques (F3)', icon:'📏', ok:testsOk, desc:'Mobilité, cardio, etc. — affiché pour les offres transformation / essentiel.', btn:'Ouvrir tests' });
+  }
+
+  var html = '<div style="display:grid;gap:14px;margin-bottom:18px">';
+  rows.forEach(function(b) {
+    var bid = b.id;
+    html += '<div class="card" style="padding:16px 18px;border-color:'+(b.ok?'rgba(22,163,74,.35)':'var(--rim3)')+'">'
+      + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">'
+      + '<div><div style="font-size:15px;font-weight:800;margin-bottom:6px">'+b.icon+' '+b.title+'</div>'
+      + '<div style="font-size:12px;color:var(--tx3);max-width:540px;line-height:1.5">'+b.desc+'</div></div>'
+      + '<span class="pill '+(b.ok?'pill-G':'pill-Y')+'">'+(b.ok?'✓ Données':'À compléter')+'</span></div>'
+      + '<div style="margin-top:12px"><button type="button" class="btn btn-dk btn-sm" onclick="reportHubNavigate(\''+bid+'\')">'+b.btn+' →</button></div></div>';
+  });
+  html += '</div>'
+    + startedNote
+    + '<div class="card" style="padding:18px;background:linear-gradient(135deg,rgba(139,21,32,.08),rgba(26,110,219,.06));border-color:var(--bx);margin-top:14px">'
+    + '<div style="font-weight:800;margin-bottom:8px">Rapport complet (IA)</div>'
+    + '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.5">Tout champ vide sera traité comme « non renseigné » dans le prompt. Vous pouvez générer quand vous voulez.</p>'
+    + '<button type="button" class="btn btn-bx btn-w" onclick="prepareWorkflowThenGenReport()">✨ Générer le rapport complet</button>'
+    + '</div>';
+  root.innerHTML = html;
+}
+
+function reportHubNavigate(which) {
+  var cid = ST.clientId;
+  if (!cid) return;
+  var c = ST.clients.find(function(x){ return x.id === cid; });
+  if (!c) return;
+  ST.pqSummary = c.pq_summary || null;
+  ST.bilanSummary = c.bilan_summary || null;
+  ST.finalReport = c.final_report || null;
+  if (which === 'pq') {
+    showPg('pq');
+    setTimeout(function(){
+      if (ST.pqSummary && typeof renderPQResult === 'function') {
+        try { renderPQResult(ST.pqSummary); document.getElementById('pq-result').style.display='block'; } catch(e){}
+      }
+    }, 80);
+    toast('info', '🧬 Préqualif');
+    return;
+  }
+  if (which === 'bil') {
+    showPg('bilan');
+    setTimeout(function(){ hydrateBilanFormFromClient(cid, { hideKnownRows: false }); }, 140);
+    return;
+  }
+  if (which === 'tst') {
+    showPg('bilan');
+    setTimeout(function(){
+      renderTestsForm();
+      showPg('tests');
+      setTimeout(function(){ hydrateTestsFormFromClient(cid); }, 80);
+    }, 60);
+    toast('info', '📏 Tests');
+  }
+}
+
+function prepareWorkflowThenGenReport() {
+  if (!ST.clientId) { toast('err', '⚠️ Sélectionnez un client'); return; }
+  var cid = ST.clientId;
+  var c = ST.clients.find(function(x){ return x.id === cid; });
+  if (!c) return;
+  ST.pqSummary = c.pq_summary || null;
+  ST.bilanSummary = c.bilan_summary || null;
+  ST.finalReport = c.final_report || null;
+  showPg('bilan');
+  setTimeout(function(){
+    hydrateBilanFormFromClient(cid, { hideKnownRows: false });
+    renderTestsForm();
+    setTimeout(function(){
+      hydrateTestsFormFromClient(cid);
+      showPg('rapport');
+      setTimeout(function(){ genReport(); }, 150);
+    }, 100);
+  }, 160);
+}
+
+function showReportHubAgain() {
+  var rC = document.getElementById('rpt-content');
+  var rA = document.getElementById('rpt-actions');
+  var hub = document.getElementById('rpt-hub-root');
+  if (rC) rC.style.display = 'none';
+  if (rA) rA.style.display = 'none';
+  if (hub) hub.style.display = 'block';
+  renderReportHub();
+}
+
 async function genReport(){
-  document.getElementById('rpt-empty').style.display='none';
+  var hubEl = document.getElementById('rpt-hub-root');
+  if (hubEl) hubEl.style.display = 'none';
+  var rptEmpty = document.getElementById('rpt-empty');
+  if (rptEmpty) rptEmpty.style.display='none';
   document.getElementById('rpt-loading').style.display='block';
   document.getElementById('rpt-content').style.display='none';
   document.getElementById('rpt-actions').style.display='none';
@@ -4454,7 +4858,21 @@ async function genReport(){
     document.getElementById('rpt-content').style.display='block';
     document.getElementById('rpt-actions').style.display='block';
     toast('ok','✨ Rapport généré !');
-  }catch(e){document.getElementById('rpt-loading').style.display='none';document.getElementById('rpt-empty').style.display='block';toast('err','❌ '+e.message);}
+    if (ST.clientId) {
+      var cl = ST.clients.find(function(x){ return x.id === ST.clientId; });
+      if (cl) {
+        cl.final_report = ST.finalReport;
+        cl.updated_at = new Date().toISOString();
+        localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+        saveToSupabase(cl);
+      }
+    }
+  }catch(e){
+    document.getElementById('rpt-loading').style.display='none';
+    if (hubEl) hubEl.style.display='block';
+    renderReportHub();
+    toast('err','❌ '+e.message);
+  }
 }
 function renderReport(r,b){
   const sc=v=>v>=70?'var(--G)':v>=50?'var(--Y)':'var(--R)';
@@ -5324,7 +5742,8 @@ function renderModeStages(clientId, c, container) {
   if (activeStageIdx >= stagesDef.length) activeStageIdx = stagesDef.length - 1;
 
   var stagesWrap = document.createElement('div'); stagesWrap.className = 'cm-stages';
-  stagesWrap.innerHTML = '<div class="cm-stages-h">Parcours</div>';
+  stagesWrap.innerHTML = '<div class="cm-stages-h">Parcours</div>'
+    + (c.parcours_started_at ? '<div style="font-size:11px;color:var(--tx3);margin:-6px 0 10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--rim3)">🚀 Parcours coaching démarré le <strong>' + String(c.parcours_started_at).slice(0, 10) + '</strong> (validation GO / DÉMARRAGE).</div>' : '<div style="font-size:11px;color:var(--tx4);margin:-6px 0 10px">Le bloc <strong>DÉMARRAGE</strong> ou <strong>GO</strong> enregistre la date de début après signature &amp; paiement.</div>');
   container.appendChild(stagesWrap);
 
   stagesDef.forEach(function(stageDef, si){
@@ -5543,10 +5962,24 @@ function validateModeStep(clientId, stageIdx, stepIdx) {
   if (!c) return;
   var stagesDef = getActiveStageDefs(c);
   initModeStages(c, stagesDef);
-  if (stepIdx > 0 && !c.mode_stages[stageIdx].steps[stepIdx-1].done) {
-    toast('err', '⚠️ Validez l\'étape précédente d\'abord'); return;
-  }
   var stepDef = stagesDef[stageIdx] && stagesDef[stageIdx].steps[stepIdx];
+  if (stepIdx > 0 && !c.mode_stages[stageIdx].steps[stepIdx-1].done) {
+    var prevDef = stagesDef[stageIdx].steps[stepIdx - 1];
+    var ordreOk = false;
+    if (stepDef && prevDef) {
+      if (stepDef.id === 'rapport_complet' && prevDef.id === 'tests') {
+        ordreOk = !!(c.final_report || (c.tests_data && Object.keys(c.tests_data).length));
+      }
+      if (stepDef.id === 'rapport_leger') {
+        ordreOk = !!(c.rapport_leger || c.final_report || clientHasBilanContentForReport(c));
+      }
+      if (stepDef.id === 'tests' && (c.tests_data && Object.keys(c.tests_data).length)) ordreOk = true;
+    }
+    if (!ordreOk) {
+      toast('err', '⚠️ Validez l\'étape précédente d\'abord');
+      return;
+    }
+  }
   // Étapes spéciales : ouvrir F3 ou générer rapport
   if (stepDef && stepDef.id === 'tests') {
     openTestsParcours(clientId, stageIdx, stepIdx); return;
@@ -5556,6 +5989,13 @@ function validateModeStep(clientId, stageIdx, stepIdx) {
   }
   if (stepDef && stepDef.id === 'rapport_leger') {
     genRapportLeger(clientId, stageIdx, stepIdx); return;
+  }
+  if (!c.parcours_started_at && stepDef && !stepDef.isFinal) {
+    var stId = (stagesDef[stageIdx] && stagesDef[stageIdx].id) || '';
+    var tid = stepDef.id || '';
+    if (tid === 'go' || tid === 'premiere_seance' || tid === 'demarrage' || (stId === 'demarrage' && stepIdx === 0)) {
+      c.parcours_started_at = new Date().toISOString();
+    }
   }
   c.mode_stages[stageIdx].steps[stepIdx].done = true;
   c.mode_stages[stageIdx].steps[stepIdx].doneAt = new Date().toISOString();
@@ -6631,7 +7071,7 @@ function sv2(id,v){const el=document.getElementById(id);if(el&&v!=null)el.textCo
 // SYNC PARAMÈTRES — ba_settings (Supabase)
 // ═══════════════════════════════════════════════════
 // Clés synchronisées (hors config car chicken-and-egg)
-var SYNC_SETTINGS_KEYS = ['ba_parcours_labels','ba_form_bilan','ba_form_tests','ba_offres_v8','ba_suite_opts','ba_phases_custom'];
+var SYNC_SETTINGS_KEYS = ['ba_parcours_labels','ba_form_bilan','ba_form_tests','ba_offres_v8','ba_suite_opts','ba_phases_custom','ba_max_config'];
 
 async function saveSettingRemote(lsKey, value) {
   if (!ST.sbUrl || !ST.sbKey) return;
@@ -6682,7 +7122,7 @@ async function loadSettingsFromSupabase() {
       // Recharger les éléments UI qui dépendent des settings
       renderBilanForm();
       renderTestsForm();
-      if (document.getElementById('editor-parcours') && document.getElementById('editor-parcours').style.display !== 'none') renderParcoursEditor();
+      if (document.getElementById('editor-parcours') && document.getElementById('editor-parcours').style.display !== 'none') { renderParcoursEditor(); renderSuitesEditor(); }
     }
   } catch(e) {}
 }
@@ -6695,13 +7135,26 @@ async function loadFromSupabase(){
     rows.forEach(row=>{
       // Ignorer les enregistrements sans nom (prospects vides/incomplets)
       if(!row.prenom && !row.nom) return;
-      let pq=null,bilan=null,final=null,bilanRaw=null,rdvHistory=null,sess=null,sessionCycles=null,importantDates=null;
-      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;rdvHistory=j.rdv_history||null;sess=j.session_tracking||null;if(Array.isArray(j.session_cycles))sessionCycles=j.session_cycles;if(j.important_dates&&typeof j.important_dates==='object')importantDates=j.important_dates;}catch(e){}
-      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,rdv_history:rdvHistory,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offre,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,bilan_raw:bilanRaw,updated_at:row.updated_at,groupId:row.group_id||null,group_name:row.group_name||null,is_group_leader:row.is_group_leader||false,sap_enabled:row.sap_enabled||false};
+      let pq=null,bilan=null,final=null,bilanRaw=null,rdvHistory=null,sess=null,sessionCycles=null,importantDates=null,parcoursStarted=null,testsData=null,rapportLeger=null,modeStagesRemote=null;
+      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;rdvHistory=j.rdv_history||null;sess=j.session_tracking||null;if(Array.isArray(j.session_cycles))sessionCycles=j.session_cycles;if(j.important_dates&&typeof j.important_dates==='object')importantDates=j.important_dates;if(j.parcours_started_at) parcoursStarted=j.parcours_started_at;if(j.tests_data&&typeof j.tests_data==='object')testsData=j.tests_data;if(j.rapport_leger)rapportLeger=j.rapport_leger;if(Array.isArray(j.mode_stages))modeStagesRemote=j.mode_stages;}catch(e){}
+      const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,rdv_history:rdvHistory,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offre,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,bilan_raw:bilanRaw,tests_data:testsData,rapport_leger:rapportLeger,updated_at:row.updated_at,groupId:row.group_id||null,group_name:row.group_name||null,is_group_leader:row.is_group_leader||false,sap_enabled:row.sap_enabled||false};
+      if(parcoursStarted) sc.parcours_started_at = parcoursStarted;
       if(sessionCycles) sc.session_cycles = sessionCycles;
       if(importantDates) sc.important_dates = importantDates;
+      if(modeStagesRemote) sc.mode_stages = modeStagesRemote;
       if(sess){if(sess.seancesPrevues!=null)sc.seancesPrevues=sess.seancesPrevues;if(sess.seancesEffectuees!=null)sc.seancesEffectuees=sess.seancesEffectuees;if(sess.periodeDebut)sc.periodeDebut=sess.periodeDebut;if(sess.periodeFin)sc.periodeFin=sess.periodeFin;}
-      const i=ST.clients.findIndex(c=>c.id===sc.id);if(i>=0)ST.clients[i]=sc;else ST.clients.unshift(sc);
+      const i=ST.clients.findIndex(c=>c.id===sc.id);
+      if(i>=0){
+        var prev = ST.clients[i];
+        var remoteTs = new Date(row.updated_at||0).getTime();
+        var localTs = new Date(prev.updated_at||0).getTime();
+        if(localTs > remoteTs){
+          if(prev.tests_data) sc.tests_data = prev.tests_data;
+          if(prev.rapport_leger) sc.rapport_leger = prev.rapport_leger;
+          if(prev.mode_stages && prev.mode_stages.length) sc.mode_stages = prev.mode_stages;
+        }
+        ST.clients[i]=sc;
+      }else ST.clients.unshift(sc);
     });
     localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
   }catch(e){}
@@ -6741,7 +7194,12 @@ async function saveToSupabase(c){
     var legacySess = cur
       ? { seancesPrevues: cur.seancesPrevues != null ? cur.seancesPrevues : null, seancesEffectuees: cur.seancesEffectuees != null ? cur.seancesEffectuees : null, periodeDebut: cur.periodeDebut || null, periodeFin: cur.periodeFin || null }
       : { seancesPrevues: c.seancesPrevues != null ? c.seancesPrevues : null, seancesEffectuees: c.seancesEffectuees != null ? c.seancesEffectuees : null, periodeDebut: c.periodeDebut || null, periodeFin: c.periodeFin || null };
-    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,name:(c.prenom+' '+c.nom).trim(),age:parseInt(c.age)||null,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offre:_offreLabel,montant:c.montant?parseFloat(c.montant):null,is_client:c.statut==='Closé',score_global:c.score_global,report_json:JSON.stringify({pq:c.pq_summary,bilan:c.bilan_summary,final:c.final_report,bilan_raw:c.bilan_raw||null,rdv_history:c.rdv_history||null,session_tracking:legacySess,session_cycles:cycles,important_dates:c.important_dates||null}),updated_at:c.updated_at,group_id:c.groupId||null,group_name:c.group_name||null,is_group_leader:c.is_group_leader||false})});
+    var _sync = loadMaxConfig().sync;
+    var _rj = { pq:c.pq_summary, bilan:c.bilan_summary, final:c.final_report, bilan_raw:c.bilan_raw||null, rdv_history:c.rdv_history||null, session_tracking:legacySess, session_cycles:cycles, important_dates:c.important_dates||null, parcours_started_at:c.parcours_started_at||null };
+    if (_sync.tests_data && c.tests_data && typeof c.tests_data === 'object') _rj.tests_data = c.tests_data;
+    if (_sync.rapport_leger && c.rapport_leger) _rj.rapport_leger = c.rapport_leger;
+    if (_sync.mode_stages && Array.isArray(c.mode_stages)) _rj.mode_stages = c.mode_stages;
+    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,name:(c.prenom+' '+c.nom).trim(),age:parseInt(c.age)||null,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offre:_offreLabel,montant:c.montant?parseFloat(c.montant):null,is_client:c.statut==='Closé',score_global:c.score_global,report_json:JSON.stringify(_rj),updated_at:c.updated_at,group_id:c.groupId||null,group_name:c.group_name||null,is_group_leader:c.is_group_leader||false})});
   }catch(e){}
 }
 
@@ -7075,14 +7533,13 @@ function renderParcoursEditor() {
 function switchEditor(tab, chip) {
   document.querySelectorAll('#pg-form-editor .chip').forEach(function(c){c.classList.remove('on');});
   if(chip) chip.classList.add('on');
-  ['bilan','tests','parcours','suites'].forEach(function(t) {
+  ['bilan','tests','parcours'].forEach(function(t) {
     var el = document.getElementById('editor-'+t);
     if(el) el.style.display = t === tab ? 'block' : 'none';
   });
   if(tab==='bilan') renderSectionsEditor('bilan');
   if(tab==='tests') renderSectionsEditor('tests');
-  if(tab==='parcours') renderParcoursEditor();
-  if(tab==='suites') renderSuitesEditor();
+  if(tab==='parcours') { renderParcoursEditor(); renderSuitesEditor(); }
 }
 
 function skipPQ() {
@@ -7895,6 +8352,29 @@ function isSectionActiveForProgramme(sec, programme) {
   return true;
 }
 
+function editFieldOptions(formKey, si, fi) {
+  var def = loadFormDef(formKey);
+  if (!def[si] || !def[si].fields || !def[si].fields[fi]) return;
+  var f = def[si].fields[fi];
+  if (!['checkboxes','radio','select'].includes(f.type)) {
+    toast('info', 'Options : cases à cocher, radio ou liste uniquement');
+    return;
+  }
+  showDialog({
+    title: 'Options du champ',
+    inputs: [{ id: 'opts', label: 'Une option par ligne', type: 'textarea', rows: 10, value: (f.options || []).join('\n') }],
+    confirmLabel: 'Enregistrer'
+  }).then(function(r) {
+    if (!r.confirmed) return;
+    var d = loadFormDef(formKey);
+    var fld = d[si].fields[fi];
+    fld.options = String(r.values.opts || '').split('\n').map(function(o){ return o.trim(); }).filter(Boolean);
+    saveFormDef(formKey, d);
+    renderSectionsEditor(formKey);
+    toast('ok', '✅ Options enregistrées — prévisualisez le formulaire pour vérifier');
+  });
+}
+
 function buildFieldRow(formKey, def, si, fi, f) {
   var row = document.createElement('div');
   row.className = 'field-row';
@@ -7917,6 +8397,15 @@ function buildFieldRow(formKey, def, si, fi, f) {
   type.className = 'field-row-type';
   type.textContent = f.type || 'text';
   row.appendChild(type);
+  if (['checkboxes','radio','select'].indexOf(f.type) >= 0) {
+    var optBtn = document.createElement('button');
+    optBtn.type = 'button';
+    optBtn.className = 'ffe-btn';
+    optBtn.title = 'Modifier les libellés des options';
+    optBtn.textContent = '⚙';
+    optBtn.onclick = function() { editFieldOptions(formKey, si, fi); };
+    row.appendChild(optBtn);
+  }
   var btns = document.createElement('div');
   btns.className = 'field-row-btns';
   [['\u2191', function(){ moveField(formKey, si, fi, -1); }],
