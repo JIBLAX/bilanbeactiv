@@ -3765,8 +3765,7 @@ function _clientName(c) {
   return ((c.prenom || '') + ' ' + (c.nom || '')).trim() || 'Client';
 }
 function _offerForClient(c) {
-  if (!c || !c.sig_offre_id) return null;
-  return loadOffres().find(function(o) { return o.id === c.sig_offre_id; }) || null;
+  return resolveOffreForClient(c);
 }
 function _activeCycleForClient(c) {
   if (!c) return null;
@@ -4311,15 +4310,89 @@ function collectBilan(){
     objectionNotes:gv('b-objection-notes')
   };
 }
-function collectTests(){
-  return{
-    programme:gv('t-programme'),taille:gv('t-taille'),poids:gv('t-poids'),
-    tn:gv('t-tn'),tc:gv('t-tc'),th:gv('t-th'),tt:gv('t-tt'),tb:gv('t-tb'),
-    mobGlobal:gv('t-mob-global'),mobPost:gv('t-mob-post'),mobSh:gv('t-mob-sh'),mobHi:gv('t-mob-hi'),mobAn:gv('t-mob-an'),
-    mobAsy:gv('t-mob-asy'),mobCom:gv('t-mob-com'),
-    p1:gv('t-p1'),p2:gv('t-p2'),p3:gv('t-p3'),ird:gv('t-ird'),fcmax:gv('t-fcmax'),zone2:gv('t-zone2'),
-    planche:gv('t-planche'),doulPrec:gv('t-doul-prec'),remarques:gv('t-remarques')
-  };
+/** Collecte les tests depuis le DOM selon loadFormDef — même logique que le modal parcours (préfixes différents). */
+function collectTestsFromDef(scope) {
+  var rootSel = scope === 'parcours' ? '#tests-parcours-form' : '#tests-form-container';
+  var testsData = {};
+  loadFormDef('tests').forEach(function(section) {
+    if (section.type !== 'group' || !section.fields) return;
+    section.fields.forEach(function(f) {
+      if (!f.id) return;
+      var key = f.id.replace(/^t-/, '');
+      if (f.type === 'checkboxes') {
+        var vals = [];
+        var sel = scope === 'parcours'
+          ? rootSel + ' input[type=checkbox][data-tf="' + cssEscAttr(key) + '"]'
+          : rootSel + ' input[type=checkbox][data-fid="' + cssEscAttr(f.id) + '"]';
+        document.querySelectorAll(sel).forEach(function(el) {
+          if (el.checked) vals.push(el.value);
+        });
+        testsData[key] = vals;
+      } else if (f.type === 'radio') {
+        var chkd = null;
+        if (scope === 'parcours') {
+          chkd = document.querySelector(rootSel + ' input[type=radio][data-tf="' + cssEscAttr(key) + '"]:checked');
+        } else if (f.name) {
+          chkd = document.querySelector(rootSel + ' input[type=radio][name="' + cssEscAttr(f.name) + '"]:checked');
+        }
+        testsData[key] = chkd ? chkd.value : '';
+      } else {
+        var elId = scope === 'parcours' ? ('f3-' + key) : f.id;
+        var el = document.getElementById(elId);
+        testsData[key] = el ? el.value : '';
+      }
+    });
+  });
+  return testsData;
+}
+/** Fusionne : base tests_data client, puis valeurs DOM non vides par-dessus. */
+function mergeTestsOverlayStored(stored, fromDom) {
+  var out = {};
+  if (stored && typeof stored === 'object') {
+    Object.keys(stored).forEach(function(k) { out[k] = stored[k]; });
+  }
+  if (!fromDom || typeof fromDom !== 'object') return out;
+  Object.keys(fromDom).forEach(function(k) {
+    var v = fromDom[k];
+    if (v === '' || v === null || v === undefined) return;
+    if (Array.isArray(v) && v.length === 0) return;
+    out[k] = v;
+  });
+  return out;
+}
+/** IRD, zone 2, alias mobGlobal — aligné sur saveTestsParcours. */
+function applyTestsDerivedMetrics(testsData, age) {
+  if (!testsData || typeof testsData !== 'object') return;
+  var _ird = computeIRD(testsData.p1, testsData.p2, testsData.p3);
+  if (_ird) {
+    testsData.ird = _ird.ird;
+    testsData.ird_cat = _ird.cat;
+    testsData.ird_advice = _ird.advice;
+  }
+  var _z2 = computeZone2(testsData.fcmax, age);
+  if (_z2) {
+    testsData.fcmax = _z2.fcmax;
+    testsData.zone2 = _z2.label;
+    testsData.zone2_lo = _z2.lo;
+    testsData.zone2_hi = _z2.hi;
+  }
+  if (testsData['mob-global']) testsData.mobGlobal = testsData['mob-global'];
+}
+/** Pour genReport : DOM page Tests si présent + données persistées du client. */
+function collectTestsForReport() {
+  var c = ST.clientId ? ST.clients.find(function(x){ return x.id === ST.clientId; }) : null;
+  var stored = c && c.tests_data ? c.tests_data : null;
+  var root = document.querySelector('#tests-form-container');
+  var fromDom = null;
+  if (root && root.querySelector('input, textarea, select')) {
+    fromDom = collectTestsFromDef('main');
+  }
+  var merged = mergeTestsOverlayStored(stored, fromDom);
+  applyTestsDerivedMetrics(merged, c && c.age ? parseFloat(c.age) : null);
+  return merged;
+}
+function collectTests() {
+  return collectTestsForReport();
 }
 
 // ═══════════════════════════════════════════════════
@@ -4704,13 +4777,39 @@ function copyBaStorageKeysList() {
   }
 }
 
+/** Offre CRM pour règles UI : d'abord signature (sig_offre_id), sinon correspondance nom depuis le bilan (offres cochées). */
+function resolveOffreForClient(c) {
+  if (!c) return null;
+  var offs = loadOffres();
+  if (c.sig_offre_id) {
+    var bySig = offs.find(function(o){ return o.id === c.sig_offre_id; });
+    if (bySig) return bySig;
+  }
+  var raw = (c.offres || '').trim();
+  if (!raw) return null;
+  var parts = raw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  var i, p, exact, loose;
+  for (i = 0; i < parts.length; i++) {
+    p = parts[i];
+    exact = offs.find(function(o){ return (o.name || '').trim() === p; });
+    if (exact) return exact;
+  }
+  for (i = 0; i < parts.length; i++) {
+    p = parts[i];
+    if (!p) continue;
+    loose = offs.find(function(o){ return (o.name || '').indexOf(p) !== -1; });
+    if (loose) return loose;
+  }
+  return null;
+}
+
 function reportHubOfferNeedsTestsBlock(c) {
-  if (!c || !c.sig_offre_id) return false;
   var mc = loadMaxConfig().reportHub;
-  var o = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
+  var o = resolveOffreForClient(c);
   if (!o) return false;
-  if (mc.forceTestsOfferIds && mc.forceTestsOfferIds.indexOf(c.sig_offre_id) !== -1) return true;
-  if (mc.hideTestsOfferIds && mc.hideTestsOfferIds.indexOf(c.sig_offre_id) !== -1) return false;
+  var oid = o.id;
+  if (mc.forceTestsOfferIds && mc.forceTestsOfferIds.indexOf(oid) !== -1) return true;
+  if (mc.hideTestsOfferIds && mc.hideTestsOfferIds.indexOf(oid) !== -1) return false;
   var nameLower = (o.name || '').toLowerCase();
   if (mc.namePatternsHideTests && mc.namePatternsHideTests.some(function(p){ return p && nameLower.indexOf(String(p).toLowerCase()) !== -1; })) return false;
   if (mc.namePatternsNeedTests && mc.namePatternsNeedTests.some(function(p){ return p && nameLower.indexOf(String(p).toLowerCase()) !== -1; })) return true;
@@ -4749,7 +4848,7 @@ function renderReportHub() {
     { id:'bil', title:'RDV Bilan coach (F2)', icon:'📋', ok:bilanOk, desc:'Notes de séance, vision, cases à cocher — base du diagnostic.', btn:'Ouvrir bilan' }
   ];
   if (showTests) {
-    rows.push({ id:'tst', title:'Tests physiques (F3)', icon:'📏', ok:testsOk, desc:'Mobilité, cardio, etc. — affiché pour les offres transformation / essentiel.', btn:'Ouvrir tests' });
+    rows.push({ id:'tst', title:'Tests physiques (F3)', icon:'📏', ok:testsOk, desc:'Mobilité, cardio, etc. — tuile affichée si l’offre (signature ou nom sur le bilan) correspond aux modes / règles « Contrôle maximal ».', btn:'Ouvrir tests' });
   }
 
   var html = '<div style="display:grid;gap:14px;margin-bottom:18px">';
@@ -4847,10 +4946,13 @@ async function genReport(){
   try{
     const b=collectBilan(),t=collectTests();
     const imc=t.poids&&t.taille?(parseFloat(t.poids)/Math.pow(parseFloat(t.taille)/100,2)).toFixed(1):'NC';
+    const mobG=t.mobGlobal!=null&&t.mobGlobal!==''?t.mobGlobal:(t['mob-global']!=null?t['mob-global']:'');
+    const doulStr=Array.isArray(t.douleurs)?t.douleurs.join(', '):(t.douleurs||'');
+    const squatStr=Array.isArray(t['mob-squat'])?t['mob-squat'].join(', '):(t['mob-squat']||'');
     const pqCtx=ST.pqSummary?'PRÉ-BILAN: '+ST.pqSummary.resumeProfil+' | Profil: '+ST.pqSummary.profilTypeCode:'Pré-bilan non effectué';
     const bilanCtx=ST.bilanSummary?'BILAN: '+ST.bilanSummary.syntheseBilan+' | Leviers: '+(ST.bilanSummary.facteursLeviers||'NC'):'Bilan non effectué';
     const sys='Tu es Jonathan, coach Transformation & Énergie, fondateur de BE ACTIV (Grenoble/Lyon). Tu rédiges le compte rendu final personnalisé remis au client après son bilan complet. Ce document sera lu directement par le client — soigne le style, la clarté et la personnalisation maximale. Utilise le prénom du client. LOI CENTRALE BE ACTIV : la perte de gras est la CONSÉQUENCE naturelle d\'une vie active. PROCESSUS : ANCRER → SIMPLIFIER → RÉPÉTER → AJUSTER → LÂCHER PRISE. 4 LEVIERS : BOUGER (musculation + NEAT) | MANGER (nourrir sans punir, zéro restriction) | RÉCUPÉRER (sommeil = résultats) | RÉGULER (stress, hormones, cycle). 3 PHASES : RESET | SCULPT | HEALTH. JAMAIS : restrictions sévères, comptage calorique obsessionnel, hacks nutritionnels avant les fondations. Style : professionnel mais humain, bienveillant, concret, actionnable. Réponds UNIQUEMENT en JSON valide sans backticks. Français.';
-    const usr='CLIENT: '+b.prenom+' '+b.nom+', '+(b.age||'?')+' ans, '+(b.ville||'NC')+'\nPROFIL: '+(b.profilTypeCode||(ST.bilanSummary&&ST.bilanSummary.profilTypeCodeUpdated)||'NC')+' | IMC: '+imc+'\nVISION: '+(b.vision6m||'').slice(0,200)+'\nBLOCAGES: '+(b.blocages||'').slice(0,150)+'\n'+pqCtx+'\n'+bilanCtx+'\nTESTS: Mobilité='+t.mobGlobal+'/100 IRD='+t.ird+' Planche='+t.planche+'s\nTaille='+t.taille+'cm Poids='+t.poids+'kg Tour nombril='+t.tn+' Tour taille='+t.tt+'\nOffres: '+b.offres+' | Montant: '+b.montant+'€\n\nJSON strict :\n{"profilGlobal":"paragraphe","synthesePreBilan":"résumé","syntheseBilan":"résumé","analyseMorphologique":"mesures","analyseMobilite":"mobilité","analyseCardio":"cardio IRD","analyseForce":"planche force","analyseCompo":"composition","pointsForts":["pt1","pt2","pt3"],"freinsPrincipaux":["f1","f2"],"axesPrioritaires":["a1","a2","a3"],"planAction90J":"plan","objectifsSMART":["obj1","obj2"],"conseilsTraining":"texte","conseilsNutrition":"texte","conseilsRecuperation":"texte","messageMotivation":"message","scoreMobilite":0,"scoreCondition":0,"scoreGlobal":0,"niveauGlobal":"Débutant|Intermédiaire|Avancé|Expert","profilTypeCodeFinal":"P1..P12","profilTypeLabelFinal":"libellé","closingStatusRecommended":"Démarrer maintenant|Envoyer offre|Relancer|Ne pas continuer","offreRecommandee":"texte","closingSummaryCoach":"note confidentielle","emailSubject":"objet","emailBody":"corps email"}';
+    const usr='CLIENT: '+b.prenom+' '+b.nom+', '+(b.age||'?')+' ans, '+(b.ville||'NC')+'\nPROFIL: '+(b.profilTypeCode||(ST.bilanSummary&&ST.bilanSummary.profilTypeCodeUpdated)||'NC')+' | IMC: '+imc+'\nVISION: '+(b.vision6m||'').slice(0,200)+'\nBLOCAGES: '+(b.blocages||'').slice(0,150)+'\n'+pqCtx+'\n'+bilanCtx+'\nTESTS: Mobilité='+mobG+'/100 IRD='+(t.ird!=null?t.ird:'')+' Planche='+(t.planche||'')+'s | Douleurs: '+(doulStr||'NC')+' | Squat: '+(squatStr||'NC')+'\nTaille='+(t.taille||'')+'cm Poids='+(t.poids||'')+'kg Tour nombril='+(t.tn||'')+' Tour taille='+(t.tt||'')+'\nOffres: '+b.offres+' | Montant: '+b.montant+'€\n\nJSON strict :\n{"profilGlobal":"paragraphe","synthesePreBilan":"résumé","syntheseBilan":"résumé","analyseMorphologique":"mesures","analyseMobilite":"mobilité","analyseCardio":"cardio IRD","analyseForce":"planche force","analyseCompo":"composition","pointsForts":["pt1","pt2","pt3"],"freinsPrincipaux":["f1","f2"],"axesPrioritaires":["a1","a2","a3"],"planAction90J":"plan","objectifsSMART":["obj1","obj2"],"conseilsTraining":"texte","conseilsNutrition":"texte","conseilsRecuperation":"texte","messageMotivation":"message","scoreMobilite":0,"scoreCondition":0,"scoreGlobal":0,"niveauGlobal":"Débutant|Intermédiaire|Avancé|Expert","profilTypeCodeFinal":"P1..P12","profilTypeLabelFinal":"libellé","closingStatusRecommended":"Démarrer maintenant|Envoyer offre|Relancer|Ne pas continuer","offreRecommandee":"texte","closingSummaryCoach":"note confidentielle","emailSubject":"objet","emailBody":"corps email"}';
     const r=await callAI(sys,usr,'claude-sonnet-4-6',3500);
     ST.finalReport=r;ST.finalReport._client=b;ST.finalReport._tests=t;
     renderReport(r,b);
@@ -6138,45 +6240,8 @@ function saveTestsParcours() {
   var ctx = _testsParcoursCtx;
   var c = ST.clients.find(function(x){ return x.id == ctx.clientId; });
   if (!c) return;
-  // Collecter depuis la définition éditeurs (source de vérité), toutes les sections
-  var testsData = {};
-  var formDef = loadFormDef('tests');
-  formDef.forEach(function(section) {
-    if (section.type !== 'group' || !section.fields) return;
-    section.fields.forEach(function(f) {
-      var key = f.id.replace(/^t-/, '');
-      if (f.type === 'checkboxes') {
-        var vals = [];
-        document.querySelectorAll('#tests-parcours-form input[type=checkbox][data-tf="'+key+'"]').forEach(function(el) {
-          if (el.checked) vals.push(el.value);
-        });
-        testsData[key] = vals;
-      } else if (f.type === 'radio') {
-        var chkd = document.querySelector('#tests-parcours-form input[type=radio][data-tf="'+key+'"]:checked');
-        testsData[key] = chkd ? chkd.value : '';
-      } else {
-        var el = document.getElementById('f3-'+key);
-        if (el) testsData[key] = el.value;
-      }
-    });
-  });
-  // Calculer IRD automatiquement (Ruffier-Dickson) si P1/P2/P3 présents
-  var _ird = computeIRD(testsData.p1, testsData.p2, testsData.p3);
-  if (_ird) {
-    testsData.ird = _ird.ird;
-    testsData.ird_cat = _ird.cat;
-    testsData.ird_advice = _ird.advice;
-  }
-  // Calculer Zone 2 auto (FCmax saisie sinon fallback Tanaka via âge client)
-  var _z2 = computeZone2(testsData.fcmax, c.age);
-  if (_z2) {
-    testsData.fcmax = _z2.fcmax;
-    testsData.zone2 = _z2.label;
-    testsData.zone2_lo = _z2.lo;
-    testsData.zone2_hi = _z2.hi;
-  }
-  // Alias pour compatibilité avec genReportComplet (lit t.mobGlobal)
-  if (testsData['mob-global']) testsData.mobGlobal = testsData['mob-global'];
+  var testsData = collectTestsFromDef('parcours');
+  applyTestsDerivedMetrics(testsData, c.age);
   c.tests_data = testsData;
   // Valider le step Tests
   c.mode_stages[ctx.stageIdx].steps[ctx.stepIdx].done = true;
