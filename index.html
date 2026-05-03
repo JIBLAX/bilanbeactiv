@@ -1213,7 +1213,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div class="chips" id="editor-tabs" style="margin-bottom:16px">
     <div class="chip on" onclick="switchEditor('bilan',this)">📋 Bilan</div>
     <div class="chip" onclick="switchEditor('tests',this)">📏 Tests</div>
-    <div class="chip" onclick="switchEditor('parcours',this)">🗺️ Parcours &amp; suites</div>
+    <div class="chip" onclick="switchEditor('parcours',this)">🗺️ Parcours</div>
   </div>
   <div id="editor-bilan">
     <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
@@ -1234,20 +1234,11 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
   <div id="editor-parcours" style="display:none">
     <div style="background:linear-gradient(135deg,rgba(139,21,32,.06),rgba(26,110,219,.05));border:1.5px solid var(--rim3);border-radius:var(--r3);padding:14px 16px;margin-bottom:16px">
-      <div style="font-weight:800;font-size:14px;color:var(--tx);margin-bottom:8px">🗺️ Parcours &amp; propositions de suite</div>
-      <div style="font-size:12.5px;color:var(--tx2);line-height:1.65"><strong>Suite</strong> = une fois le parcours fini, ce que vous pouvez proposer au client (programmes, CONTINUE, etc.). Vous cochez ça <strong>par offre</strong> dans chaque carte. Ensuite vous affinez les <strong>étapes</strong> et les délais si besoin.</div>
+      <div style="font-weight:800;font-size:14px;color:var(--tx);margin-bottom:8px">🗺️ Parcours</div>
+      <div style="font-size:12.5px;color:var(--tx2);line-height:1.65">Configurez les <strong>étapes</strong> et les <strong>délais</strong> par offre. La suite du client (vers quelle offre ou fin de parcours) se choisit sur <strong>sa fiche</strong>, en liste déroulante à la fin du parcours.</div>
     </div>
-    <p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Offres triées par famille. Signature commune en haut. Liste des libellés réutilisables en bas.</p>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Offres avec parcours, triées par famille. Signature commune en haut.</p>
     <div id="parcours-modes-view"></div>
-    <div style="margin:22px 0 12px;padding-top:16px;border-top:2px dashed var(--rim3)">
-      <div style="font-weight:800;font-size:13px;color:var(--bx);margin-bottom:8px">📚 Liste des propositions (catalogue)</div>
-      <div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Noms et icônes affichés dans les cases à cocher « quand le parcours est terminé ». Ajoutez ici une ligne si vous manquez d’une proposition.</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-        <button class="btn btn-bx btn-sm" onclick="addSuiteOption()">＋ Ajouter une suite</button>
-        <button class="btn btn-dk btn-sm" onclick="resetSuiteOptions()">↩ Réinitialiser</button>
-      </div>
-      <div id="suites-editor-list"></div>
-    </div>
   </div>
 </div>
 
@@ -5711,35 +5702,6 @@ function openClient(id) {
 // Les phases C2/C3 partagent les mêmes étapes que C1
 // Le coach décide : continuer la phase ou certifier → suivante
 
-const PHASE_LABELS = {
-  reset:  {name:'PHASE RESET',  ico:'🔴', cert:'CERTIFIED RESET',  color:'var(--R)'},
-  sculpt: {name:'PHASE SCULPT', ico:'🟡', cert:'CERTIFIED SCULPT', color:'var(--Y)'},
-  health: {name:'PHASE HEALTH', ico:'🟢', cert:'CERTIFIED HEALTH', color:'var(--G)'},
-  cont:   {name:'ACTIV CONTINUE', ico:'♾️', cert:null, color:'var(--bx)', isContinue:true}
-};
-
-// Suites possibles après certification — modifiables dans l'éditeur
-// Chaque item: {key, label, ico, phaseKey}
-// phaseKey = null → même phase (offre libre)
-var SUITE_OPTIONS_DEFAULT = [
-  {key:'activ_reset_online',   label:'ACTIV RESET ONLINE',   ico:'🔴', phaseKey:'reset'},
-  {key:'activ_reset_hybride',  label:'ACTIV RESET HYBRIDE',  ico:'🔴', phaseKey:'reset'},
-  {key:'activ_program',        label:'ACTIV PROGRAM',        ico:'📗', phaseKey:'sculpt'},
-  {key:'activ_continue_sculpt',label:'ACTIV CONTINUE — SCULPT', ico:'🟡♾️', phaseKey:'sculpt'},
-  {key:'activ_continue_health',label:'ACTIV CONTINUE — HEALTH', ico:'🟢♾️', phaseKey:'health'},
-  {key:'activ_continue_reset', label:'ACTIV CONTINUE — RESET',  ico:'🔴♾️', phaseKey:'reset'},
-  {key:'jm_pass_sap',          label:'JM PASS (SAP)',        ico:'💪', phaseKey:null},
-  {key:'cardio_mouv',          label:'CARDIO MOUV Pass/Pack', ico:'🎵', phaseKey:null},
-  {key:'activ_training',       label:'ACTIV TRAINING',       ico:'⚡', phaseKey:null}
-];
-
-function loadSuiteOptions() {
-  try { var s=localStorage.getItem('ba_suite_opts'); if(s) return JSON.parse(s); } catch(e){}
-  return SUITE_OPTIONS_DEFAULT.map(function(o){return Object.assign({},o);});
-}
-function saveSuiteOptions(arr) { localStorage.setItem('ba_suite_opts', JSON.stringify(arr)); saveSettingRemote('ba_suite_opts', arr); }
-
-
 // Étapes communes à toutes les phases (personnalisables dans l'éditeur)
 const PHASES_BASE = [
   {id:'rdv-bilan',     ico:'📅', lbl:'RDV Bilan',         days:0},
@@ -5843,6 +5805,30 @@ var ACTIV_CONTINUE_STAGES = {
   sculpt: {id:'activ_continue_sculpt', lbl:'ACTIV CONTINUE — SCULPT', ico:'🟡♾️', steps:[{id:'test_maj',lbl:'Test (MAJ)'},{id:'go',lbl:'GO'},{id:'optimisation',lbl:'Optimisation'},{id:'done',lbl:'VALIDÉE ✅',isFinal:true}]},
   health: {id:'activ_continue_health', lbl:'ACTIV CONTINUE — HEALTH', ico:'🟢♾️', steps:[{id:'test_maj',lbl:'Test (MAJ)'},{id:'go',lbl:'GO'},{id:'optimisation',lbl:'Optimisation'},{id:'done',lbl:'VALIDÉE ✅',isFinal:true}]}
 };
+
+function loadContinueStageDefs() {
+  try { var s = localStorage.getItem('ba_activ_continue_stage_defs'); if (s) return JSON.parse(s); } catch (e) {}
+  return {};
+}
+function saveContinueStageDefs(obj) {
+  try {
+    localStorage.setItem('ba_activ_continue_stage_defs', JSON.stringify(obj));
+    saveSettingRemote('ba_activ_continue_stage_defs', obj);
+  } catch (e) {}
+}
+/** Parcours CONTINUE fusionné (défaut + éditeur). */
+function getContinueStageMerged(ck) {
+  var base = ACTIV_CONTINUE_STAGES[ck];
+  if (!base) return null;
+  var cus = loadContinueStageDefs()[ck];
+  if (!cus) return JSON.parse(JSON.stringify(base));
+  return {
+    id: cus.id || base.id,
+    lbl: cus.lbl != null ? cus.lbl : base.lbl,
+    ico: cus.ico != null ? cus.ico : base.ico,
+    steps: Array.isArray(cus.steps) && cus.steps.length ? JSON.parse(JSON.stringify(cus.steps)) : JSON.parse(JSON.stringify(base.steps))
+  };
+}
 
 // ─── Config custom des stages (admin éditeur) ────────
 function loadCustomStageDefs(){try{var s=localStorage.getItem('ba_custom_stage_defs');if(s)return JSON.parse(s);}catch(e){}return{};}
@@ -5958,13 +5944,6 @@ function getMergedBaseStagesForOfferId(offerId, modeKeyHint) {
   });
 }
 
-/** Suites cochées pour une offre ; null = comportement historique (boutons codés en dur où besoin). */
-function getSuiteKeysForOfferResolved(offerId) {
-  var cfg = loadOfferParcoursAll()[offerId];
-  if (cfg && Array.isArray(cfg.suiteKeys) && cfg.suiteKeys.length) return cfg.suiteKeys;
-  return null;
-}
-
 function stepDurationToMs(step) {
   if (!step || !step.durVal || step.durVal <= 0) return 0;
   var u = (step.durUnit || 'jours').toLowerCase();
@@ -5973,13 +5952,87 @@ function stepDurationToMs(step) {
   return n * 24 * 3600 * 1000;
 }
 
-function runSuiteKeyAction(clientId, suiteKey) {
-  switch (suiteKey) {
-    case 'activ_continue_reset': addActivContinue(clientId, 'reset'); return;
-    case 'activ_continue_sculpt': addActivContinue(clientId, 'sculpt'); return;
-    case 'activ_continue_health': addActivContinue(clientId, 'health'); return;
-    default: openNewOffreForClient(clientId);
+/** Orientation après fin de cycle : « FIN », « parcours:offer|<id> », « parcours:continue|<reset|sculpt|health> » (ou ancien id offre seul, normalisé). */
+function saveParcoursNextChoice(clientId, val) {
+  var c = ST.clients.find(function(x) { return String(x.id) === String(clientId); });
+  if (!c) return;
+  c.parcours_next_choice = val || '';
+  c.updated_at = new Date().toISOString();
+  try { localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients)); } catch (e) {}
+  saveToSupabase(c);
+}
+
+/** Offre produit « ACTIV CONTINUE » (pas les libellés RESET/SCULPT/HEALTH seuls). */
+function isGenericActivContinueOffer(o) {
+  if (!o) return false;
+  if (o.id === 'o_ac') return true;
+  var n = (o.name || '').toUpperCase();
+  if (n.indexOf('CONTINUE') < 0 || n.indexOf('ACTIV') < 0) return false;
+  if (n.indexOf('RESET') >= 0 || n.indexOf('SCULPT') >= 0 || n.indexOf('HEALTH') >= 0) return false;
+  return true;
+}
+
+function normalizeParcoursNextChoiceVal(raw) {
+  if (raw == null || raw === '') return '';
+  var s = String(raw);
+  if (s === 'FIN') return 'FIN';
+  if (s.indexOf('parcours:') === 0) return s;
+  if (s.indexOf('continue:') === 0) return 'parcours:continue|' + s.split(':')[1];
+  var o = loadOffres().find(function(x) { return x.id === s; });
+  if (o) return 'parcours:offer|' + s;
+  return s;
+}
+
+function appendParcoursNextSelect(clientId, c, endDiv) {
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-top:12px;padding-top:12px;border-top:1px dashed var(--rim3)';
+  var lab = document.createElement('div');
+  lab.style.cssText = 'font-size:12px;font-weight:700;color:var(--tx);margin-bottom:4px';
+  lab.textContent = 'Prochain parcours';
+  var hint = document.createElement('div');
+  hint.style.cssText = 'font-size:10px;color:var(--tx4);margin-bottom:8px;line-height:1.45';
+  hint.textContent = 'Chaque ligne = un parcours (chemin) : offre + parcours principal, ou une variante ACTIV CONTINUE (RESET / SCULPT / HEALTH), ou FIN.';
+  var sel = document.createElement('select');
+  sel.style.cssText = 'width:100%;padding:10px 12px;border-radius:var(--r2);border:1.5px solid var(--rim3);font-size:13px;background:var(--bg3);color:var(--tx);box-sizing:border-box';
+  var opt0 = document.createElement('option');
+  opt0.value = '';
+  opt0.textContent = '— Choisir —';
+  sel.appendChild(opt0);
+  var continueOptsAdded = false;
+  loadOffres().forEach(function(o) {
+    if (!o.parcours || o.alaCarte) return;
+    if (isGenericActivContinueOffer(o)) {
+      if (continueOptsAdded) return;
+      continueOptsAdded = true;
+      ['reset', 'sculpt', 'health'].forEach(function(ck) {
+        var op = document.createElement('option');
+        op.value = 'parcours:continue|' + ck;
+        var sub = ck === 'reset' ? 'RESET' : (ck === 'sculpt' ? 'SCULPT' : 'HEALTH');
+        op.textContent = (o.name || 'ACTIV CONTINUE') + ' · parcours ' + sub;
+        sel.appendChild(op);
+      });
+    } else {
+      var op2 = document.createElement('option');
+      op2.value = 'parcours:offer|' + o.id;
+      op2.textContent = (o.name || o.id) + ' — parcours';
+      sel.appendChild(op2);
+    }
+  });
+  var fin = document.createElement('option');
+  fin.value = 'FIN';
+  fin.textContent = 'FIN';
+  sel.appendChild(fin);
+  sel.value = normalizeParcoursNextChoiceVal(c.parcours_next_choice);
+  if (sel.value && !Array.prototype.some.call(sel.options, function(opt) { return opt.value === sel.value; })) {
+    sel.value = '';
   }
+  sel.onchange = function() {
+    saveParcoursNextChoice(clientId, sel.value);
+  };
+  wrap.appendChild(lab);
+  wrap.appendChild(hint);
+  wrap.appendChild(sel);
+  endDiv.appendChild(wrap);
 }
 
 function getActiveStageDefs(c) {
@@ -6002,8 +6055,8 @@ function getActiveStageDefs(c) {
     ? getMergedBaseStagesForOfferId(oid, modeKey)
     : getStageDefsForMode(modeKey).map(function(s) { return Object.assign({}, s, { _mode: modeKey }); });
   var continueDefs = (c.activ_continue_stages || []).map(function(ck) {
-    var s = ACTIV_CONTINUE_STAGES[ck];
-    return s ? Object.assign({}, s, { _mode: 'continue_' + ck }) : null;
+    var merged = getContinueStageMerged(ck);
+    return merged ? Object.assign({}, merged, { _mode: 'continue_' + ck }) : null;
   }).filter(Boolean);
   return baseDefs.concat(continueDefs);
 }
@@ -6143,23 +6196,8 @@ function renderModeStages(clientId, c, container) {
       actions.appendChild(mkBtn('btn btn-dk btn-sm', '🔂', 'Relancer ACTIV ESSENTIEL', function(){ relancerActivEssentiel(clientId); }));
       actions.appendChild(mkBtn('btn btn-bx btn-sm', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
     } else if (sid === 'activ_reset') {
-      hHtml = '🚀 GO ACTIV !';
-      subHtml = 'Le parcours initial est validé. Choisissez la suite.';
-      actions.appendChild(mkBtn('btn btn-bx btn-sm', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
-      var skOffer = c.sig_offre_id ? getSuiteKeysForOfferResolved(c.sig_offre_id) : null;
-      if (skOffer && skOffer.length) {
-        var catSuites = loadSuiteOptions();
-        skOffer.forEach(function(sk) {
-          var su = catSuites.find(function(x) { return x.key === sk; });
-          var ico = su && su.ico ? su.ico : '🔀';
-          var lab = su && su.label ? su.label : sk;
-          actions.appendChild(mkBtn('btn btn-dk btn-sm', ico, lab, function() { runSuiteKeyAction(clientId, sk); }));
-        });
-      } else {
-        actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — RESET',  function(){ addActivContinue(clientId,'reset'); }));
-        actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — SCULPT', function(){ addActivContinue(clientId,'sculpt'); }));
-        actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — HEALTH', function(){ addActivContinue(clientId,'health'); }));
-      }
+      hHtml = '🚀 Parcours initial validé';
+      subHtml = 'Utilisez le menu ci-dessous pour l’orientation (offre suivante ou FIN).';
     } else if (sid === 'activ_continue_reset') {
       hHtml = '✅ ACTIV CONTINUE RESET validée';
       actions.appendChild(mkBtn('btn btn-dk btn-sm', '🔂', 'Relancer',         function(){ relancerActivContinueStage(clientId,'reset'); }));
@@ -6210,6 +6248,7 @@ function renderModeStages(clientId, c, container) {
     endDiv.innerHTML = '<div class="cm-finale-h">'+hHtml+'</div>'
       + (subHtml ? '<div class="cm-finale-sub">'+subHtml+'</div>' : '');
     endDiv.appendChild(actions);
+    appendParcoursNextSelect(clientId, c, endDiv);
 
     if (c.statut !== 'Ancien Client') {
       var afterDiv = document.createElement('div'); afterDiv.className = 'cm-finale-after';
@@ -7396,7 +7435,7 @@ function sv2(id,v){const el=document.getElementById(id);if(el&&v!=null)el.textCo
 // SYNC PARAMÈTRES — ba_settings (Supabase)
 // ═══════════════════════════════════════════════════
 // Clés synchronisées (hors config car chicken-and-egg)
-var SYNC_SETTINGS_KEYS = ['ba_parcours_labels','ba_form_bilan','ba_form_tests','ba_offres_v8','ba_suite_opts','ba_phases_custom','ba_max_config','ba_parcours_duration','ba_offer_parcours_v1'];
+var SYNC_SETTINGS_KEYS = ['ba_parcours_labels','ba_form_bilan','ba_form_tests','ba_offres_v8','ba_phases_custom','ba_max_config','ba_parcours_duration','ba_offer_parcours_v1','ba_activ_continue_stage_defs'];
 
 async function saveSettingRemote(lsKey, value) {
   if (!ST.sbUrl || !ST.sbKey) return;
@@ -7447,7 +7486,7 @@ async function loadSettingsFromSupabase() {
       // Recharger les éléments UI qui dépendent des settings
       renderBilanForm();
       renderTestsForm();
-      if (document.getElementById('editor-parcours') && document.getElementById('editor-parcours').style.display !== 'none') { renderParcoursEditor(); renderSuitesEditor(); }
+      if (document.getElementById('editor-parcours') && document.getElementById('editor-parcours').style.display !== 'none') { renderParcoursEditor(); }
     }
   } catch(e) {}
 }
@@ -7461,12 +7500,14 @@ async function loadFromSupabase(){
       // Ignorer les enregistrements sans nom (prospects vides/incomplets)
       if(!row.prenom && !row.nom) return;
       let pq=null,bilan=null,final=null,bilanRaw=null,rdvHistory=null,sess=null,sessionCycles=null,importantDates=null,parcoursStarted=null,testsData=null,rapportLeger=null,modeStagesRemote=null;
-      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;rdvHistory=j.rdv_history||null;sess=j.session_tracking||null;if(Array.isArray(j.session_cycles))sessionCycles=j.session_cycles;if(j.important_dates&&typeof j.important_dates==='object')importantDates=j.important_dates;if(j.parcours_started_at) parcoursStarted=j.parcours_started_at;if(j.tests_data&&typeof j.tests_data==='object')testsData=j.tests_data;if(j.rapport_leger)rapportLeger=j.rapport_leger;if(Array.isArray(j.mode_stages))modeStagesRemote=j.mode_stages;}catch(e){}
+      var nextChoice=null;
+      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;rdvHistory=j.rdv_history||null;sess=j.session_tracking||null;if(Array.isArray(j.session_cycles))sessionCycles=j.session_cycles;if(j.important_dates&&typeof j.important_dates==='object')importantDates=j.important_dates;if(j.parcours_started_at) parcoursStarted=j.parcours_started_at;if(j.tests_data&&typeof j.tests_data==='object')testsData=j.tests_data;if(j.rapport_leger)rapportLeger=j.rapport_leger;if(Array.isArray(j.mode_stages))modeStagesRemote=j.mode_stages;if(j.parcours_next_choice)nextChoice=j.parcours_next_choice;}catch(e){}
       const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,rdv_history:rdvHistory,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offre,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,bilan_raw:bilanRaw,tests_data:testsData,rapport_leger:rapportLeger,updated_at:row.updated_at,groupId:row.group_id||null,group_name:row.group_name||null,is_group_leader:row.is_group_leader||false,sap_enabled:row.sap_enabled||false};
       if(parcoursStarted) sc.parcours_started_at = parcoursStarted;
       if(sessionCycles) sc.session_cycles = sessionCycles;
       if(importantDates) sc.important_dates = importantDates;
       if(modeStagesRemote) sc.mode_stages = modeStagesRemote;
+      if(nextChoice) sc.parcours_next_choice = nextChoice;
       if(sess){if(sess.seancesPrevues!=null)sc.seancesPrevues=sess.seancesPrevues;if(sess.seancesEffectuees!=null)sc.seancesEffectuees=sess.seancesEffectuees;if(sess.periodeDebut)sc.periodeDebut=sess.periodeDebut;if(sess.periodeFin)sc.periodeFin=sess.periodeFin;}
       const i=ST.clients.findIndex(c=>c.id===sc.id);
       if(i>=0){
@@ -7477,6 +7518,7 @@ async function loadFromSupabase(){
           if(prev.tests_data) sc.tests_data = prev.tests_data;
           if(prev.rapport_leger) sc.rapport_leger = prev.rapport_leger;
           if(prev.mode_stages && prev.mode_stages.length) sc.mode_stages = prev.mode_stages;
+          if(prev.parcours_next_choice != null && prev.parcours_next_choice !== '') sc.parcours_next_choice = prev.parcours_next_choice;
         }
         ST.clients[i]=sc;
       }else ST.clients.unshift(sc);
@@ -7520,87 +7562,12 @@ async function saveToSupabase(c){
       ? { seancesPrevues: cur.seancesPrevues != null ? cur.seancesPrevues : null, seancesEffectuees: cur.seancesEffectuees != null ? cur.seancesEffectuees : null, periodeDebut: cur.periodeDebut || null, periodeFin: cur.periodeFin || null }
       : { seancesPrevues: c.seancesPrevues != null ? c.seancesPrevues : null, seancesEffectuees: c.seancesEffectuees != null ? c.seancesEffectuees : null, periodeDebut: c.periodeDebut || null, periodeFin: c.periodeFin || null };
     var _sync = loadMaxConfig().sync;
-    var _rj = { pq:c.pq_summary, bilan:c.bilan_summary, final:c.final_report, bilan_raw:c.bilan_raw||null, rdv_history:c.rdv_history||null, session_tracking:legacySess, session_cycles:cycles, important_dates:c.important_dates||null, parcours_started_at:c.parcours_started_at||null };
+    var _rj = { pq:c.pq_summary, bilan:c.bilan_summary, final:c.final_report, bilan_raw:c.bilan_raw||null, rdv_history:c.rdv_history||null, session_tracking:legacySess, session_cycles:cycles, important_dates:c.important_dates||null, parcours_started_at:c.parcours_started_at||null, parcours_next_choice:c.parcours_next_choice||null };
     if (_sync.tests_data && c.tests_data && typeof c.tests_data === 'object') _rj.tests_data = c.tests_data;
     if (_sync.rapport_leger && c.rapport_leger) _rj.rapport_leger = c.rapport_leger;
     if (_sync.mode_stages && Array.isArray(c.mode_stages)) _rj.mode_stages = c.mode_stages;
     await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,name:(c.prenom+' '+c.nom).trim(),age:parseInt(c.age)||null,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offre:_offreLabel,montant:c.montant?parseFloat(c.montant):null,is_client:c.statut==='Closé',score_global:c.score_global,report_json:JSON.stringify(_rj),updated_at:c.updated_at,group_id:c.groupId||null,group_name:c.group_name||null,is_group_leader:c.is_group_leader||false})});
   }catch(e){}
-}
-
-function renderSuitesEditor() {
-  var el = document.getElementById('suites-editor-list');
-  if (!el) return;
-  var suites = loadSuiteOptions();
-  el.innerHTML = '';
-
-  var PHASES = {
-    reset: {bg:'var(--R-l)', color:'var(--R)'},
-    sculpt:{bg:'var(--Y-l)', color:'var(--Y)'},
-    health:{bg:'var(--G-l)', color:'var(--G)'},
-    cont:  {bg:'var(--B-l)', color:'var(--B)'},
-    'null':{bg:'var(--bg3)', color:'var(--tx3)'}
-  };
-
-  suites.forEach(function(s, i) {
-    var pk = s.phaseKey || 'null';
-    var ph = PHASES[pk] || PHASES['null'];
-
-    var card = document.createElement('div');
-    card.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;margin-bottom:8px;background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r3)';
-
-    var num = document.createElement('span');
-    num.style.cssText = 'width:22px;height:22px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--rim3);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--tx3);flex-shrink:0';
-    num.textContent = i + 1;
-    card.appendChild(num);
-
-    var icoInp = document.createElement('input');
-    icoInp.type = 'text';
-    icoInp.value = s.ico || '📌';
-    icoInp.style.cssText = 'width:46px;text-align:center;font-size:20px;padding:5px;border-radius:var(--r2);background:var(--bg3);border:1.5px solid var(--rim3);flex-shrink:0';
-    icoInp.title = 'Emoji / icône';
-    icoInp.onchange = function() { suites[i].ico = this.value; saveSuiteOptions(suites); };
-    card.appendChild(icoInp);
-
-    var lblInp = document.createElement('input');
-    lblInp.type = 'text';
-    lblInp.value = s.label;
-    lblInp.placeholder = 'Nom de la suite…';
-    lblInp.style.cssText = 'flex:1;min-width:120px;font-weight:600;font-size:13px';
-    lblInp.onchange = function() { suites[i].label = this.value; saveSuiteOptions(suites); };
-    card.appendChild(lblInp);
-
-    var phaseSel = document.createElement('select');
-    phaseSel.style.cssText = 'font-size:11px;font-weight:700;padding:4px 10px;border-radius:50px;border:1.5px solid '+ph.color+';background:'+ph.bg+';color:'+ph.color+';cursor:pointer;flex-shrink:0';
-    [{v:'reset',l:'🔴 Reset'},{v:'sculpt',l:'📗 Sculpt'},{v:'health',l:'🟢 Health'},{v:'cont',l:'♾️ Continue'},{v:'null',l:'🔀 Toutes phases'}].forEach(function(opt) {
-      var o = document.createElement('option');
-      o.value = opt.v;
-      o.textContent = opt.l;
-      if (pk === opt.v) o.selected = true;
-      phaseSel.appendChild(o);
-    });
-    phaseSel.onchange = function() {
-      suites[i].phaseKey = this.value === 'null' ? null : this.value;
-      saveSuiteOptions(suites);
-      renderSuitesEditor();
-    };
-    card.appendChild(phaseSel);
-
-    var btns = document.createElement('div');
-    btns.style.cssText = 'display:flex;gap:4px;flex-shrink:0';
-    [{t:'↑', fn:function(){if(i>0){var tmp=suites[i-1];suites[i-1]=suites[i];suites[i]=tmp;saveSuiteOptions(suites);renderSuitesEditor();}}},
-     {t:'↓', fn:function(){if(i<suites.length-1){var tmp=suites[i+1];suites[i+1]=suites[i];suites[i]=tmp;saveSuiteOptions(suites);renderSuitesEditor();}}},
-     {t:'✕', fn:function(){dlgConfirm('Supprimer cette suite ?','Supprimer').then(function(r){if(!r.confirmed)return;suites.splice(i,1);saveSuiteOptions(suites);renderSuitesEditor();});}}
-    ].forEach(function(item) {
-      var b = document.createElement('button');
-      b.className = 'ffe-btn';
-      b.textContent = item.t;
-      b.onclick = item.fn;
-      btns.appendChild(b);
-    });
-    card.appendChild(btns);
-    el.appendChild(card);
-  });
 }
 
 function renderSectionsEditor(formKey) {
@@ -7815,7 +7782,7 @@ function oePersistStages(offerId, stages, doToast) {
 }
 
 function oeResetOffer(offerId) {
-  dlgConfirm('Réinitialiser le parcours de cette offre sur le modèle par défaut du mode ? (durées par étape et suites seront effacées)', 'Réinitialiser').then(function(r) {
+  dlgConfirm('Réinitialiser le parcours de cette offre sur le modèle par défaut du mode ? (durées par étape effacées)', 'Réinitialiser').then(function(r) {
     if (!r.confirmed) return;
     var all = loadOfferParcoursAll();
     if (all[offerId]) {
@@ -7902,15 +7869,182 @@ function oeAddStageOffer(offerId) {
   oePersistStages(offerId, stages);
 }
 
-function oeToggleSuiteKey(offerId, suiteKey, checked) {
-  var all = loadOfferParcoursAll();
-  if (!all[offerId]) all[offerId] = {};
-  var arr = all[offerId].suiteKeys ? all[offerId].suiteKeys.slice() : [];
-  var ix = arr.indexOf(suiteKey);
-  if (checked && ix < 0) arr.push(suiteKey);
-  if (!checked && ix >= 0) arr.splice(ix, 1);
-  all[offerId].suiteKeys = arr;
-  saveOfferParcoursAll(all);
+/** Aperçu textuel d’un parcours offre (plusieurs blocs). */
+function buildParcoursPreviewHtml(stages) {
+  if (!stages || !stages.length) return '<span style="color:var(--tx4)">(vide)</span>';
+  var blocks = [];
+  stages.forEach(function(stage) {
+    var steps = (stage.steps || []).map(function(s) { return (s.lbl || s.id || ''); }).join(' → ');
+    blocks.push('<span style="font-size:12px;line-height:1.45;display:inline-block"><strong style="color:var(--tx2)">' + _escHtml(stage.lbl || '') + '</strong>'
+      + ' <span style="color:var(--tx4)">·</span> <span style="color:var(--tx3);font-weight:500">' + _escHtml(steps) + '</span></span>');
+  });
+  return blocks.join('<span style="display:block;height:4px"></span>');
+}
+
+function buildContinuePreviewHtml(ck) {
+  var obj = getContinueStageMerged(ck);
+  if (!obj) return '<span style="color:var(--tx4)">—</span>';
+  var steps = (obj.steps || []).map(function(s) { return (s.lbl || s.id || ''); }).join(' → ');
+  return '<span style="font-size:12px;line-height:1.45"><strong style="color:var(--tx2)">' + _escHtml(obj.lbl || ck) + '</strong>'
+    + ' <span style="color:var(--tx4)">·</span> <span style="color:var(--tx3);font-weight:500">' + _escHtml(steps) + '</span></span>';
+}
+
+function ocGetClone(ck) {
+  var m = getContinueStageMerged(ck);
+  return m ? JSON.parse(JSON.stringify(m)) : null;
+}
+function ocSaveSilent(ck, obj) {
+  var all = loadContinueStageDefs();
+  all[ck] = { id: obj.id, lbl: obj.lbl, ico: obj.ico, steps: JSON.parse(JSON.stringify(obj.steps)) };
+  saveContinueStageDefs(all);
+}
+function ocPersist(ck, obj, doToast) {
+  ocSaveSilent(ck, obj);
+  renderParcoursEditor();
+  if (doToast !== false) toast('ok', 'Enregistré');
+}
+function ocResetContinue(ck) {
+  dlgConfirm('Réinitialiser ce parcours (étapes et libellés) sur les valeurs d’origine ?', 'Réinitialiser').then(function(r) {
+    if (!r.confirmed) return;
+    var all = loadContinueStageDefs();
+    delete all[ck];
+    saveContinueStageDefs(all);
+    renderParcoursEditor();
+    toast('ok', 'Parcours réinitialisé');
+  });
+}
+function ocEditBlockLbl(ck, val) {
+  var o = ocGetClone(ck);
+  if (!o) return;
+  o.lbl = val;
+  ocSaveSilent(ck, o);
+}
+function ocEditIco(ck, val) {
+  var o = ocGetClone(ck);
+  if (!o) return;
+  o.ico = val;
+  ocSaveSilent(ck, o);
+}
+function ocEditStepLbl(ck, stepIdx, val) {
+  var o = ocGetClone(ck);
+  if (!o || !o.steps[stepIdx]) return;
+  o.steps[stepIdx].lbl = val;
+  ocSaveSilent(ck, o);
+}
+function ocStepDurChange(ck, stepIdx, durStr, unitStr) {
+  var o = ocGetClone(ck);
+  if (!o || !o.steps[stepIdx]) return;
+  o.steps[stepIdx].durVal = parseInt(durStr, 10) || 0;
+  o.steps[stepIdx].durUnit = unitStr || 'jours';
+  ocSaveSilent(ck, o);
+  toast('ok', 'Durée enregistrée');
+}
+function ocDeleteStep(ck, stepIdx) {
+  var o = ocGetClone(ck);
+  if (!o || !o.steps[stepIdx] || o.steps[stepIdx].isFinal) return;
+  o.steps.splice(stepIdx, 1);
+  ocPersist(ck, o);
+}
+function ocMoveStep(ck, stepIdx, dir) {
+  var o = ocGetClone(ck);
+  if (!o) return;
+  var ni = stepIdx + dir;
+  if (ni < 0 || ni >= o.steps.length) return;
+  var tmp = o.steps[stepIdx]; o.steps[stepIdx] = o.steps[ni]; o.steps[ni] = tmp;
+  ocSaveSilent(ck, o);
+  renderParcoursEditor();
+}
+function ocAddStep(ck) {
+  var lbl = prompt('Libellé de la nouvelle étape :');
+  if (!lbl || !lbl.trim()) return;
+  var o = ocGetClone(ck);
+  if (!o) return;
+  var finalIdx = -1;
+  for (var fi = 0; fi < o.steps.length; fi++) { if (o.steps[fi].isFinal) { finalIdx = fi; break; } }
+  var newStep = { id: 'custom_' + Date.now(), lbl: lbl.trim(), durVal: 0, durUnit: 'jours' };
+  if (finalIdx >= 0) o.steps.splice(finalIdx, 0, newStep); else o.steps.push(newStep);
+  ocPersist(ck, o);
+}
+
+/** HTML des étapes d’une offre (corps éditable). */
+function renderOfferStagesEditorHtml(oidEsc, stages) {
+  var html = '';
+  stages.forEach(function(stage) {
+    var sid = String(stage.id).replace(/'/g, "\\'");
+    html += '<div style="margin-bottom:10px;border:1px solid var(--rim3);border-radius:8px;padding:8px 10px">'
+      + '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">'
+      + '<span style="font-size:13px;flex-shrink:0">' + (stage.ico || '📌') + '</span>'
+      + _pcInpBold(stage.lbl, 'oeEditStageLblOffer(\'' + oidEsc + '\',\'' + sid + '\',this.value)')
+      + _pcDelBtn('oeDeleteStageOffer(\'' + oidEsc + '\',\'' + sid + '\')')
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:6px;padding-left:8px">';
+
+    stage.steps.forEach(function(s, si) {
+      var canDel = !s.isFinal && stage.steps.length > 1;
+      var dVal = (s.durVal != null && s.durVal > 0) ? String(s.durVal) : '';
+      var uVal = (s.durUnit || 'jours');
+      var isSem = (String(uVal).toLowerCase().indexOf('sem') !== -1);
+      var selJ = !isSem ? ' selected' : '';
+      var selS = isSem ? ' selected' : '';
+      html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px;padding:8px 0;border-bottom:1px dashed var(--rim3)">'
+        + '<span style="font-size:11px;color:var(--tx4);flex-shrink:0;width:18px">' + (s.isFinal ? '✅' : '→') + '</span>'
+        + _pcInp(s.lbl, 'oeEditStepLblOffer(\'' + oidEsc + '\',\'' + sid + '\',' + si + ',this.value)')
+        + '<span style="font-size:10px;color:var(--tx4);white-space:nowrap">max</span>'
+        + '<input type="number" min="0" step="1" value="' + _escHtml(dVal) + '" placeholder="—" style="width:56px;flex-shrink:0;padding:6px 8px;border-radius:6px;border:1px solid var(--rim3);font-size:12px;background:var(--bg3);color:var(--tx)" title="Délai après l’étape précédente (alertes)" onchange="oeStepDurChange(\'' + oidEsc + '\',\'' + sid + '\',' + si + ',this.value,this.nextElementSibling.value)">'
+        + '<select style="flex-shrink:0;padding:6px 8px;border-radius:6px;border:1px solid var(--rim3);font-size:11px;background:var(--bg3);color:var(--tx)" onchange="oeStepDurChange(\'' + oidEsc + '\',\'' + sid + '\',' + si + ',this.previousElementSibling.value,this.value)">'
+        + '<option value="jours"' + selJ + '>jours</option>'
+        + '<option value="semaines"' + selS + '>semaines</option>'
+        + '</select>'
+        + (si > 0 && !s.isFinal ? '<button type="button" onclick="oeMoveStepOffer(\'' + oidEsc + '\',\'' + sid + '\',' + si + ',-1)" style="flex-shrink:0;background:none;border:none;color:var(--tx4);font-size:12px;cursor:pointer;padding:2px 3px" title="Monter">↑</button>' : '<span style="width:18px;flex-shrink:0"></span>')
+        + (canDel ? _pcDelBtn('oeDeleteStepOffer(\'' + oidEsc + '\',\'' + sid + '\',' + si + ')') : '<span style="width:22px;flex-shrink:0"></span>')
+        + '</div>';
+    });
+
+    html += '</div>'
+      + '<button type="button" onclick="oeAddStepOffer(\'' + oidEsc + '\',\'' + sid + '\')" style="margin-top:6px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px dashed var(--bx);background:none;color:var(--bx);cursor:pointer;width:100%">＋ Ajouter une étape</button>'
+      + '</div>';
+  });
+  return html;
+}
+
+/** HTML édition d’un parcours ACTIV CONTINUE (RESET / SCULPT / HEALTH). */
+function renderContinueEditorHtml(ck) {
+  var cks = String(ck).replace(/'/g, "\\'");
+  var o = ocGetClone(ck);
+  if (!o) return '';
+  var icoVal = (o.ico || '').replace(/"/g, '&quot;');
+  var html = ''
+    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">'
+    + '<input type="text" value="' + icoVal + '" placeholder="Icône" style="width:52px;font-size:13px;padding:6px 8px;border-radius:6px;border:1px solid var(--rim3);background:var(--bg3);color:var(--tx)" title="Emoji" onchange="ocEditIco(\'' + cks + '\',this.value)">'
+    + _pcInpBold(o.lbl, 'ocEditBlockLbl(\'' + cks + '\',this.value)')
+    + '</div>'
+    + '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin:4px 0 8px">Étapes du parcours</div>'
+    + '<div style="display:flex;flex-direction:column;gap:6px;padding-left:4px">';
+
+  o.steps.forEach(function(s, si) {
+    var canDel = !s.isFinal && o.steps.length > 1;
+    var dVal = (s.durVal != null && s.durVal > 0) ? String(s.durVal) : '';
+    var uVal = (s.durUnit || 'jours');
+    var isSem = (String(uVal).toLowerCase().indexOf('sem') !== -1);
+    var selJ = !isSem ? ' selected' : '';
+    var selS = isSem ? ' selected' : '';
+    html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px;padding:8px 0;border-bottom:1px dashed var(--rim3)">'
+      + '<span style="font-size:11px;color:var(--tx4);flex-shrink:0;width:18px">' + (s.isFinal ? '✅' : '→') + '</span>'
+      + _pcInp(s.lbl, 'ocEditStepLbl(\'' + cks + '\',' + si + ',this.value)')
+      + '<span style="font-size:10px;color:var(--tx4);white-space:nowrap">max</span>'
+      + '<input type="number" min="0" step="1" value="' + _escHtml(dVal) + '" placeholder="—" style="width:56px;flex-shrink:0;padding:6px 8px;border-radius:6px;border:1px solid var(--rim3);font-size:12px;background:var(--bg3);color:var(--tx)" onchange="ocStepDurChange(\'' + cks + '\',' + si + ',this.value,this.nextElementSibling.value)">'
+      + '<select style="flex-shrink:0;padding:6px 8px;border-radius:6px;border:1px solid var(--rim3);font-size:11px;background:var(--bg3);color:var(--tx)" onchange="ocStepDurChange(\'' + cks + '\',' + si + ',this.previousElementSibling.value,this.value)">'
+      + '<option value="jours"' + selJ + '>jours</option>'
+      + '<option value="semaines"' + selS + '>semaines</option>'
+      + '</select>'
+      + (si > 0 && !s.isFinal ? '<button type="button" onclick="ocMoveStep(\'' + cks + '\',' + si + ',-1)" style="flex-shrink:0;background:none;border:none;color:var(--tx4);font-size:12px;cursor:pointer;padding:2px 3px" title="Monter">↑</button>' : '<span style="width:18px;flex-shrink:0"></span>')
+      + (canDel ? _pcDelBtn('ocDeleteStep(\'' + cks + '\',' + si + ')') : '<span style="width:22px;flex-shrink:0"></span>')
+      + '</div>';
+  });
+
+  html += '</div>'
+    + '<button type="button" onclick="ocAddStep(\'' + cks + '\')" style="margin-top:6px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px dashed var(--bx);background:none;color:var(--bx);cursor:pointer;width:100%">＋ Ajouter une étape</button>';
+  return html;
 }
 
 function renderParcoursEditor() {
@@ -7926,6 +8060,12 @@ function renderParcoursEditor() {
     if (!byMode[mk]) byMode[mk] = [];
     byMode[mk].push(o);
   });
+  var hasActivContinueProduct = offres.some(isGenericActivContinueOffer);
+  var continueKeys = [
+    { ck: 'reset', sub: 'RESET' },
+    { ck: 'sculpt', sub: 'SCULPT' },
+    { ck: 'health', sub: 'HEALTH' }
+  ];
 
   var html = '';
 
@@ -7940,7 +8080,34 @@ function renderParcoursEditor() {
   });
   html += '</div></div>';
 
-  html += '<p style="font-size:12px;color:var(--tx3);margin:0 0 14px;line-height:1.5">Pour chaque offre : d’abord <strong>ce que vous proposez quand le parcours est fini</strong>, puis les <strong>étapes</strong> et leurs délais (alertes). En bas de page : le catalogue des propositions (libellés).</p>';
+  html += '<p style="font-size:12px;color:var(--tx3);margin:0 0 14px;line-height:1.5">Aperçu repliable par offre : ouvrez une carte pour modifier délais et libellés. Les <strong>parcours suite</strong> ACTIV CONTINUE (RESET · SCULPT · HEALTH) sont les chemins proposés dans la liste « prochain parcours » sur la fiche client. L’orientation se règle là-bas.</p>';
+
+  if (hasActivContinueProduct) {
+    html += '<div style="margin:16px 0 10px;font-weight:800;font-size:12px;color:var(--V);text-transform:uppercase;letter-spacing:.6px">♾️ ACTIV CONTINUE — parcours suite (3 chemins)</div>'
+      + '<p style="font-size:11px;color:var(--tx4);margin:-6px 0 12px;line-height:1.45">Ce ne sont pas trois offres catalogue : ce sont trois <strong>parcours</strong> rattachés au produit ACTIV CONTINUE. Le parcours <em>principal</em> de l’offre s’édite dans la section de mode ci-dessous.</p>';
+    continueKeys.forEach(function(row) {
+      var ck = row.ck;
+      var cks = ck.replace(/'/g, "\\'");
+      var cust = loadContinueStageDefs()[ck];
+      var hasCustom = !!cust;
+      var preview = buildContinuePreviewHtml(ck);
+      html += '<details style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);margin-bottom:10px">'
+        + '<summary style="cursor:pointer;padding:12px 14px;list-style:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px">'
+        + '<div style="flex:1;min-width:220px">'
+        + '<div style="font-weight:700;font-size:14px;color:var(--tx)">' + _escHtml(row.sub) + ' <span style="font-size:11px;font-weight:600;color:var(--tx4)">parcours suite</span></div>'
+        + '<div style="margin-top:6px">' + preview + '</div>'
+        + '<div style="font-size:10px;color:var(--tx4);margin-top:6px">' + (hasCustom ? 'Personnalisé' : 'Modèle par défaut') + '</div></div>'
+        + '<span style="font-size:11px;color:var(--bx);white-space:nowrap">▼ Modifier</span>'
+        + '</summary>'
+        + '<div style="padding:0 14px 14px;border-top:1px solid var(--rim3)">'
+        + '<div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:10px;padding-top:10px">'
+        + '<button type="button" onclick="ocResetContinue(\'' + cks + '\')" style="font-size:10px;padding:4px 8px;border-radius:4px;border:1px solid var(--rim2);background:var(--bg3);color:var(--tx3);cursor:pointer">↩ Réinit.</button>'
+        + '</div>'
+        + renderContinueEditorHtml(ck)
+        + '</div>'
+        + '</details>';
+    });
+  }
 
   modeOrder.forEach(function(mk) {
     var list = byMode[mk];
@@ -7951,71 +8118,31 @@ function renderParcoursEditor() {
       var stages = oeGetStagesClone(off.id);
       var cfg = loadOfferParcoursAll()[off.id] || {};
       var hasCustom = !!(cfg.stages && cfg.stages.length);
-      var suiteCat = loadSuiteOptions();
+      var preview = buildParcoursPreviewHtml(stages);
+      var acNote = isGenericActivContinueOffer(off)
+        ? '<div style="font-size:11px;color:var(--tx4);margin-top:6px;line-height:1.45">Parcours principal du produit ; les suites RESET / SCULPT / HEALTH sont dans la section ♾️ ci-dessus.</div>'
+        : '';
 
-      html += '<div style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:12px 14px;margin-bottom:12px">'
-        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px">'
-        + '<div><div style="font-weight:700;font-size:15px;color:var(--tx)">' + _escHtml(off.name) + '</div>'
-        + '<div style="font-size:11px;color:var(--tx4);margin-top:4px">' + (hasCustom ? 'Parcours adapté pour cette offre' : 'Identique au modèle du mode jusqu’à modification') + '</div></div>'
+      html += '<details style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);margin-bottom:12px">'
+        + '<summary style="cursor:pointer;padding:12px 14px;list-style:none;display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px">'
+        + '<div style="flex:1;min-width:220px">'
+        + '<div style="font-weight:700;font-size:15px;color:var(--tx)">' + _escHtml(off.name) + '</div>'
+        + '<div style="font-size:11px;color:var(--tx4);margin-top:4px">' + (hasCustom ? 'Parcours adapté pour cette offre' : 'Identique au modèle du mode jusqu’à modification') + '</div>'
+        + acNote
+        + '<div style="margin-top:10px;line-height:1.5">' + preview + '</div></div>'
+        + '<span style="font-size:11px;color:var(--bx);white-space:nowrap;align-self:center">▼ Modifier</span>'
+        + '</summary>'
+        + '<div style="padding:0 14px 14px;border-top:1px solid var(--rim3)">'
+        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px;padding-top:10px;flex-wrap:wrap">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px">Édition du parcours</div>'
         + '<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end">'
         + '<button type="button" onclick="oeResetOffer(\'' + oid + '\')" style="font-size:10px;padding:4px 8px;border-radius:4px;border:1px solid var(--rim2);background:var(--bg3);color:var(--tx3);cursor:pointer">↩ Réinit.</button>'
         + '<button type="button" onclick="oeAddStageOffer(\'' + oid + '\')" style="font-size:10px;padding:4px 8px;border-radius:4px;border:1px solid var(--bx);background:none;color:var(--bx);cursor:pointer">＋ Bloc</button>'
-        + '</div></div>';
-
-      html += '<div style="margin-bottom:14px;padding:12px;background:linear-gradient(135deg,rgba(26,110,219,.08),transparent);border:1px solid rgba(26,110,219,.25);border-radius:var(--r2)">'
-        + '<div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Quand ce parcours est terminé, que proposez-vous ?</div>'
-        + '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.45">Cochez les propositions qui auront du sens pour ce client. Rien de coché = l’app garde ses boutons par défaut.</div>'
-        + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">';
-      var selKeys = cfg.suiteKeys || [];
-      suiteCat.forEach(function(su) {
-        var ck = selKeys.indexOf(su.key) >= 0 ? ' checked' : '';
-        var sk = String(su.key).replace(/'/g, "\\'");
-        html += '<label style="display:flex;align-items:center;gap:10px;margin:0;padding:10px 12px;background:var(--bg2);border:1px solid var(--rim3);border-radius:10px;cursor:pointer;font-size:13px;color:var(--tx);line-height:1.35;box-sizing:border-box">'
-          + '<input type="checkbox"' + ck + ' onchange="oeToggleSuiteKey(\'' + oid + '\',\'' + sk + '\',this.checked)" style="width:18px;height:18px;margin:0;flex-shrink:0;accent-color:var(--bx);cursor:pointer">'
-          + '<span style="flex:1;min-width:0;word-break:break-word">' + su.ico + ' ' + _escHtml(su.label) + '</span>'
-          + '</label>';
-      });
-      html += '</div></div>';
-
-      html += '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin:4px 0 8px">Étapes du parcours</div>';
-
-      stages.forEach(function(stage) {
-        var sid = String(stage.id).replace(/'/g, "\\'");
-        html += '<div style="margin-bottom:10px;border:1px solid var(--rim3);border-radius:8px;padding:8px 10px">'
-          + '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">'
-          + '<span style="font-size:13px;flex-shrink:0">' + (stage.ico || '📌') + '</span>'
-          + _pcInpBold(stage.lbl, 'oeEditStageLblOffer(\'' + oid + '\',\'' + sid + '\',this.value)')
-          + _pcDelBtn('oeDeleteStageOffer(\'' + oid + '\',\'' + sid + '\')')
-          + '</div>'
-          + '<div style="display:flex;flex-direction:column;gap:6px;padding-left:8px">';
-
-        stage.steps.forEach(function(s, si) {
-          var canDel = !s.isFinal && stage.steps.length > 1;
-          var dVal = (s.durVal != null && s.durVal > 0) ? String(s.durVal) : '';
-          var uVal = (s.durUnit || 'jours');
-          var isSem = (String(uVal).toLowerCase().indexOf('sem') !== -1);
-          var selJ = !isSem ? ' selected' : '';
-          var selS = isSem ? ' selected' : '';
-          html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px;padding:8px 0;border-bottom:1px dashed var(--rim3)">'
-            + '<span style="font-size:11px;color:var(--tx4);flex-shrink:0;width:18px">' + (s.isFinal ? '✅' : '→') + '</span>'
-            + _pcInp(s.lbl, 'oeEditStepLblOffer(\'' + oid + '\',\'' + sid + '\',' + si + ',this.value)')
-            + '<span style="font-size:10px;color:var(--tx4);white-space:nowrap">max</span>'
-            + '<input type="number" min="0" step="1" value="' + _escHtml(dVal) + '" placeholder="—" style="width:56px;flex-shrink:0;padding:6px 8px;border-radius:6px;border:1px solid var(--rim3);font-size:12px;background:var(--bg3);color:var(--tx)" title="Délai après l’étape précédente (alertes)" onchange="oeStepDurChange(\'' + oid + '\',\'' + sid + '\',' + si + ',this.value,this.nextElementSibling.value)">'
-            + '<select style="flex-shrink:0;padding:6px 8px;border-radius:6px;border:1px solid var(--rim3);font-size:11px;background:var(--bg3);color:var(--tx)" onchange="oeStepDurChange(\'' + oid + '\',\'' + sid + '\',' + si + ',this.previousElementSibling.value,this.value)">'
-            + '<option value="jours"' + selJ + '>jours</option>'
-            + '<option value="semaines"' + selS + '>semaines</option>'
-            + '</select>'
-            + (si > 0 && !s.isFinal ? '<button type="button" onclick="oeMoveStepOffer(\'' + oid + '\',\'' + sid + '\',' + si + ',-1)" style="flex-shrink:0;background:none;border:none;color:var(--tx4);font-size:12px;cursor:pointer;padding:2px 3px" title="Monter">↑</button>' : '<span style="width:18px;flex-shrink:0"></span>')
-            + (canDel ? _pcDelBtn('oeDeleteStepOffer(\'' + oid + '\',\'' + sid + '\',' + si + ')') : '<span style="width:22px;flex-shrink:0"></span>')
-            + '</div>';
-        });
-
-        html += '</div>'
-          + '<button type="button" onclick="oeAddStepOffer(\'' + oid + '\',\'' + sid + '\')" style="margin-top:6px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px dashed var(--bx);background:none;color:var(--bx);cursor:pointer;width:100%">＋ Ajouter une étape</button>'
-          + '</div>';
-      });
-
-      html += '</div>';
+        + '</div></div>'
+        + '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin:4px 0 8px">Étapes du parcours</div>'
+        + renderOfferStagesEditorHtml(oid, stages)
+        + '</div>'
+        + '</details>';
     });
   });
 
@@ -8035,7 +8162,7 @@ function switchEditor(tab, chip) {
   });
   if(tab==='bilan') renderSectionsEditor('bilan');
   if(tab==='tests') renderSectionsEditor('tests');
-  if(tab==='parcours') { renderParcoursEditor(); renderSuitesEditor(); }
+  if(tab==='parcours') { renderParcoursEditor(); }
 }
 
 function skipPQ() {
@@ -8181,41 +8308,6 @@ function previewForm(formKey) {
   }
   openModal('preview');
 }
-
-function addSuiteOption() {
-  showDialog({
-    title: '＋ Nouvelle suite',
-    inputs: [
-      {id:'ico',   label:'Emoji',       type:'text',   value:'📌', placeholder:'📌'},
-      {id:'label', label:'Libellé',     type:'text',   placeholder:'Ex: ACTIV PROGRAM'},
-      {id:'phase', label:'Phase cible', type:'select', value:'reset',
-       options:['reset|Phase Reset','sculpt|Phase Sculpt','health|Phase Health','cont|ACTIV CONTINUE','null|Libre (toutes)']}
-    ],
-    confirmLabel: 'Ajouter'
-  }).then(function(r) {
-    if (!r.confirmed || !r.values.label.trim()) return;
-    var suites = loadSuiteOptions();
-    suites.push({
-      key: 'custom_'+Date.now(),
-      ico: r.values.ico || '📌',
-      label: r.values.label.trim(),
-      phaseKey: r.values.phase === 'null' ? null : r.values.phase
-    });
-    saveSuiteOptions(suites);
-    renderSuitesEditor();
-    toast('ok', 'Suite ajoutée');
-  });
-}
-
-function resetSuiteOptions() {
-  dlgConfirm('Réinitialiser les suites ?','Réinitialiser').then(function(r) {
-    if (!r.confirmed) return;
-    localStorage.removeItem('ba_suite_opts');
-    renderSuitesEditor();
-    toast('ok', 'Suites réinitialisées');
-  });
-}
-
 
 function toggleMore() {
   const m = document.getElementById('nav-more');
