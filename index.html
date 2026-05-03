@@ -1234,14 +1234,14 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
   <div id="editor-parcours" style="display:none">
     <div style="background:linear-gradient(135deg,rgba(139,21,32,.06),rgba(26,110,219,.05));border:1.5px solid var(--rim3);border-radius:var(--r3);padding:14px 16px;margin-bottom:16px">
-      <div style="font-weight:800;font-size:14px;color:var(--tx);margin-bottom:8px">🗺️ Parcours client &amp; suites après certification</div>
-      <div style="font-size:12.5px;color:var(--tx2);line-height:1.65"><strong>Étapes du programme</strong> par <em>mode d’offre</em> (le parcours commence par ONBOARDING / DÉMARRAGE selon le mode — le diagnostique est facultatif, depuis la fiche ou l’atelier). <strong>Suites</strong> : continuations après certification. Pour chaque mode : champ <strong>durée indicative</strong> affiché sur la fiche client.</div>
+      <div style="font-weight:800;font-size:14px;color:var(--tx);margin-bottom:8px">🗺️ Parcours par offre &amp; suites</div>
+      <div style="font-size:12.5px;color:var(--tx2);line-height:1.65">Chaque <strong>offre avec parcours</strong> a sa carte : ordre des blocs et des étapes, <strong>délai</strong> par étape (jours ou semaines) pour le suivi et les <strong>alertes</strong> d’accueil, et en bas de carte les <strong>suites</strong> proposées quand le cycle est terminé. La durée « macro » du programme (ex. reset 12 sem.) reste celle du produit ; ici vous cadencez le réel étape par étape.</div>
     </div>
-    <p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Les étapes affichées chez le client suivent le <strong>mode de l’offre</strong> (Action / Transformation / Essentiel / Collectif). La <strong>signature</strong> reste la porte d’entrée commune.</p>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Vue groupée par famille (Action, Transformation, Essentiel, Collectif). La <strong>signature</strong> reste commune ; le catalogue des libellés de suites est sous la liste des offres.</p>
     <div id="parcours-modes-view"></div>
     <div style="margin:22px 0 12px;padding-top:16px;border-top:2px dashed var(--rim3)">
-      <div style="font-weight:800;font-size:13px;color:var(--bx);margin-bottom:8px">🔀 Suites proposées après certification</div>
-      <div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Options affichées quand un client <strong>termine un cycle</strong> — ordre, libellé et phase cible.</div>
+      <div style="font-weight:800;font-size:13px;color:var(--bx);margin-bottom:8px">📚 Catalogue des suites</div>
+      <div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Définissez ici les <strong>suites possibles</strong> (nom, icône, phase). Vous les activez ensuite <strong>par offre</strong> dans chaque carte ci-dessus ; sans coches sur une offre, l’app garde les boutons par défaut (ex. les trois CONTINUE après GO ACTIV).</div>
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
         <button class="btn btn-bx btn-sm" onclick="addSuiteOption()">＋ Ajouter une suite</button>
         <button class="btn btn-dk btn-sm" onclick="resetSuiteOptions()">↩ Réinitialiser</button>
@@ -2901,8 +2901,25 @@ const OFFRES_DEFAULT = [
   {id:'o8', name:'CARDIO MOUV PACK 10',   price:130, durVal:10,durUnit:'séances', paiement:1,test:'none',parcours:true, alaCarte:false,modeOffre:'collectif',offer_type:'session'},
   {id:'o11',name:'ACTIV TRAINING',        price:10,  durVal:1, durUnit:'séance',  paiement:1,test:'none',parcours:false,alaCarte:true, modeOffre:'collectif',offer_type:'session'}
 ];
+/** Offres retirées du catalogue Business (ex. JM PASS+) — masquées même si encore en base ou cache local. */
+function pruneRetiredOffresFromCatalog(arr) {
+  return arr.filter(function(o) {
+    var nm = String(o.name || '').toUpperCase().replace(/\s+/g, ' ').trim();
+    if (/\bJM\s*PASS\s*\+/.test(nm)) return false;
+    if (nm.indexOf('JM PASS COACHING +') !== -1) return false;
+    return true;
+  });
+}
 function loadOffres() {
-  try { const s=localStorage.getItem('ba_offres_v8'); if(s) return JSON.parse(s); } catch(e){}
+  try {
+    var s = localStorage.getItem('ba_offres_v8');
+    if (s) {
+      var parsed = JSON.parse(s);
+      var pruned = pruneRetiredOffresFromCatalog(parsed);
+      if (pruned.length !== parsed.length) saveOffres(pruned);
+      return pruned;
+    }
+  } catch (e) {}
   return OFFRES_DEFAULT.map(function(o){return Object.assign({},o);});
 }
 function saveOffres(arr) { localStorage.setItem('ba_offres_v8', JSON.stringify(arr)); saveSettingRemote('ba_offres_v8', arr); }
@@ -3895,6 +3912,55 @@ function _buildHomeAlerts() {
         if (_homeAlertShouldShow(am, snoozeMap, todayIso)) alerts.push(am);
       }
     }
+  });
+
+  // 3b) Étapes parcours — dépassement délai (durée par étape, une fois l’étape « en cours »)
+  ST.clients.forEach(function(c) {
+    if (!c || !c.sig_offre_id || !c.mode_stages) return;
+    if (c.statut === 'Ancien Client') return;
+    var stagesDef = getActiveStageDefs(c);
+    if (!stagesDef || !stagesDef.length) return;
+    var anchorStart = c.parcours_started_at ? new Date(c.parcours_started_at).getTime() : null;
+    stagesDef.forEach(function(stageDef, si) {
+      if (!stageDef.steps || String(stageDef._mode || '').indexOf('continue_') === 0) return;
+      var stageData = c.mode_stages[si];
+      if (!stageData || !stageData.steps) return;
+      stageDef.steps.forEach(function(step, stepIdx) {
+        var msDur = stepDurationToMs(step);
+        if (msDur <= 0) return;
+        var st = stageData.steps[stepIdx];
+        if (st && st.done) return;
+        var prevT = null;
+        if (stepIdx > 0) {
+          var p = stageData.steps[stepIdx - 1];
+          if (!p || !p.done || !p.doneAt) return;
+          prevT = new Date(p.doneAt).getTime();
+        } else if (si > 0) {
+          var ps = c.mode_stages[si - 1];
+          if (!ps || !ps.steps || !ps.steps.length) return;
+          var last = ps.steps[ps.steps.length - 1];
+          if (!last || !last.done || !last.doneAt) return;
+          prevT = new Date(last.doneAt).getTime();
+        } else {
+          if (!anchorStart) return;
+          prevT = anchorStart;
+        }
+        var due = prevT + msDur;
+        if (Date.now() <= due) return;
+        var daysLate = Math.ceil((Date.now() - due) / (24 * 3600 * 1000));
+        var k = 'stepdue:' + c.id + ':' + si + ':' + stepIdx + ':' + step.id;
+        var offN = _offerForClient(c);
+        var a = {
+          key: k,
+          priority: 3,
+          dueDate: new Date(due).toISOString().slice(0, 10),
+          clientId: c.id,
+          title: '⏰ Étape « ' + (step.lbl || step.id) + ' » — ' + _clientName(c),
+          meta: (offN && offN.name ? offN.name + ' · ' : '') + 'dépassement ~' + daysLate + ' j · délai ' + String(step.durVal) + ' ' + String(step.durUnit || 'jours')
+        };
+        if (_homeAlertShouldShow(a, snoozeMap, todayIso)) alerts.push(a);
+      });
+    });
   });
 
   // 4) Fin de programme (info utile) — pas pour offres one-shot / à la carte
@@ -5855,27 +5921,90 @@ function getParcoursDurationLabel(modeKey) {
   return ' · durée indicative : ' + String(d.weeks).trim();
 }
 
-function getActiveStageDefs(c) {
-  var mode = null, offreName = '';
-  if (c.sig_offre_id) {
-    var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
-    if (o) { mode = o.modeOffre; offreName = (o.name||'').toUpperCase(); }
-  }
-  if (!mode && c.phaseRuns && c.phaseRuns[0] && c.phaseRuns[0].offreId) {
-    var o2 = loadOffres().find(function(x){return x.id===c.phaseRuns[0].offreId;});
-    if (o2) { mode = o2.modeOffre; offreName = (o2.name||'').toUpperCase(); }
-  }
-  if (!mode) {
-    var oR = resolveOffreForClient(c);
-    if (oR) { mode = oR.modeOffre; offreName = (oR.name || '').toUpperCase(); }
-  }
-  var modeKey = mode || 'action';
-  // ACTIV PROGRAM ESSENTIEL → parcours spécifique
+// ─── Parcours configurable par offre (étapes + durées par étape + suites proposées) ───
+var BA_OFFER_PARCOURS_KEY = 'ba_offer_parcours_v1';
+function loadOfferParcoursAll() {
+  try { var s = localStorage.getItem(BA_OFFER_PARCOURS_KEY); if (s) return JSON.parse(s); } catch (e) {}
+  return {};
+}
+function saveOfferParcoursAll(obj) {
+  try {
+    localStorage.setItem(BA_OFFER_PARCOURS_KEY, JSON.stringify(obj));
+    saveSettingRemote(BA_OFFER_PARCOURS_KEY, obj);
+  } catch (e) {}
+}
+
+function resolveModeKeyFromOffreObj(o) {
+  if (!o) return 'action';
+  var modeKey = o.modeOffre || 'action';
+  var offreName = (o.name || '').toUpperCase();
   if (modeKey === 'transformation' && (offreName.indexOf('ESSENTIEL') > -1 || offreName.indexOf("PROGRAM'") > -1 || offreName.indexOf('PROGRAM ') > -1)) {
     modeKey = 'essentiel';
   }
-  var baseDefs = getStageDefsForMode(modeKey).map(function(s){return Object.assign({},s,{_mode:modeKey});});
-  var continueDefs = (c.activ_continue_stages || []).map(function(ck){var s=ACTIV_CONTINUE_STAGES[ck];return s?Object.assign({},s,{_mode:'continue_'+ck}):null;}).filter(Boolean);
+  return modeKey;
+}
+
+/** Étapes de base (sans blocs ACTIV CONTINUE) pour une offre : JSON coach ou défaut du mode. */
+function getMergedBaseStagesForOfferId(offerId, modeKeyHint) {
+  var off = loadOffres().find(function(x) { return x.id === offerId; });
+  var modeKey = modeKeyHint != null ? modeKeyHint : (off ? resolveModeKeyFromOffreObj(off) : 'action');
+  var defaults = getStageDefsForMode(modeKey).map(function(s) {
+    return Object.assign({}, s, { _mode: modeKey });
+  });
+  var cfg = loadOfferParcoursAll()[offerId];
+  if (!cfg || !cfg.stages || !cfg.stages.length) return defaults;
+  return cfg.stages.map(function(s) {
+    return Object.assign({}, s, { _mode: s._mode || modeKey });
+  });
+}
+
+/** Suites cochées pour une offre ; null = comportement historique (boutons codés en dur où besoin). */
+function getSuiteKeysForOfferResolved(offerId) {
+  var cfg = loadOfferParcoursAll()[offerId];
+  if (cfg && Array.isArray(cfg.suiteKeys) && cfg.suiteKeys.length) return cfg.suiteKeys;
+  return null;
+}
+
+function stepDurationToMs(step) {
+  if (!step || !step.durVal || step.durVal <= 0) return 0;
+  var u = (step.durUnit || 'jours').toLowerCase();
+  var n = Number(step.durVal) || 0;
+  if (u === 'semaines' || u.indexOf('sem') !== -1) return n * 7 * 24 * 3600 * 1000;
+  return n * 24 * 3600 * 1000;
+}
+
+function runSuiteKeyAction(clientId, suiteKey) {
+  switch (suiteKey) {
+    case 'activ_continue_reset': addActivContinue(clientId, 'reset'); return;
+    case 'activ_continue_sculpt': addActivContinue(clientId, 'sculpt'); return;
+    case 'activ_continue_health': addActivContinue(clientId, 'health'); return;
+    default: openNewOffreForClient(clientId);
+  }
+}
+
+function getActiveStageDefs(c) {
+  var oid = null;
+  var oResolved = null;
+  if (c.sig_offre_id) {
+    oResolved = loadOffres().find(function(x) { return x.id === c.sig_offre_id; });
+    if (oResolved) oid = oResolved.id;
+  }
+  if (!oid && c.phaseRuns && c.phaseRuns[0] && c.phaseRuns[0].offreId) {
+    oResolved = loadOffres().find(function(x) { return x.id === c.phaseRuns[0].offreId; });
+    if (oResolved) oid = oResolved.id;
+  }
+  if (!oid) {
+    oResolved = resolveOffreForClient(c);
+    if (oResolved) oid = oResolved.id;
+  }
+  var modeKey = oResolved ? resolveModeKeyFromOffreObj(oResolved) : 'action';
+  var baseDefs = oid
+    ? getMergedBaseStagesForOfferId(oid, modeKey)
+    : getStageDefsForMode(modeKey).map(function(s) { return Object.assign({}, s, { _mode: modeKey }); });
+  var continueDefs = (c.activ_continue_stages || []).map(function(ck) {
+    var s = ACTIV_CONTINUE_STAGES[ck];
+    return s ? Object.assign({}, s, { _mode: 'continue_' + ck }) : null;
+  }).filter(Boolean);
   return baseDefs.concat(continueDefs);
 }
 
@@ -5892,10 +6021,8 @@ function renderModeStages(clientId, c, container) {
   var activeStageIdx = lastDoneStage + 1;
   if (activeStageIdx >= stagesDef.length) activeStageIdx = stagesDef.length - 1;
 
-  var _pm0 = stagesDef[0] && stagesDef[0]._mode ? stagesDef[0]._mode : 'action';
-  var _durHead = getParcoursDurationLabel(_pm0);
   var stagesWrap = document.createElement('div'); stagesWrap.className = 'cm-stages';
-  stagesWrap.innerHTML = '<div class="cm-stages-h">Parcours'+_durHead+'</div>'
+  stagesWrap.innerHTML = '<div class="cm-stages-h">Parcours</div>'
     + (c.parcours_started_at ? '<div style="font-size:11px;color:var(--tx3);margin:-6px 0 10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--rim3)">🚀 Parcours coaching démarré le <strong>' + String(c.parcours_started_at).slice(0, 10) + '</strong> (validation GO / DÉMARRAGE).</div>' : '<div style="font-size:11px;color:var(--tx4);margin:-6px 0 10px">Le bloc <strong>DÉMARRAGE</strong> ou <strong>GO</strong> enregistre la date de début après signature &amp; paiement.</div>');
   container.appendChild(stagesWrap);
 
@@ -5943,7 +6070,11 @@ function renderModeStages(clientId, c, container) {
         chk.className = 'cm-step-check' + (st.done?' done':isLocked?' locked':'');
         var lbl = document.createElement('div');
         lbl.className = 'cm-step-lbl' + (st.done?' done':isLocked?' locked':'');
-        lbl.innerHTML = getPLbl('step_'+_stageM+'_'+stageDef.id+'_'+step.id+'_'+stepIdx, step.lbl);
+        var durHint = '';
+        if (step.durVal && Number(step.durVal) > 0 && step.durUnit) {
+          durHint = ' <span style="font-size:10px;font-weight:500;color:var(--tx4)">· ' + String(step.durVal) + ' ' + String(step.durUnit) + '</span>';
+        }
+        lbl.innerHTML = getPLbl('step_'+_stageM+'_'+stageDef.id+'_'+step.id+'_'+stepIdx, step.lbl) + durHint;
         if (!st.done && !isLocked && isActive) {
           chk.onclick = (function(cid, sIdx, stIdx){ return function(e){
             e.stopPropagation();
@@ -6015,9 +6146,20 @@ function renderModeStages(clientId, c, container) {
       hHtml = '🚀 GO ACTIV !';
       subHtml = 'Le parcours initial est validé. Choisissez la suite.';
       actions.appendChild(mkBtn('btn btn-bx btn-sm', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
-      actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — RESET',  function(){ addActivContinue(clientId,'reset'); }));
-      actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — SCULPT', function(){ addActivContinue(clientId,'sculpt'); }));
-      actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — HEALTH', function(){ addActivContinue(clientId,'health'); }));
+      var skOffer = c.sig_offre_id ? getSuiteKeysForOfferResolved(c.sig_offre_id) : null;
+      if (skOffer && skOffer.length) {
+        var catSuites = loadSuiteOptions();
+        skOffer.forEach(function(sk) {
+          var su = catSuites.find(function(x) { return x.key === sk; });
+          var ico = su && su.ico ? su.ico : '🔀';
+          var lab = su && su.label ? su.label : sk;
+          actions.appendChild(mkBtn('btn btn-dk btn-sm', ico, lab, function() { runSuiteKeyAction(clientId, sk); }));
+        });
+      } else {
+        actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — RESET',  function(){ addActivContinue(clientId,'reset'); }));
+        actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — SCULPT', function(){ addActivContinue(clientId,'sculpt'); }));
+        actions.appendChild(mkBtn('btn btn-dk btn-sm', '⏺', 'CONTINUE — HEALTH', function(){ addActivContinue(clientId,'health'); }));
+      }
     } else if (sid === 'activ_continue_reset') {
       hHtml = '✅ ACTIV CONTINUE RESET validée';
       actions.appendChild(mkBtn('btn btn-dk btn-sm', '🔂', 'Relancer',         function(){ relancerActivContinueStage(clientId,'reset'); }));
@@ -7254,7 +7396,7 @@ function sv2(id,v){const el=document.getElementById(id);if(el&&v!=null)el.textCo
 // SYNC PARAMÈTRES — ba_settings (Supabase)
 // ═══════════════════════════════════════════════════
 // Clés synchronisées (hors config car chicken-and-egg)
-var SYNC_SETTINGS_KEYS = ['ba_parcours_labels','ba_form_bilan','ba_form_tests','ba_offres_v8','ba_suite_opts','ba_phases_custom','ba_max_config','ba_parcours_duration'];
+var SYNC_SETTINGS_KEYS = ['ba_parcours_labels','ba_form_bilan','ba_form_tests','ba_offres_v8','ba_suite_opts','ba_phases_custom','ba_max_config','ba_parcours_duration','ba_offer_parcours_v1'];
 
 async function saveSettingRemote(lsKey, value) {
   if (!ST.sbUrl || !ST.sbKey) return;
@@ -7646,76 +7788,239 @@ function pcResetMode(modeKey) {
   toast('ok', '↩ Mode réinitialisé');
 }
 
+// ── Éditeur par offre (ba_offer_parcours_v1) ──────────────────────────
+function oeSaveStagesSilent(offerId, stages) {
+  var all = loadOfferParcoursAll();
+  if (!all[offerId]) all[offerId] = {};
+  all[offerId].stages = stages;
+  saveOfferParcoursAll(all);
+}
+
+function oeGetStagesClone(offerId) {
+  var all = loadOfferParcoursAll();
+  var cfg = all[offerId];
+  var off = loadOffres().find(function(x) { return x.id === offerId; });
+  if (!off) return [];
+  if (cfg && cfg.stages && cfg.stages.length) {
+    return JSON.parse(JSON.stringify(cfg.stages));
+  }
+  var mk = resolveModeKeyFromOffreObj(off);
+  return JSON.parse(JSON.stringify(getStageDefsForMode(mk)));
+}
+
+function oePersistStages(offerId, stages, doToast) {
+  oeSaveStagesSilent(offerId, stages);
+  renderParcoursEditor();
+  if (doToast !== false) toast('ok', 'Enregistré');
+}
+
+function oeResetOffer(offerId) {
+  dlgConfirm('Réinitialiser le parcours de cette offre sur le modèle par défaut du mode ? (durées par étape et suites seront effacées)', 'Réinitialiser').then(function(r) {
+    if (!r.confirmed) return;
+    var all = loadOfferParcoursAll();
+    if (all[offerId]) {
+      delete all[offerId].stages;
+      delete all[offerId].suiteKeys;
+    }
+    saveOfferParcoursAll(all);
+    renderParcoursEditor();
+    toast('ok', 'Offre réinitialisée');
+  });
+}
+
+function oeEditStepLblOffer(offerId, stageId, stepIdx, val) {
+  var stages = oeGetStagesClone(offerId);
+  var stage = stages.find(function(s) { return s.id === stageId; });
+  if (!stage || !stage.steps[stepIdx]) return;
+  stage.steps[stepIdx].lbl = val;
+  oeSaveStagesSilent(offerId, stages);
+}
+
+function oeEditStageLblOffer(offerId, stageId, val) {
+  var stages = oeGetStagesClone(offerId);
+  var stage = stages.find(function(s) { return s.id === stageId; });
+  if (!stage) return;
+  stage.lbl = val;
+  oeSaveStagesSilent(offerId, stages);
+}
+
+function oeStepDurChange(offerId, stageId, stepIdx, durStr, unitStr) {
+  var stages = oeGetStagesClone(offerId);
+  var stage = stages.find(function(s) { return s.id === stageId; });
+  if (!stage || !stage.steps[stepIdx]) return;
+  stage.steps[stepIdx].durVal = parseInt(durStr, 10) || 0;
+  stage.steps[stepIdx].durUnit = unitStr || 'jours';
+  oeSaveStagesSilent(offerId, stages);
+  toast('ok', 'Durée enregistrée');
+}
+
+function oeDeleteStepOffer(offerId, stageId, stepIdx) {
+  var stages = oeGetStagesClone(offerId);
+  var stage = stages.find(function(s) { return s.id === stageId; });
+  if (!stage || !stage.steps[stepIdx] || stage.steps[stepIdx].isFinal) return;
+  stage.steps.splice(stepIdx, 1);
+  oePersistStages(offerId, stages);
+}
+
+function oeMoveStepOffer(offerId, stageId, stepIdx, dir) {
+  var stages = oeGetStagesClone(offerId);
+  var stage = stages.find(function(s) { return s.id === stageId; });
+  if (!stage) return;
+  var ni = stepIdx + dir;
+  if (ni < 0 || ni >= stage.steps.length) return;
+  var tmp = stage.steps[stepIdx]; stage.steps[stepIdx] = stage.steps[ni]; stage.steps[ni] = tmp;
+  oePersistStages(offerId, stages, false);
+}
+
+function oeAddStepOffer(offerId, stageId) {
+  var lbl = prompt('Libellé de la nouvelle étape :');
+  if (!lbl || !lbl.trim()) return;
+  var stages = oeGetStagesClone(offerId);
+  var stage = stages.find(function(s) { return s.id === stageId; });
+  if (!stage) return;
+  var finalIdx = -1;
+  for (var fi = 0; fi < stage.steps.length; fi++) { if (stage.steps[fi].isFinal) { finalIdx = fi; break; } }
+  var newStep = { id: 'custom_' + Date.now(), lbl: lbl.trim(), durVal: 0, durUnit: 'jours' };
+  if (finalIdx >= 0) stage.steps.splice(finalIdx, 0, newStep); else stage.steps.push(newStep);
+  oePersistStages(offerId, stages);
+}
+
+function oeDeleteStageOffer(offerId, stageId) {
+  if (!confirm('Supprimer ce bloc du parcours pour cette offre ?')) return;
+  var stages = oeGetStagesClone(offerId);
+  var idx = stages.findIndex(function(s) { return s.id === stageId; });
+  if (idx < 0) return;
+  stages.splice(idx, 1);
+  oePersistStages(offerId, stages);
+}
+
+function oeAddStageOffer(offerId) {
+  var lbl = prompt('Nom du nouveau bloc :');
+  if (!lbl || !lbl.trim()) return;
+  var stages = oeGetStagesClone(offerId);
+  stages.push({ id: 'custom_stage_' + Date.now(), lbl: lbl.trim(), ico: '📌', steps: [{ id: 'done', lbl: 'Terminée ✅', isFinal: true, durVal: 0, durUnit: 'jours' }] });
+  oePersistStages(offerId, stages);
+}
+
+function oeToggleSuiteKey(offerId, suiteKey, checked) {
+  var all = loadOfferParcoursAll();
+  if (!all[offerId]) all[offerId] = {};
+  var arr = all[offerId].suiteKeys ? all[offerId].suiteKeys.slice() : [];
+  var ix = arr.indexOf(suiteKey);
+  if (checked && ix < 0) arr.push(suiteKey);
+  if (!checked && ix >= 0) arr.splice(ix, 1);
+  all[offerId].suiteKeys = arr;
+  saveOfferParcoursAll(all);
+  renderParcoursEditor();
+  toast('ok', 'Suites mises à jour');
+}
+
 function renderParcoursEditor() {
   var el = document.getElementById('parcours-modes-view');
   if (!el) return;
-  var modes = [
-    { key:'action',         ico:'⚡', label:'MODE ACTION',         color:'var(--Y)' },
-    { key:'transformation', ico:'🔄', label:'MODE TRANSFORMATION (ACTIV RESET HYBRIDE / ONLINE)', color:'var(--V)' },
-    { key:'essentiel',      ico:'🟠', label:'MODE ESSENTIEL (ACTIV PROGRAM ESSENTIEL)', color:'#e86a00' },
-    { key:'collectif',      ico:'🔥', label:'MODE COLLECTIF',      color:'var(--B)' }
-  ];
+  var modeColors = { action: 'var(--Y)', transformation: 'var(--V)', essentiel: '#e86a00', collectif: 'var(--B)' };
+  var modeTitles = { action: '⚡ ACTION', transformation: '🔄 TRANSFORMATION', essentiel: '🟠 ESSENTIEL', collectif: '🔥 COLLECTIF' };
+  var modeOrder = ['action', 'transformation', 'essentiel', 'collectif'];
+  var offres = loadOffres().filter(function(o) { return o.parcours && !o.alaCarte; });
+  var byMode = {};
+  offres.forEach(function(o) {
+    var mk = resolveModeKeyFromOffreObj(o);
+    if (!byMode[mk]) byMode[mk] = [];
+    byMode[mk].push(o);
+  });
+
   var html = '';
 
-  // ── Signature commune
-  html += '<div style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:12px 14px;margin-bottom:10px">'
-    + '<div style="font-weight:700;font-size:12px;color:var(--bx);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">✍️ SIGNATURE — Commune à tous les modes</div>'
+  html += '<div style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:12px 14px;margin-bottom:12px">'
+    + '<div style="font-weight:700;font-size:12px;color:var(--bx);margin-bottom:8px">✍️ Signature — commune à toutes les offres</div>'
     + '<div style="display:flex;flex-direction:column;gap:5px">';
-  SIG_STEPS.forEach(function(step){
+  SIG_STEPS.forEach(function(step) {
     html += '<div style="display:flex;align-items:center;gap:6px">'
-      + '<span style="font-size:14px;flex-shrink:0">'+step.ico+'</span>'
-      + _pInp('sig_'+step.id, step.lbl)
+      + '<span style="font-size:14px;flex-shrink:0">' + step.ico + '</span>'
+      + _pInp('sig_' + step.id, step.lbl)
       + '</div>';
   });
   html += '</div></div>';
 
-  // ── Modes
-  modes.forEach(function(m) {
-    var stages = getStageDefsForMode(m.key);
-    var isCustom = !!loadCustomStageDefs()[m.key];
-    var durW = (loadParcoursDurations()[m.key] || {}).weeks || '';
-    html += '<div style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:12px 14px;margin-bottom:10px">'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
-      + '<div style="font-weight:700;font-size:11px;color:'+m.color+';text-transform:uppercase;letter-spacing:.7px">'+m.ico+' '+m.label+'</div>'
-      + '<div style="display:flex;gap:4px">'
-      + (isCustom ? '<button onclick="pcResetMode(\''+m.key+'\')" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--rim2);background:var(--bg3);color:var(--tx3);cursor:pointer">↩ Défaut</button>' : '')
-      + '<button onclick="pcAddStage(\''+m.key+'\')" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--bx);background:none;color:var(--bx);cursor:pointer">+ Bloc</button>'
-      + '</div></div>'
-      + '<div style="margin-bottom:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r2);border:1px dashed var(--rim3)">'
-      + '<div style="font-size:10px;font-weight:700;color:var(--tx3);margin-bottom:6px">⏱ Durée indicative du parcours (semaines)</div>'
-      + '<input type="text" value="'+_escHtml(durW)+'" placeholder="ex : 12 ou 8–12" style="width:100%;max-width:220px;padding:7px 10px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px" onchange="saveParcoursDuration(\''+m.key+'\',this.value);toast(\'ok\',\'Durée enregistrée\')">'
-      + '<div style="font-size:10px;color:var(--tx4);margin-top:6px;line-height:1.35">Affichée sur la fiche client à côté du titre « Parcours ». Libre format (nombre ou fourchette).</div>'
-      + '</div>';
+  html += '<p style="font-size:12px;color:var(--tx3);margin:0 0 14px;line-height:1.55">Chaque <strong>offre avec parcours</strong> a son propre enchaînement. Renseignez une <strong>durée</strong> sur chaque étape (pour le suivi et les alertes). Les <strong>suites</strong> proposées à la fin se cochent par offre ; le catalogue des libellés est la section en bas de page.</p>';
 
-    stages.forEach(function(stage) {
-      html += '<div style="margin-bottom:10px;border:1px solid var(--rim3);border-radius:8px;padding:8px 10px">'
-        + '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">'
-        + '<span style="font-size:13px;flex-shrink:0">'+(stage.ico||'📌')+'</span>'
-        + _pcInpBold(stage.lbl, 'pcEditStageLbl("'+m.key+'","'+stage.id+'",this.value)')
-        + _pcDelBtn('pcDeleteStage("'+m.key+'","'+stage.id+'")')
-        + '</div>'
-        + '<div style="display:flex;flex-direction:column;gap:3px;padding-left:10px">';
+  modeOrder.forEach(function(mk) {
+    var list = byMode[mk];
+    if (!list || !list.length) return;
+    html += '<div style="margin:16px 0 10px;font-weight:800;font-size:12px;color:' + (modeColors[mk] || 'var(--tx)') + ';text-transform:uppercase;letter-spacing:.6px">' + (modeTitles[mk] || mk) + '</div>';
+    list.forEach(function(off) {
+      var oid = off.id.replace(/'/g, "\\'");
+      var stages = oeGetStagesClone(off.id);
+      var cfg = loadOfferParcoursAll()[off.id] || {};
+      var hasCustom = !!(cfg.stages && cfg.stages.length);
+      var suiteCat = loadSuiteOptions();
 
-      stage.steps.forEach(function(s, si) {
-        var canDel = !s.isFinal && stage.steps.length > 1;
-        html += '<div style="display:flex;align-items:center;gap:4px">'
-          + '<span style="font-size:10px;color:var(--tx4);flex-shrink:0;width:14px">'+(s.isFinal?'✅':'→')+'</span>'
-          + _pcInp(s.lbl, 'pcEditStepLbl("'+m.key+'","'+stage.id+'",'+si+',this.value)')
-          + (si > 0 && !s.isFinal ? '<button onclick="pcMoveStep(\''+m.key+'\',\''+stage.id+'\','+si+',-1)" style="flex-shrink:0;background:none;border:none;color:var(--tx4);font-size:12px;cursor:pointer;padding:2px 3px" title="Monter">↑</button>' : '<span style="width:18px;flex-shrink:0"></span>')
-          + (canDel ? _pcDelBtn('pcDeleteStep("'+m.key+'","'+stage.id+'",'+si+')') : '<span style="width:22px;flex-shrink:0"></span>')
+      html += '<div style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:12px 14px;margin-bottom:12px">'
+        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px">'
+        + '<div><div style="font-weight:700;font-size:14px;color:var(--tx)">' + _escHtml(off.name) + '</div>'
+        + '<div style="font-size:11px;color:var(--tx4);margin-top:4px">' + (hasCustom ? 'Parcours personnalisé pour cette offre' : 'Modèle du mode (éditez pour enregistrer une copie)') + '</div></div>'
+        + '<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end">'
+        + '<button type="button" onclick="oeResetOffer(\'' + oid + '\')" style="font-size:10px;padding:4px 8px;border-radius:4px;border:1px solid var(--rim2);background:var(--bg3);color:var(--tx3);cursor:pointer">↩ Modèle par défaut</button>'
+        + '<button type="button" onclick="oeAddStageOffer(\'' + oid + '\')" style="font-size:10px;padding:4px 8px;border-radius:4px;border:1px solid var(--bx);background:none;color:var(--bx);cursor:pointer">＋ Bloc</button>'
+        + '</div></div>';
+
+      stages.forEach(function(stage) {
+        var sid = String(stage.id).replace(/'/g, "\\'");
+        html += '<div style="margin-bottom:10px;border:1px solid var(--rim3);border-radius:8px;padding:8px 10px">'
+          + '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">'
+          + '<span style="font-size:13px;flex-shrink:0">' + (stage.ico || '📌') + '</span>'
+          + _pcInpBold(stage.lbl, 'oeEditStageLblOffer(\'' + oid + '\',\'' + sid + '\',this.value)')
+          + _pcDelBtn('oeDeleteStageOffer(\'' + oid + '\',\'' + sid + '\')')
+          + '</div>'
+          + '<div style="display:flex;flex-direction:column;gap:6px;padding-left:8px">';
+
+        stage.steps.forEach(function(s, si) {
+          var canDel = !s.isFinal && stage.steps.length > 1;
+          var dVal = (s.durVal != null && s.durVal > 0) ? String(s.durVal) : '';
+          var uVal = (s.durUnit || 'jours');
+          var isSem = (String(uVal).toLowerCase().indexOf('sem') !== -1);
+          var selJ = !isSem ? ' selected' : '';
+          var selS = isSem ? ' selected' : '';
+          html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:4px">'
+            + '<span style="font-size:10px;color:var(--tx4);flex-shrink:0;width:14px">' + (s.isFinal ? '✅' : '→') + '</span>'
+            + _pcInp(s.lbl, 'oeEditStepLblOffer(\'' + oid + '\',\'' + sid + '\',' + si + ',this.value)')
+            + '<span style="font-size:10px;color:var(--tx4);white-space:nowrap">délai</span>'
+            + '<input type="number" min="0" step="1" value="' + _escHtml(dVal) + '" placeholder="—" style="width:52px;padding:5px 6px;border-radius:6px;border:1px solid var(--rim3);font-size:12px;background:var(--bg3)" title="Durée pour valider cette étape après la précédente" onchange="oeStepDurChange(\'' + oid + '\',\'' + sid + '\',' + si + ',this.value,this.nextElementSibling.value)">'
+            + '<select style="padding:5px 8px;border-radius:6px;border:1px solid var(--rim3);font-size:11px;background:var(--bg3);color:var(--tx)" onchange="oeStepDurChange(\'' + oid + '\',\'' + sid + '\',' + si + ',this.previousElementSibling.value,this.value)">'
+            + '<option value="jours"' + selJ + '>jours</option>'
+            + '<option value="semaines"' + selS + '>semaines</option>'
+            + '</select>'
+            + (si > 0 && !s.isFinal ? '<button type="button" onclick="oeMoveStepOffer(\'' + oid + '\',\'' + sid + '\',' + si + ',-1)" style="flex-shrink:0;background:none;border:none;color:var(--tx4);font-size:12px;cursor:pointer;padding:2px 3px" title="Monter">↑</button>' : '<span style="width:18px;flex-shrink:0"></span>')
+            + (canDel ? _pcDelBtn('oeDeleteStepOffer(\'' + oid + '\',\'' + sid + '\',' + si + ')') : '<span style="width:22px;flex-shrink:0"></span>')
+            + '</div>';
+        });
+
+        html += '</div>'
+          + '<button type="button" onclick="oeAddStepOffer(\'' + oid + '\',\'' + sid + '\')" style="margin-top:6px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px dashed var(--bx);background:none;color:var(--bx);cursor:pointer;width:100%">＋ Ajouter une étape</button>'
           + '</div>';
       });
-      html += '</div>'
-        + '<button onclick="pcAddStep(\''+m.key+'\',\''+stage.id+'\')" style="margin-top:6px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px dashed var(--bx);background:none;color:var(--bx);cursor:pointer;width:100%">+ Ajouter une étape</button>'
-        + '</div>';
-    });
 
-    // ACTIV CONTINUE (transformation seulement, lecture seule pour l'instant)
-    if (m.key === 'transformation') {
-      html += '<div style="margin-top:4px;font-size:11px;color:var(--tx4);padding:6px 4px">♾️ ACTIV CONTINUE (RESET / SCULPT / HEALTH) — configurable via les étiquettes ci-dessus</div>';
-    }
-    html += '</div>';
+      html += '<div style="margin-top:12px;padding:10px;background:var(--bg3);border-radius:var(--r2);border:1px dashed var(--rim3)">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:6px">🔀 Suites après ce parcours</div>'
+        + '<div style="font-size:11px;color:var(--tx4);margin-bottom:8px;line-height:1.45">Cochez les suites proposées quand le client termine le cycle (ex. après « GO ACTIV »). Laisser tout décoché = boutons par défaut de l’application.</div>';
+      var selKeys = cfg.suiteKeys || [];
+      suiteCat.forEach(function(su) {
+        var ck = selKeys.indexOf(su.key) >= 0 ? ' checked' : '';
+        var sk = String(su.key).replace(/'/g, "\\'");
+        html += '<label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;cursor:pointer;font-size:12px;color:var(--tx2)">'
+          + '<input type="checkbox"' + ck + ' onchange="oeToggleSuiteKey(\'' + oid + '\',\'' + sk + '\',this.checked)" style="margin-top:3px">'
+          + '<span>' + su.ico + ' ' + _escHtml(su.label) + '</span></label>';
+      });
+      html += '</div>';
+
+      html += '</div>';
+    });
   });
+
+  if (!offres.length) {
+    html += '<p style="font-size:13px;color:var(--tx3)">Aucune offre « parcours » dans le catalogue — synchronisez les offres depuis Business ou ajoutez une offre avec parcours.</p>';
+  }
+
   el.innerHTML = html;
 }
 
@@ -8221,6 +8526,7 @@ async function pullOffresFromFinances() {
       }
       return o;
     });
+    offres = pruneRetiredOffresFromCatalog(offres);
     saveOffres(offres);
     localStorage.setItem('ba_offres_from_business', '1');
     renderOffresPage();
