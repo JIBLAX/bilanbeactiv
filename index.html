@@ -741,6 +741,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .ps-sep-lbl{font-size:7px;font-weight:700;color:var(--bx3);letter-spacing:.5px;writing-mode:horizontal-tb;white-space:nowrap;text-transform:uppercase}
 .parcours-pct{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-bottom:12px}
 .parcours-pct-fill{height:100%;background:linear-gradient(90deg,var(--bx),var(--bx3));border-radius:2px;transition:width .4s ease}
+@keyframes suiviJalonsIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .cycle-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(139,21,32,.1);color:var(--bx);border:1px solid var(--rim);margin-bottom:10px}
 /* Responsive thermomètre */
 @media(min-width:769px){
@@ -1140,7 +1141,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <!-- ══════ PAGE RAPPORT ══════ -->
 <div class="pg" id="pg-rapport">
   <div class="page-title">🤖 Atelier rapport — Diagnostique BE ACTIV</div>
-  <p style="font-size:12.5px;color:var(--tx3);max-width:720px;line-height:1.55;margin-bottom:14px">Remplissez les blocs <strong>quand vous voulez</strong>, dans l’ordre qui vous arrange. Le rapport complet s’appuie sur ce qui est disponible (préqualif et bilan RDV au minimum ; tests si offre transformation). Le parcours signé <strong>DÉMARRAGE / GO</strong> sur la fiche client marque la suite du programme après paiement — indépendamment de ce formulaire.</p>
+  <p style="font-size:12.5px;color:var(--tx3);max-width:720px;line-height:1.55;margin-bottom:14px">Bloc <strong>100 % facultatif</strong> : préqualif, bilan, tests et génération de rapports se font ici, à votre rythme. Rien n’est requis pour avancer le <strong>parcours coaching</strong> sur la fiche client (DÉMARRAGE, ONBOARDING, etc.).</p>
   <div id="rpt-hub-root"></div>
   <div id="rpt-empty" style="display:none"></div>
   <div id="rpt-loading" style="display:none"><div class="ldwrap"><div class="ldring"></div><div class="ldmsg"><strong>Rapport en cours…</strong>L'IA analyse toutes les données</div></div></div>
@@ -1234,7 +1235,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div id="editor-parcours" style="display:none">
     <div style="background:linear-gradient(135deg,rgba(139,21,32,.06),rgba(26,110,219,.05));border:1.5px solid var(--rim3);border-radius:var(--r3);padding:14px 16px;margin-bottom:16px">
       <div style="font-weight:800;font-size:14px;color:var(--tx);margin-bottom:8px">🗺️ Parcours client &amp; suites après certification</div>
-      <div style="font-size:12.5px;color:var(--tx2);line-height:1.65"><strong>Bloc A — Étapes du programme</strong> (signature → bilan → offre → livraison / RESET / etc.) : paramétrez les libellés et micro-étapes par <em>mode d’offre</em>. <strong>Bloc B — Suites</strong> : liste des continuations proposées au client à la fin d’un cycle (ACTIV CONTINUE, nouvelle offre…). Les deux vont ensemble dans votre système : même écran pour tout piloter.</div>
+      <div style="font-size:12.5px;color:var(--tx2);line-height:1.65"><strong>Étapes du programme</strong> par <em>mode d’offre</em> (le parcours commence par ONBOARDING / DÉMARRAGE selon le mode — le diagnostique est facultatif, depuis la fiche ou l’atelier). <strong>Suites</strong> : continuations après certification. Pour chaque mode : champ <strong>durée indicative</strong> affiché sur la fiche client.</div>
     </div>
     <p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Les étapes affichées chez le client suivent le <strong>mode de l’offre</strong> (Action / Transformation / Essentiel / Collectif). La <strong>signature</strong> reste la porte d’entrée commune.</p>
     <div id="parcours-modes-view"></div>
@@ -5723,22 +5724,14 @@ function savePhasesCustom(phases) {
 // STAGES PAR MODE D'OFFRE — Accordéons séquentiels
 // ═══════════════════════════════════════════════════
 var MODE_STAGE_DEFS = {
+  /** Rapport / diagnostique volontaire → bouton « Atelier » hors parcours (plus d’étape 1er rapport ici). */
   action: [
-    {id:'rapport', lbl:'1er RAPPORT', ico:'📊', steps:[
-      {id:'rapport_leger',lbl:'Rapport Léger (F1+F2) envoyé'},
-      {id:'done',lbl:'Terminée ✅',isFinal:true}
-    ]},
     {id:'demarrage', lbl:'DÉMARRAGE', ico:'🚀', steps:[
       {id:'premiere_seance',lbl:'1ère séance'},
       {id:'done',lbl:'Terminée ✅',isFinal:true}
     ]}
   ],
   transformation: [
-    {id:'rapport', lbl:'1er RAPPORT', ico:'📊', steps:[
-      {id:'tests',lbl:'Tests physiques'},
-      {id:'rapport_complet',lbl:'Diagnostique BE ACTIV généré'},
-      {id:'done',lbl:'Terminée ✅',isFinal:true}
-    ]},
     {id:'onboarding', lbl:'ONBOARDING', ico:'🚀', steps:[
       {id:'acces_app',lbl:'Accès App Coaching'},
       {id:'packaging',lbl:'Packaging Program délivré'},
@@ -5759,11 +5752,6 @@ var MODE_STAGE_DEFS = {
   ],
   // ACTIV PROGRAM ESSENTIEL — parcours spécifique 2 mois
   essentiel: [
-    {id:'rapport', lbl:'1er RAPPORT', ico:'📊', steps:[
-      {id:'tests',lbl:'Tests physiques'},
-      {id:'rapport_complet',lbl:'Diagnostique BE ACTIV généré'},
-      {id:'done',lbl:'Terminée ✅',isFinal:true}
-    ]},
     {id:'onboarding_essentiel', lbl:'ONBOARDING', ico:'🚀', steps:[
       {id:'acces_programme',lbl:'Accès Programme délivré'},
       {id:'seance_lancement',lbl:'Séance de lancement'},
@@ -5811,6 +5799,62 @@ function initModeStages(c, stagesDef) {
   });
 }
 
+/** Réaligne mode_stages sur la définition courante (supprime blocs obsolètes ex. « rapport », conserve étapes validées par id). */
+function migrateClientModeStagesToNewDefs(c, stagesDef) {
+  if (!c || !Array.isArray(stagesDef) || !stagesDef.length) return false;
+  var old = c.mode_stages;
+  if (!Array.isArray(old)) old = [];
+  var newArr = [];
+  var changed = false;
+  stagesDef.forEach(function(stageDef) {
+    var prev = old.find(function(m){ return m && m.id === stageDef.id; });
+    var steps = [];
+    (stageDef.steps || []).forEach(function(sDef) {
+      var oSt = prev && prev.steps ? prev.steps.find(function(x){ return x.id === sDef.id; }) : null;
+      steps.push(oSt ? { id: sDef.id, done: !!oSt.done, doneAt: oSt.doneAt || null } : { id: sDef.id, done: false, doneAt: null });
+    });
+    newArr.push({ id: stageDef.id, steps: steps, certified: prev && prev.certified, certifiedAt: prev && prev.certifiedAt });
+    if (!prev || prev.steps.length !== steps.length) changed = true;
+  });
+  if (newArr.length !== old.length) changed = true;
+  if (!changed) {
+    for (var i = 0; i < newArr.length; i++) {
+      if (!old[i] || old[i].id !== newArr[i].id) { changed = true; break; }
+    }
+  }
+  if (changed) {
+    c.mode_stages = newArr;
+    c.updated_at = new Date().toISOString();
+    try {
+      localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+      saveToSupabase(c);
+    } catch(e) {}
+    return true;
+  }
+  return false;
+}
+
+function loadParcoursDurations() {
+  try {
+    var s = localStorage.getItem('ba_parcours_duration');
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return {};
+}
+function saveParcoursDuration(modeKey, weeksStr) {
+  var d = loadParcoursDurations();
+  d[modeKey] = { weeks: (weeksStr || '').trim(), updated_at: new Date().toISOString() };
+  try {
+    localStorage.setItem('ba_parcours_duration', JSON.stringify(d));
+    saveSettingRemote('ba_parcours_duration', d);
+  } catch(e) {}
+}
+function getParcoursDurationLabel(modeKey) {
+  var d = loadParcoursDurations()[modeKey];
+  if (!d || !String(d.weeks || '').trim()) return '';
+  return ' · durée indicative : ' + String(d.weeks).trim();
+}
+
 function getActiveStageDefs(c) {
   var mode = null, offreName = '';
   if (c.sig_offre_id) {
@@ -5820,6 +5864,10 @@ function getActiveStageDefs(c) {
   if (!mode && c.phaseRuns && c.phaseRuns[0] && c.phaseRuns[0].offreId) {
     var o2 = loadOffres().find(function(x){return x.id===c.phaseRuns[0].offreId;});
     if (o2) { mode = o2.modeOffre; offreName = (o2.name||'').toUpperCase(); }
+  }
+  if (!mode) {
+    var oR = resolveOffreForClient(c);
+    if (oR) { mode = oR.modeOffre; offreName = (oR.name || '').toUpperCase(); }
   }
   var modeKey = mode || 'action';
   // ACTIV PROGRAM ESSENTIEL → parcours spécifique
@@ -5833,6 +5881,7 @@ function getActiveStageDefs(c) {
 
 function renderModeStages(clientId, c, container) {
   var stagesDef = getActiveStageDefs(c);
+  migrateClientModeStagesToNewDefs(c, stagesDef);
   initModeStages(c, stagesDef);
   var lastDoneStage = -1;
   stagesDef.forEach(function(sd, si){
@@ -5843,8 +5892,10 @@ function renderModeStages(clientId, c, container) {
   var activeStageIdx = lastDoneStage + 1;
   if (activeStageIdx >= stagesDef.length) activeStageIdx = stagesDef.length - 1;
 
+  var _pm0 = stagesDef[0] && stagesDef[0]._mode ? stagesDef[0]._mode : 'action';
+  var _durHead = getParcoursDurationLabel(_pm0);
   var stagesWrap = document.createElement('div'); stagesWrap.className = 'cm-stages';
-  stagesWrap.innerHTML = '<div class="cm-stages-h">Parcours</div>'
+  stagesWrap.innerHTML = '<div class="cm-stages-h">Parcours'+_durHead+'</div>'
     + (c.parcours_started_at ? '<div style="font-size:11px;color:var(--tx3);margin:-6px 0 10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--rim3)">🚀 Parcours coaching démarré le <strong>' + String(c.parcours_started_at).slice(0, 10) + '</strong> (validation GO / DÉMARRAGE).</div>' : '<div style="font-size:11px;color:var(--tx4);margin:-6px 0 10px">Le bloc <strong>DÉMARRAGE</strong> ou <strong>GO</strong> enregistre la date de début après signature &amp; paiement.</div>');
   container.appendChild(stagesWrap);
 
@@ -6112,7 +6163,11 @@ function validateModeStep(clientId, stageIdx, stepIdx) {
 var _testsParcoursCtx = null; // {clientId, stageIdx, stepIdx}
 
 function openTestsParcours(clientId, stageIdx, stepIdx) {
-  _testsParcoursCtx = {clientId:clientId, stageIdx:stageIdx, stepIdx:stepIdx};
+  _testsParcoursCtx = {
+    clientId: clientId,
+    stageIdx: (stageIdx != null && stageIdx >= 0) ? stageIdx : null,
+    stepIdx: (stepIdx != null && stepIdx >= 0) ? stepIdx : null
+  };
   var c = ST.clients.find(function(x){ return x.id == clientId; });
   var td = (c && c.tests_data) || {};
   var nom = c ? ((c.prenom||'')+' '+(c.nom||'')) : '';
@@ -6243,14 +6298,15 @@ function saveTestsParcours() {
   var testsData = collectTestsFromDef('parcours');
   applyTestsDerivedMetrics(testsData, c.age);
   c.tests_data = testsData;
-  // Valider le step Tests
-  c.mode_stages[ctx.stageIdx].steps[ctx.stepIdx].done = true;
-  c.mode_stages[ctx.stageIdx].steps[ctx.stepIdx].doneAt = new Date().toISOString();
+  if (ctx.stageIdx != null && ctx.stepIdx != null && c.mode_stages && c.mode_stages[ctx.stageIdx] && c.mode_stages[ctx.stageIdx].steps && c.mode_stages[ctx.stageIdx].steps[ctx.stepIdx]) {
+    c.mode_stages[ctx.stageIdx].steps[ctx.stepIdx].done = true;
+    c.mode_stages[ctx.stageIdx].steps[ctx.stepIdx].doneAt = new Date().toISOString();
+  }
   c.updated_at = new Date().toISOString();
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
   closeTestsParcours();
-  toast('ok', '✅ Tests enregistrés — générez maintenant le Diagnostique BE ACTIV');
+  toast('ok', ctx.stageIdx != null ? '✅ Tests enregistrés — générez maintenant le Diagnostique BE ACTIV' : '✅ Tests enregistrés');
   renderClientModal(ctx.clientId);
 }
 
@@ -6861,61 +6917,112 @@ function saveClientImportantDates(clientId, patch) {
   if (!c.important_dates) c.important_dates = {};
   if (patch.next_weekly_bilan !== undefined) c.important_dates.next_weekly_bilan = patch.next_weekly_bilan || '';
   if (patch.next_monthly_bilan !== undefined) c.important_dates.next_monthly_bilan = patch.next_monthly_bilan || '';
+  if (patch.anniversaire_programme !== undefined) c.important_dates.anniversaire_programme = patch.anniversaire_programme || '';
+  if (patch.prochain_mini_bilan !== undefined) c.important_dates.prochain_mini_bilan = patch.prochain_mini_bilan || '';
+  if (patch.notes_jalons !== undefined) c.important_dates.notes_jalons = patch.notes_jalons || '';
   c.updated_at = new Date().toISOString();
   localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
   saveToSupabase(c);
 }
-function appendClientImportantDates(container, clientId) {
+/** Suivi coach : visible après lancement parcours (signature) — jalons, mini-bilans, anniversaire programme. */
+function openAtelierRapportFromClient(cid) {
+  ST.clientId = cid;
+  closeModal('client');
+  showPg('rapport');
+}
+
+function appendClientSuiviJalonsPanel(container, clientId) {
   var c = ST.clients.find(function(x) { return x.id == clientId; });
   if (!c) return;
+  if (c.sig_started !== true) return;
   if (!clientQualifiesForImportantDatesCRM(c)) return;
   if (!c.important_dates) c.important_dates = {};
-  var weekly = c.important_dates.next_weekly_bilan || '';
-  var monthly = c.important_dates.next_monthly_bilan || '';
+  var imp = c.important_dates;
+  var weekly = imp.next_weekly_bilan || '';
+  var monthly = imp.next_monthly_bilan || '';
+  var anniv = imp.anniversaire_programme || '';
+  var mini = imp.prochain_mini_bilan || '';
+  var notes = imp.notes_jalons || '';
+
   var wrap = document.createElement('div');
-  wrap.style.cssText = 'margin:12px 0;padding:14px;background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2)';
-  wrap.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Dates importantes</div>'
-    + '<div style="font-size:10px;color:var(--tx4);line-height:1.35;margin-bottom:10px">+7j et +30j : raccourcis à partir de la date affichée (ou d\'aujourd\'hui si le champ est vide).</div>'
-    + '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;margin-bottom:10px">'
+  wrap.style.cssText = 'margin:12px 0;border-radius:var(--r2);overflow:hidden;border:1.5px solid rgba(26,110,219,.35);background:linear-gradient(135deg,rgba(26,110,219,.06),transparent);animation:suiviJalonsIn .35s ease-out';
+  wrap.innerHTML = '<button type="button" class="sj-toggle" style="width:100%;text-align:left;padding:12px 14px;background:transparent;border:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;font-weight:700;color:var(--tx)">'
+    + '<span>📌 Suivi &amp; jalons</span><span class="sj-arrow" style="font-size:12px;color:var(--tx3);transition:transform .2s">▼</span></button>'
+    + '<div class="sj-body" style="max-height:0;overflow:hidden;transition:max-height .4s ease">'
+    + '<div style="padding:0 14px 14px;font-size:11px;color:var(--tx3);line-height:1.5;border-top:1px dashed var(--rim3)">'
+    + 'Renseignez les dates après la mise en route du parcours (mini-bilans, anniversaire de programme, rappels).</div>'
+    + '<div style="padding:0 14px 12px;display:grid;gap:10px">'
+    + '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end">'
     + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Prochain bilan hebdomadaire</div><input type="date" id="imp-weekly-' + clientId + '" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px" value="' + weekly + '"></div>'
     + '<button type="button" class="btn btn-sm" id="imp-weekly-plus7-' + clientId + '" style="padding:7px 10px">+7j</button>'
-    + '<button type="button" class="btn btn-dk btn-sm" id="imp-weekly-save-' + clientId + '" style="padding:7px 10px">Valider</button>'
-    + '</div>'
+    + '<button type="button" class="btn btn-dk btn-sm" id="imp-weekly-save-' + clientId + '" style="padding:7px 10px">OK</button></div>'
     + '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end">'
     + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Prochain bilan mensuel</div><input type="date" id="imp-monthly-' + clientId + '" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px" value="' + monthly + '"></div>'
     + '<button type="button" class="btn btn-sm" id="imp-monthly-plus30-' + clientId + '" style="padding:7px 10px">+30j</button>'
-    + '<button type="button" class="btn btn-dk btn-sm" id="imp-monthly-save-' + clientId + '" style="padding:7px 10px">Valider</button>'
-    + '</div>';
+    + '<button type="button" class="btn btn-dk btn-sm" id="imp-monthly-save-' + clientId + '" style="padding:7px 10px">OK</button></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Anniversaire programme</div><input type="date" id="imp-anniv-' + clientId + '" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px" value="' + anniv + '"></div>'
+    + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Prochain mini-bilan</div><input type="date" id="imp-mini-' + clientId + '" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px" value="' + mini + '"></div></div>'
+    + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Notes jalons</div><textarea id="imp-notes-' + clientId + '" rows="2" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px;resize:vertical"></textarea></div>'
+    + '<button type="button" class="btn btn-bx btn-sm" id="imp-save-all-' + clientId + '" style="width:100%">💾 Enregistrer le suivi</button>'
+    + '</div></div>';
   container.appendChild(wrap);
+  var notesTa = document.getElementById('imp-notes-' + clientId);
+  if (notesTa) notesTa.value = notes;
+
+  var toggle = wrap.querySelector('.sj-toggle');
+  var body = wrap.querySelector('.sj-body');
+  var arrow = wrap.querySelector('.sj-arrow');
+  var open = false;
+  function setOpen(v) {
+    open = v;
+    if (body) body.style.maxHeight = open ? '520px' : '0';
+    if (arrow) arrow.style.transform = open ? 'rotate(-180deg)' : '';
+  }
+  if (toggle) toggle.onclick = function() { setOpen(!open); };
 
   var wEl = document.getElementById('imp-weekly-' + clientId);
   var mEl = document.getElementById('imp-monthly-' + clientId);
+  var aEl = document.getElementById('imp-anniv-' + clientId);
+  var miniEl = document.getElementById('imp-mini-' + clientId);
+  var nEl = document.getElementById('imp-notes-' + clientId);
   var wSave = document.getElementById('imp-weekly-save-' + clientId);
   var mSave = document.getElementById('imp-monthly-save-' + clientId);
   var wP7 = document.getElementById('imp-weekly-plus7-' + clientId);
   var mP30 = document.getElementById('imp-monthly-plus30-' + clientId);
+  var saveAll = document.getElementById('imp-save-all-' + clientId);
 
+  function pullAll() {
+    saveClientImportantDates(clientId, {
+      next_weekly_bilan: wEl ? wEl.value : '',
+      next_monthly_bilan: mEl ? mEl.value : '',
+      anniversaire_programme: aEl ? aEl.value : '',
+      prochain_mini_bilan: miniEl ? miniEl.value : '',
+      notes_jalons: nEl ? nEl.value : ''
+    });
+  }
+  if (saveAll) saveAll.onclick = function() { pullAll(); toast('ok', '✅ Suivi & jalons enregistrés'); };
   if (wSave) wSave.onclick = function() {
     saveClientImportantDates(clientId, { next_weekly_bilan: wEl ? wEl.value : '' });
-    toast('ok', '✅ Date hebdomadaire enregistrée');
+    toast('ok', '✅ Hebdomadaire');
   };
   if (mSave) mSave.onclick = function() {
     saveClientImportantDates(clientId, { next_monthly_bilan: mEl ? mEl.value : '' });
-    toast('ok', '✅ Date mensuelle enregistrée');
+    toast('ok', '✅ Mensuel');
   };
   if (wP7) wP7.onclick = function() {
     var base = wEl && wEl.value ? wEl.value : new Date().toISOString().slice(0, 10);
     var next = _addDaysIso(base, 7);
     if (wEl) wEl.value = next;
     saveClientImportantDates(clientId, { next_weekly_bilan: next });
-    toast('ok', '🗓️ Hebdo décalé de 7 jours');
+    toast('ok', '🗓️ Hebdo +7j');
   };
   if (mP30) mP30.onclick = function() {
     var base = mEl && mEl.value ? mEl.value : new Date().toISOString().slice(0, 10);
     var next = _addDaysIso(base, 30);
     if (mEl) mEl.value = next;
     saveClientImportantDates(clientId, { next_monthly_bilan: next });
-    toast('ok', '📆 Mensuel décalé de 30 jours');
+    toast('ok', '📆 Mensuel +30j');
   };
 }
 
@@ -6989,13 +7096,26 @@ function renderClientModal(id) {
     container.appendChild(summary);
   }
 
+  var facBloc = document.createElement('div');
+  facBloc.style.cssText = 'margin:10px 0 14px;display:flex;flex-direction:column;gap:6px';
+  facBloc.innerHTML = '<button type="button" class="btn btn-bx" style="width:100%;justify-content:center;padding:11px 14px;font-weight:700;border-radius:var(--r2)" onclick="openAtelierRapportFromClient(\''+id+'\')">🤖 Atelier Diagnostique <span style="font-size:10px;font-weight:600;opacity:.88;margin-left:8px">facultatif — hors parcours</span></button>'
+    + '<div style="font-size:10px;color:var(--tx4);text-align:center;line-height:1.45;padding:0 4px">Préqualif, bilan, tests et génération IA selon les données ; indépendant du coaching.</div>';
+  container.appendChild(facBloc);
+
   appendSessionTrackingCRM(container, id);
-  appendClientImportantDates(container, id);
+  appendClientSuiviJalonsPanel(container, id);
+
+  if (c.sig_offre_id || offreMode || resolveOffreForClient(c)) {
+    var _sdInit = getActiveStageDefs(c);
+    migrateClientModeStagesToNewDefs(c, _sdInit);
+    initModeStages(c, _sdInit);
+  }
 
   // ── Cockpit progression (si parcours actif)
-  if ((c.sig_offre_id || offreMode) && Array.isArray(c.mode_stages) && c.mode_stages.length) {
+  if ((c.sig_offre_id || offreMode || resolveOffreForClient(c)) && Array.isArray(c.mode_stages) && c.mode_stages.length) {
     try {
       var stagesDef = getActiveStageDefs(c);
+      migrateClientModeStagesToNewDefs(c, stagesDef);
       initModeStages(c, stagesDef);
       var totalSteps = 0, doneSteps = 0;
       var activeStageLbl = '—';
@@ -7056,16 +7176,14 @@ function renderClientModal(id) {
       }
       if (c.pq_summary) _editChip('🧬 Pré-qualif', function(){ closeModal('client'); startPrequalifForProspect(id); });
       if (c.bilan_summary || c.bilan_raw) _editChip('🩺 Bilan', function(){ closeModal('client'); startBilanForProspect(id); });
-      // Tests : retrouver l'étape "tests" pour rouvrir l'éditeur même si validée
-      var testsLoc = null;
-      stagesDef.forEach(function(sd, si){ (sd.steps||[]).forEach(function(stp, sti){ if (stp.id === 'tests') testsLoc = {stageIdx: si, stepIdx: sti}; }); });
-      if (testsLoc) _editChip('📏 Tests', function(){ openTestsParcours(id, testsLoc.stageIdx, testsLoc.stepIdx); });
+      _editChip('📏 Tests', function(){ openTestsParcours(id, -1, -1); });
+      _editChip('🤖 Atelier', function(){ openAtelierRapportFromClient(id); });
       if (dataEdit.children.length > 1) cockpit.appendChild(dataEdit);
     } catch(e) { console.warn('cockpit render error', e); }
   }
 
   // ── Stages parcours
-  if (c.sig_offre_id || offreMode) {
+  if (c.sig_offre_id || offreMode || resolveOffreForClient(c)) {
     renderModeStages(id, c, container);
   } else {
     var empty = document.createElement('div'); empty.className = 'cm-empty';
@@ -7136,7 +7254,7 @@ function sv2(id,v){const el=document.getElementById(id);if(el&&v!=null)el.textCo
 // SYNC PARAMÈTRES — ba_settings (Supabase)
 // ═══════════════════════════════════════════════════
 // Clés synchronisées (hors config car chicken-and-egg)
-var SYNC_SETTINGS_KEYS = ['ba_parcours_labels','ba_form_bilan','ba_form_tests','ba_offres_v8','ba_suite_opts','ba_phases_custom','ba_max_config'];
+var SYNC_SETTINGS_KEYS = ['ba_parcours_labels','ba_form_bilan','ba_form_tests','ba_offres_v8','ba_suite_opts','ba_phases_custom','ba_max_config','ba_parcours_duration'];
 
 async function saveSettingRemote(lsKey, value) {
   if (!ST.sbUrl || !ST.sbKey) return;
@@ -7555,13 +7673,19 @@ function renderParcoursEditor() {
   modes.forEach(function(m) {
     var stages = getStageDefsForMode(m.key);
     var isCustom = !!loadCustomStageDefs()[m.key];
+    var durW = (loadParcoursDurations()[m.key] || {}).weeks || '';
     html += '<div style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:12px 14px;margin-bottom:10px">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
       + '<div style="font-weight:700;font-size:11px;color:'+m.color+';text-transform:uppercase;letter-spacing:.7px">'+m.ico+' '+m.label+'</div>'
       + '<div style="display:flex;gap:4px">'
       + (isCustom ? '<button onclick="pcResetMode(\''+m.key+'\')" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--rim2);background:var(--bg3);color:var(--tx3);cursor:pointer">↩ Défaut</button>' : '')
       + '<button onclick="pcAddStage(\''+m.key+'\')" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--bx);background:none;color:var(--bx);cursor:pointer">+ Bloc</button>'
-      + '</div></div>';
+      + '</div></div>'
+      + '<div style="margin-bottom:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r2);border:1px dashed var(--rim3)">'
+      + '<div style="font-size:10px;font-weight:700;color:var(--tx3);margin-bottom:6px">⏱ Durée indicative du parcours (semaines)</div>'
+      + '<input type="text" value="'+_escHtml(durW)+'" placeholder="ex : 12 ou 8–12" style="width:100%;max-width:220px;padding:7px 10px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px" onchange="saveParcoursDuration(\''+m.key+'\',this.value);toast(\'ok\',\'Durée enregistrée\')">'
+      + '<div style="font-size:10px;color:var(--tx4);margin-top:6px;line-height:1.35">Affichée sur la fiche client à côté du titre « Parcours ». Libre format (nombre ou fourchette).</div>'
+      + '</div>';
 
     stages.forEach(function(stage) {
       html += '<div style="margin-bottom:10px;border:1px solid var(--rim3);border-radius:8px;padding:8px 10px">'
