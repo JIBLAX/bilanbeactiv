@@ -1,0 +1,11 @@
+{
+  "name": "bilanbeactiv",
+  "private": true,
+  "description": "BILAN CRM — static app + e2e KPI",
+  "scripts": {
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.49.0"
+  }
+}

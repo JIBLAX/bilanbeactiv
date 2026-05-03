@@ -985,8 +985,8 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
   <div class="sh no-mt">📊 Activité <span id="home-year" style="font-size:10px;color:var(--tx3);font-weight:400;margin-left:3px"></span></div>
   <div class="kpi-grid">
-    <div class="kpi-box"><div class="kpi-v" id="kp-p">—</div><div class="kpi-l">Prospects</div></div>
-    <div class="kpi-box"><div class="kpi-v bl" id="kp-r">—</div><div class="kpi-l">RDV</div></div>
+    <div class="kpi-box"><div class="kpi-v" id="kp-p">—</div><div class="kpi-l">En pipeline</div></div>
+    <div class="kpi-box"><div class="kpi-v bl" id="kp-r">—</div><div class="kpi-l">Cohorte RDV (année)</div></div>
     <div class="kpi-box kpi-bx"><div class="kpi-v bx" id="kp-t">—</div><div class="kpi-l">Taux Closing</div></div>
     <div class="kpi-box kpi-Y"><div class="kpi-v ye" id="kp-ca">—</div><div class="kpi-l">CA <span id="kp-ca-year"></span></div></div>
   </div>
@@ -1019,8 +1019,8 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="stat-main" id="stat-closing-pct">—</div>
   </div>
   <div class="kpi-grid" style="margin-bottom:16px">
-    <div class="kpi-box" style="padding:12px"><div class="kpi-v" id="st-p" style="font-size:22px">—</div><div class="kpi-l">Prospects</div></div>
-    <div class="kpi-box" style="padding:12px"><div class="kpi-v bl" id="st-r" style="font-size:22px">—</div><div class="kpi-l">RDV</div></div>
+    <div class="kpi-box" style="padding:12px"><div class="kpi-v" id="st-p" style="font-size:22px">—</div><div class="kpi-l">Non closés (cohorte)</div></div>
+    <div class="kpi-box" style="padding:12px"><div class="kpi-v bl" id="st-r" style="font-size:22px">—</div><div class="kpi-l">Volume année (date RDV)</div></div>
     <div class="kpi-box" style="padding:12px"><div class="kpi-v" id="st-c" style="font-size:22px;color:var(--G)">—</div><div class="kpi-l">Closings</div></div>
     <div class="kpi-box" style="padding:12px"><div class="kpi-v ye" id="st-ca" style="font-size:18px">—</div><div class="kpi-l">CA total</div></div>
   </div>
@@ -3648,17 +3648,24 @@ function getYear(dateStr) {
   if(!dateStr) return null;
   try{const p=dateStr.split('/');return p.length===3?parseInt('20'+p[2]):parseInt(dateStr.slice(0,4));}catch(e){return null;}
 }
+/** Closé + Ancien client = engagement passé (même logique Stats / Wrapped / CA). */
+function isClosingStatusForKPI(c) {
+  return !!(c && (c.statut === 'Closé' || c.statut === 'Ancien Client'));
+}
 function updateKPIs() {
   const year=new Date().getFullYear();
   document.getElementById('home-year').textContent=year;
   document.getElementById('kp-ca-year').textContent=year;
   const yc=ST.clients.filter(c=>getYear(c.date)===year);
-  const total=ST.clients.length, rdv=yc.length;
-  const _isClosed=c=>c.statut==='Closé'||c.statut==='Ancien Client';
-  const closings=yc.filter(_isClosed).length;
-  const taux=rdv>0?Math.round(closings/rdv*100):0;
-  const ca=yc.filter(_isClosed).reduce((s,c)=>s+(parseFloat(c.montant)||0),0);
-  sv2('kp-p',total||'—'); sv2('kp-r',rdv||'—');
+  var pipelineOpen = ST.clients.filter(function(c){
+    return c && (c.prenom || c.nom) && !isClosingStatusForKPI(c);
+  }).length;
+  var cohortRdv = yc.length;
+  const closings=yc.filter(isClosingStatusForKPI).length;
+  const taux=cohortRdv>0?Math.round(closings/cohortRdv*100):0;
+  const ca=yc.filter(isClosingStatusForKPI).reduce((s,c)=>s+(parseFloat(c.montant)||0),0);
+  sv2('kp-p', pipelineOpen || '0');
+  sv2('kp-r', cohortRdv || '—');
   sv2('kp-t',taux?taux+'%':'—'); sv2('kp-ca',ca>0?ca+'€':'—');
   sv2('sb-closing',taux?taux+'%':'—'); sv2('tb-closing',taux?taux+'%':'—');
   sv2('sb-year',year);
@@ -3843,7 +3850,7 @@ function _buildHomeAlerts() {
   ST.clients.forEach(function(c) {
     if (!c || !c.sig_offre_id) return;
     var off = _offerForClient(c);
-    if (!off || !(off.sessionTracking === true || off.session_tracking === true)) return;
+    if (!off || !(off.sessionTracking === true || off.session_tracking === true || off.session_tracking_enabled === true)) return;
     var cy = _activeCycleForClient(c);
     if (!cy) return;
     var prev = Number(cy.seancesPrevues) || 0;
@@ -4051,13 +4058,17 @@ function renderStats() {
   const year=ST.statsYear||new Date().getFullYear();
   sv2('stats-year',year);
   const yc=ST.clients.filter(c=>getYear(c.date)===year);
-  const _isC=c=>c.statut==='Closé'||c.statut==='Ancien Client';
-  const total=yc.length, closings=yc.filter(_isC).length;
-  const taux=total>0?Math.round(closings/total*100):0;
+  const _isC=isClosingStatusForKPI;
+  const cohortVol=yc.length;
+  const pipelineCohort=yc.filter(function(c){ return !_isC(c); }).length;
+  const closings=yc.filter(_isC).length;
+  const taux=cohortVol>0?Math.round(closings/cohortVol*100):0;
   const ca=yc.filter(_isC).reduce((s,c)=>s+(parseFloat(c.montant)||0),0);
   const objTotal=yc.reduce((s,c)=>s+(c.objections||[]).length,0);
   sv2('stat-closing-pct',taux+'%');
-  sv2('st-p',total||'—'); sv2('st-r',total||'—'); sv2('st-c',closings||'—');
+  sv2('st-p', String(pipelineCohort));
+  sv2('st-r', cohortVol || '—');
+  sv2('st-c',closings||'—');
   sv2('st-ca',ca>0?ca+'€':'—');
   function barEl(cid,data,col){
     const el=document.getElementById(cid);if(!el)return;
@@ -4066,7 +4077,11 @@ function renderStats() {
     el.innerHTML=sorted.length?sorted.map(([k,v])=>'<div class="stat-bar-item"><div class="stat-bar-lbl">'+k.slice(0,20)+'</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width:'+(v/max*100)+'%;background:'+col+'"></div></div><div class="stat-bar-val">'+v+'</div></div>').join(''):'<div class="note">Aucune donnée</div>';
   }
   const offresCount={};
-  yc.filter(_isC).forEach(c=>{(c.offres||'').split(',').forEach(o=>{const t=o.trim();if(t)offresCount[t]=(offresCount[t]||0)+1;});});
+  yc.filter(_isC).forEach(function(c){
+    var o = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
+    var t = (o && o.name) ? String(o.name).trim() : ((c.offres||'').split(',')[0]||'').trim();
+    if (t) offresCount[t]=(offresCount[t]||0)+1;
+  });
   barEl('stats-offres',offresCount,'var(--Y)');
   const srcs={};yc.forEach(c=>{if(c.source)srcs[c.source]=(srcs[c.source]||0)+1;});
   barEl('stats-sources',srcs,'var(--bx)');
@@ -4106,7 +4121,7 @@ function renderStats() {
 function openWrapped() {
   var year = ST.statsYear || new Date().getFullYear();
   var yc = ST.clients.filter(function(c){ return getYear(c.date) === year; });
-  var closings = yc.filter(function(c){ return c.statut === 'Closé'; });
+  var closings = yc.filter(isClosingStatusForKPI);
   var total = yc.length;
   var taux = total > 0 ? Math.round(closings.length / total * 100) : 0;
   var ca = closings.reduce(function(s,c){ return s + (parseFloat(c.montant)||0); }, 0);
@@ -4171,8 +4186,8 @@ function openWrapped() {
     '</div>' +
 
     '<div class="wr-grid">' +
-      '<div class="wr-kpi"><div class="wr-kpi-v">'+total+'</div><div class="wr-kpi-l">Prospects</div></div>' +
-      '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#4cd964">'+closings.length+'</div><div class="wr-kpi-l">Clients closés</div></div>' +
+      '<div class="wr-kpi"><div class="wr-kpi-v">'+total+'</div><div class="wr-kpi-l">Cohorte (RDV année)</div></div>' +
+      '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#4cd964">'+closings.length+'</div><div class="wr-kpi-l">Closings (Closé + anciens)</div></div>' +
       '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#ff9f0a">'+taux+'%</div><div class="wr-kpi-l">Taux closing</div></div>' +
       '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#ffd60a">'+(ca>0?ca+'€':'—')+'</div><div class="wr-kpi-l">CA total</div></div>' +
     '</div>' +
@@ -4272,7 +4287,7 @@ function renderGraph() {
   const monthly={};for(let i=1;i<=12;i++)monthly[year+'-'+String(i).padStart(2,'0')]={rdv:0,ca:0};
   ST.clients.filter(c=>getYear(c.date)===year).forEach(c=>{
     let m='';try{const p=c.date.split('/');if(p.length===3)m='20'+p[2]+'-'+p[1].padStart(2,'0');else m=c.date.slice(0,7);}catch(e){return;}
-    if(!monthly[m])return;monthly[m].rdv++;if(c.statut==='Closé')monthly[m].ca+=(parseFloat(c.montant)||0);
+    if(!monthly[m])return;monthly[m].rdv++;if(isClosingStatusForKPI(c))monthly[m].ca+=(parseFloat(c.montant)||0);
   });
   const mLbls=['J','F','M','A','M','J','J','A','S','O','N','D'];
   const data=Object.keys(monthly).sort().map(k=>monthly[k]);
@@ -5647,7 +5662,7 @@ function renderClients(){
     var isClosing = c.sig_started === true;
     var isNew = isNewClient(c);
     var dt=c.updated_at?new Date(c.updated_at).toLocaleDateString('fr-FR'):'';
-    var offreTxt = ((c.offres||'').split(',')[0].trim()||'—');
+    var offRaw = ((c.offres||'').split(',')[0]||'').trim();
     var displayStatut = c.statut;
     var todayStr = new Date().toISOString().split('T')[0];
     if ((c.statut === 'Non closé' || c.statut === 'Contact' || c.statut === 'Attente RDV') && c.date && c.date >= todayStr) displayStatut = 'Attente RDV';
@@ -5671,11 +5686,19 @@ function renderClients(){
     var cardClasses='ccrd'+(ST.selectMode?' select-mode':'')+(isSelected?' selected':'');
     var cardClick=ST.selectMode?'toggleClientSelect(\''+c.id+'\',event)':'openClient(\''+c.id+'\')';
     var cardStyle=ST.selectMode?'':(isNew?'animation:slide-in-new 2s ease-out':isClosing?'border-color:rgba(200,130,10,.4)':'');
+    var metaLine = [];
+    var _src = (c.source||'').trim();
+    var _vil = (c.ville||'').trim();
+    if (_src) metaLine.push(_src);
+    if (_vil) metaLine.push(_vil);
+    if (offRaw) metaLine.push(offRaw);
+    if (dt) metaLine.push(dt);
+    var cmetaStr = metaLine.join(' · ');
     return '<div class="'+cardClasses+'" onclick="'+cardClick+'" style="'+cardStyle+'">'
       +selCheck
       +'<div class="cav" style="'+(isClosing?'background:var(--Y)':isNew?'background:var(--G)':'')+'">'+init+'</div>'
       +'<div class="cinfo"><div class="cname">'+(c.prenom||'')+' '+(c.nom||'')+'</div>'
-      +'<div class="cmeta">'+(c.source||c.ville||'—')+' · '+offreTxt+' · '+dt+'</div></div>'
+      +'<div class="cmeta">'+(cmetaStr||'&nbsp;')+'</div>'
       +'<div class="cbadges">'
         +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
         + newBadge + closingBadge + groupBadge + sapBadge + retourBadge
@@ -6068,6 +6091,7 @@ function getActiveStageDefs(c) {
 }
 
 function renderModeStages(clientId, c, container) {
+  var finaleShowsNewOffre = false;
   var stagesDef = getActiveStageDefs(c);
   migrateClientModeStagesToNewDefs(c, stagesDef);
   initModeStages(c, stagesDef);
@@ -6084,20 +6108,19 @@ function renderModeStages(clientId, c, container) {
   var gateOff = c.sig_offre_id ? loadOffres().find(function(x){ return x.id === c.sig_offre_id; }) : null;
   var sessionGate = offerParcoursCompletionUsesSessions(gateOff);
   var gateStats = sessionGate ? getSessionGateStats(c) : null;
-  var headerParts = '<div class="cm-stages-h">Parcours</div>'
-    + (c.parcours_started_at ? '<div style="font-size:11px;color:var(--tx3);margin:-6px 0 10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--rim3)">🚀 Démarré le <strong>' + String(c.parcours_started_at).slice(0, 10) + '</strong></div>' : '');
-  if (sessionGate && gateStats && gateStats.min > 0) {
-    var pctBar = Math.min(100, Math.round(gateStats.eff / gateStats.min * 100));
-    headerParts += '<div style="font-size:12px;margin:0 0 12px;padding:10px 12px;background:linear-gradient(135deg,rgba(26,110,219,.08),transparent);border:1px solid var(--rim3);border-radius:var(--r2)">'
-      + '<div style="font-weight:700;color:var(--tx);margin-bottom:6px">📊 Séances → validation du parcours</div>'
-      + '<div style="color:var(--tx2);line-height:1.45"><strong>' + gateStats.eff + '</strong> / <strong>' + gateStats.min + '</strong> séances effectuées pour pouvoir cocher la dernière étape.</div>'
-      + (gateStats.met
-        ? '<div style="margin-top:8px;font-size:12px;color:var(--G);font-weight:700">✓ Objectif atteint — validez « Terminée » ci-dessous.</div>'
-        : '<div style="margin-top:8px;font-size:11px;color:var(--tx3)">Enregistrez les séances avec <strong>+1</strong> dans « Suivi des séances » (bloc au-dessus de cette section).</div>')
-      + '<div style="margin-top:10px;height:6px;background:var(--rim3);border-radius:4px;overflow:hidden"><div style="height:100%;width:' + pctBar + '%;background:var(--bx);transition:width .2s"></div></div>'
-      + '</div>';
+
+  var hParc = document.createElement('div'); hParc.className = 'cm-stages-h'; hParc.textContent = 'Parcours'; stagesWrap.appendChild(hParc);
+  if (c.parcours_started_at) {
+    var dd = document.createElement('div');
+    dd.style.cssText = 'font-size:11px;color:var(--tx3);margin:-6px 0 10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--rim3)';
+    dd.innerHTML = '🚀 Démarré le <strong>' + String(c.parcours_started_at).slice(0, 10) + '</strong>';
+    stagesWrap.appendChild(dd);
   }
-  stagesWrap.innerHTML = headerParts;
+  if (sessionGate && clientQualifiesForSessionTrackingCRM(c)) {
+    var band = document.createElement('div');
+    band.style.cssText = 'margin:0 0 12px;padding:10px 12px;background:linear-gradient(135deg,rgba(26,110,219,.06),transparent);border:1px solid var(--rim3);border-radius:var(--r2)';
+    if (attachSessionGateCompactUi(band, clientId, { suffix: '-hdr', showEarlyEndBtn: true })) stagesWrap.appendChild(band);
+  }
   container.appendChild(stagesWrap);
 
   stagesDef.forEach(function(stageDef, si){
@@ -6135,12 +6158,34 @@ function renderModeStages(clientId, c, container) {
     if (isFuture) {
       body.innerHTML = '<div style="font-size:12.5px;color:var(--tx4);text-align:center;padding:8px 0;font-style:italic">🔒 Déverrouillez l\'étape précédente d\'abord</div>';
     } else {
+      if (isActive && sessionGate && clientQualifiesForSessionTrackingCRM(c)) {
+        var gInline = getSessionGateStats(c);
+        if (gInline && gInline.min > 0) {
+          var fuseWrap = document.createElement('div');
+          fuseWrap.style.cssText = 'margin:0 0 10px;padding:8px 10px;background:var(--bg3);border:1px solid var(--rim3);border-radius:var(--r2);font-size:11px;line-height:1.45;color:var(--tx2)';
+          fuseWrap.textContent = (parcoursCoachingEarlyEndActive(c)
+            ? 'Fin coaching hors objectif enregistrée · '
+            : '')
+            + gInline.eff + ' / ' + gInline.min + ' séances pour la finale · compteur partagé avec le bandeau du parcours.';
+          var bLnk = document.createElement('button');
+          bLnk.type = 'button';
+          bLnk.className = 'btn btn-sm';
+          bLnk.style.cssText = 'margin-top:8px;display:block;width:100%;padding:8px;font-weight:700';
+          bLnk.textContent = 'Détails · suivi séances';
+          bLnk.onclick = function(e) {
+            e.stopPropagation();
+            scrollToCrmSuiviSeancesAnchor(clientId);
+          };
+          body.appendChild(fuseWrap);
+          body.appendChild(bLnk);
+        }
+      }
       stageDef.steps.forEach(function(step, stepIdx){
         var st = stageData.steps[stepIdx] || {done:false, doneAt:null};
         var prevDone = stepIdx === 0 || (stageData.steps[stepIdx-1] && stageData.steps[stepIdx-1].done);
         var isLocked = isFuture || (!prevDone && !st.done);
         var isLastParcoursStepHere = (si === stagesDef.length - 1 && stepIdx === (stageDef.steps || []).length - 1);
-        var sessionLocksFinal = sessionGate && step.isFinal && isLastParcoursStepHere && gateStats && gateStats.min > 0 && !gateStats.met;
+        var sessionLocksFinal = sessionGate && step.isFinal && isLastParcoursStepHere && gateStats && gateStats.min > 0 && !gateStats.met && !parcoursCoachingEarlyEndActive(c);
         if (sessionLocksFinal) isLocked = true;
         var row = document.createElement('div'); row.className = 'cm-step';
         var chk = document.createElement('div');
@@ -6273,6 +6318,12 @@ function renderModeStages(clientId, c, container) {
     endDiv.innerHTML = '<div class="cm-finale-h">'+hHtml+'</div>'
       + (subHtml ? '<div class="cm-finale-sub">'+subHtml+'</div>' : '');
     endDiv.appendChild(actions);
+    for (var ni = 0; ni < actions.children.length; ni++) {
+      if ((actions.children[ni].textContent || '').indexOf('Nouvelle offre') !== -1) {
+        finaleShowsNewOffre = true;
+        break;
+      }
+    }
     appendParcoursNextSelect(clientId, c, endDiv);
 
     if (c.statut !== 'Ancien Client') {
@@ -6282,6 +6333,8 @@ function renderModeStages(clientId, c, container) {
     }
     container.appendChild(endDiv);
   }
+
+  return { finaleShowsNewOffre: finaleShowsNewOffre };
 }
 
 function relancerAncienClient(clientId) {
@@ -6355,8 +6408,8 @@ function validateModeStep(clientId, stageIdx, stepIdx) {
     var offGate = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
     if (offerParcoursCompletionUsesSessions(offGate)) {
       var gs = getSessionGateStats(c);
-      if (gs && gs.min > 0 && !gs.met) {
-        toast('err', '⚠️ Objectif séances : ' + gs.eff + '/' + gs.min + '. Ajoutez des séances (+1) dans le bloc « Suivi des séances ».');
+      if (gs && gs.min > 0 && !gs.met && !parcoursCoachingEarlyEndActive(c)) {
+        toast('err', '⚠️ Objectif séances : ' + gs.eff + '/' + gs.min + '. Utilisez −1/+1 dans le bandeau parcours ou « Détails · suivi séances », ou « Fin coaching (sans objectif) » si abandon.');
         return;
       }
     }
@@ -6864,6 +6917,8 @@ function openNewOffreForClient(clientId) {
   // Ouvre le modal SIGNATURE pour une nouvelle offre
   var c = ST.clients.find(function(x){ return x.id == clientId; });
   if (!c) return;
+  if (c.statut === 'Ancien Client') c.reopen_from_ancien = true;
+  delete c.parcours_coaching_early_end_at;
   archiveSessionCyclesForClient(c);
   // Reset sig_steps et mode_stages pour une nouvelle offre
   c.sig_steps = null;
@@ -6940,6 +6995,154 @@ function getSessionGateStats(c) {
   var eff = cy ? (Number(cy.seancesEffectuees) || 0) : 0;
   var met = min > 0 ? eff >= min : true;
   return { eff: eff, min: min, met: met, cy: cy };
+}
+
+/** Coaching arrêté sans objectif séances : débloque la case finale pour ce parcours uniquement. */
+function parcoursCoachingEarlyEndActive(c) {
+  return !!(c && c.parcours_coaching_early_end_at);
+}
+
+function scrollToCrmSuiviSeancesAnchor(clientId) {
+  var el = document.getElementById('ba-crm-suivi-seances-' + clientId);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/**
+ * Compact + −1/+1 séances dans le bandeau parcours (même source que le bloc « Suivi des séances »).
+ * suffix : ids uniques (-hdr / inline).
+ */
+function attachSessionGateCompactUi(hostEl, clientId, options) {
+  var opts = options || {};
+  var suffix = opts.suffix || 'x';
+  if (!hostEl) return false;
+
+  var c = ST.clients.find(function(x) { return x.id == clientId; });
+  if (!c || !clientQualifiesForSessionTrackingCRM(c)) return false;
+  var showEarlyEnd = opts.showEarlyEndBtn === true && !parcoursCoachingEarlyEndActive(c);
+  migrateClientSessionCycles(c);
+  var gateOff = loadOffres().find(function(x) { return x.id === c.sig_offre_id; });
+  if (!gateOff || !offerParcoursCompletionUsesSessions(gateOff)) return false;
+
+  var g = getSessionGateStats(c);
+  if (!g) return false;
+  if (!g.cy) {
+    if (offerHasSessionTrackingBilan(c.sig_offre_id) && c.sig_started === true) ensureActiveSessionCycle(c);
+    g = getSessionGateStats(c);
+  }
+  if (!g || !g.cy) return false;
+
+  hostEl.innerHTML = '';
+  hostEl.style.cssText = 'font-size:11px;line-height:1.45;color:var(--tx2)';
+  hostEl.dataset.sessionCompact = '1';
+
+  var pctBar = g.min > 0 ? Math.min(100, Math.round(g.eff / g.min * 100)) : 0;
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'font-weight:700;color:var(--tx);margin-bottom:6px';
+  hdr.textContent = '📊 Séances (parcours)';
+  hostEl.appendChild(hdr);
+
+  if (parcoursCoachingEarlyEndActive(c)) {
+    var bye = document.createElement('div');
+    bye.style.cssText = 'font-size:11px;color:var(--tx3);margin-bottom:8px';
+    bye.textContent = 'Fin coaching enregistrée — la dernière étape peut être validée.';
+    hostEl.appendChild(bye);
+  }
+
+  var row = document.createElement('div');
+  row.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:6px';
+
+  var lblNb = document.createElement('span');
+  lblNb.style.flex = '1 1 120px';
+  lblNb.innerHTML = '<strong style="color:var(--tx)">' + g.eff + '</strong> / <strong>' + g.min + '</strong> séances pour valider « Terminée »';
+
+  var ctl = document.createElement('span');
+  ctl.style.cssText = 'display:flex;align-items:center;gap:8px;margin-left:auto';
+
+  var btnM = document.createElement('button');
+  btnM.type = 'button';
+  btnM.className = 'btn';
+  btnM.style.cssText = 'padding:4px 10px;font-size:12px';
+  btnM.textContent = '−1';
+  btnM.id = 'sess-comp-min' + suffix + '-' + clientId;
+
+  var btnP = document.createElement('button');
+  btnP.type = 'button';
+  btnP.className = 'btn';
+  btnP.style.cssText = 'padding:4px 10px;font-size:12px';
+  btnP.textContent = '+1';
+  btnP.id = 'sess-comp-plus' + suffix + '-' + clientId;
+
+  ctl.appendChild(btnM);
+  ctl.appendChild(btnP);
+  row.appendChild(lblNb);
+  row.appendChild(ctl);
+  hostEl.appendChild(row);
+
+  function wireDelta(delta) {
+    var cl = ST.clients.find(function(x) { return x.id == clientId; });
+    if (!cl || !delta) return;
+    migrateClientSessionCycles(cl);
+    var gg = getSessionGateStats(cl);
+    if (!gg || !gg.cy) return;
+    var cur = Number(gg.cy.seancesEffectuees) || 0;
+    patchSessionCycle(clientId, gg.cy.id, { seancesEffectuees: Math.max(0, cur + delta) });
+  }
+
+  btnM.onclick = function(ev) { ev.stopPropagation(); wireDelta(-1); };
+  btnP.onclick = function(ev) { ev.stopPropagation(); wireDelta(+1); };
+
+  var linkRow = document.createElement('div');
+  linkRow.style.cssText = 'margin-top:4px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:11px';
+
+  var a = document.createElement('button');
+  a.type = 'button';
+  a.className = 'btn btn-sm btn-V';
+  a.style.cssText = 'padding:4px 10px;font-weight:700';
+  a.textContent = 'Détails · suivi séances';
+  a.onclick = function(ev) {
+    ev.stopPropagation();
+    scrollToCrmSuiviSeancesAnchor(clientId);
+  };
+  linkRow.appendChild(a);
+
+  if (showEarlyEnd) {
+    var ab = document.createElement('button');
+    ab.type = 'button';
+    ab.className = 'btn btn-sm';
+    ab.style.cssText = 'padding:4px 8px;color:var(--tx3)';
+    ab.textContent = 'Fin coaching (sans objectif)';
+    ab.onclick = function(ev) {
+      ev.stopPropagation();
+      openFinCoachingSansObjectifConfirm(clientId);
+    };
+    linkRow.appendChild(ab);
+  }
+
+  hostEl.appendChild(linkRow);
+
+  if (g.min > 0) {
+    var bar = document.createElement('div');
+    bar.style.cssText = 'margin-top:8px;height:5px;background:var(--rim3);border-radius:4px;overflow:hidden';
+    var fi = document.createElement('div');
+    fi.style.cssText = 'height:100%;width:' + pctBar + '%;background:var(--bx)';
+    bar.appendChild(fi);
+    hostEl.appendChild(bar);
+  }
+  return true;
+}
+
+function openFinCoachingSansObjectifConfirm(clientId) {
+  var c = ST.clients.find(function(x) { return x.id == clientId; });
+  if (!c || parcoursCoachingEarlyEndActive(c)) return;
+  dlgConfirm('Enregistrer une fin de coaching sans atteindre l’objectif séances pour ce parcours ? (abandon, blessure, autre)', 'Confirmer').then(function(r) {
+    if (!r.confirmed) return;
+    c.parcours_coaching_early_end_at = new Date().toISOString();
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    toast('ok', '🏁 Fin coaching — case finale débloquée');
+    renderClientModal(clientId);
+  });
 }
 
 function isLastStepOfParcours(stagesDef, stageIdx, stepIdx) {
@@ -7175,6 +7378,7 @@ function appendSessionTrackingCRM(container, clientId) {
   );
 
   var wrap = document.createElement('div');
+  wrap.id = 'ba-crm-suivi-seances-' + clientId;
   wrap.style.cssText = 'margin:14px 0;padding:14px;background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2)';
   wrap.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Suivi des séances — parcours actuel</div>'
     + '<div style="font-size:11px;color:var(--tx2);margin-bottom:10px">' + (offLbl ? offLbl.name : '') + minLab + '</div>'
@@ -7212,6 +7416,54 @@ function appendSessionTrackingCRM(container, clientId) {
     if (elPf) elPf.onchange = function() { patchSessionCycle(clientId, cid, { periodeFin: this.value || '' }); };
   }
 }
+
+/** Engagement (closing) + démarrage parcours — rétro et imports. */
+function saveClientDossierDates(clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  var elC = document.getElementById('crm-dossier-closed-' + clientId);
+  var elP = document.getElementById('crm-dossier-parcours-' + clientId);
+  if (elC) {
+    var vc = (elC.value || '').trim();
+    if (vc) c.closedAt = vc + 'T12:00:00.000Z';
+    else delete c.closedAt;
+  }
+  if (elP) {
+    var vp = (elP.value || '').trim();
+    if (vp) c.parcours_started_at = vp + 'T12:00:00.000Z';
+    else delete c.parcours_started_at;
+  }
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  toast('ok', '✅ Dates dossier enregistrées');
+  renderClientModal(clientId);
+}
+
+function appendClientDossierDatesPanel(container, clientId, c) {
+  if (!container || !c) return;
+  var showParcours = !!(c.sig_offre_id || resolveOffreForClient(c) || (Array.isArray(c.mode_stages) && c.mode_stages.length) || c.parcours_started_at);
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'margin:10px 0 12px;padding:12px 14px;border:1px dashed var(--rim3);border-radius:var(--r2);background:var(--bg3)';
+  var closedVal = c.closedAt ? String(c.closedAt).slice(0, 10) : '';
+  var parcVal = c.parcours_started_at ? String(c.parcours_started_at).slice(0, 10) : '';
+  var h = '<div style="font-size:11px;font-weight:800;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">📅 Dates dossier</div>'
+    + '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.45">Corrigez l’engagement (closing) et le premier démarrage de parcours pour les dossiers rétro ou importés.</div>'
+    + '<div style="display:grid;gap:10px">'
+    + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Engagement client (closing)</div>'
+    + '<input type="date" id="crm-dossier-closed-' + clientId + '" value="' + closedVal + '" style="width:100%;max-width:280px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" title="Date à laquelle le client est enregistré comme engagé"></div>';
+  if (showParcours) {
+    h += '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Démarrage parcours coaching</div>'
+      + '<input type="date" id="crm-dossier-parcours-' + clientId + '" value="' + parcVal + '" style="width:100%;max-width:280px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" title="Aligne le bandeau « Démarré le » du parcours"></div>';
+  }
+  h += '</div>'
+    + '<button type="button" class="btn btn-bx btn-sm" id="crm-dossier-save-' + clientId + '" style="width:100%;margin-top:12px">💾 Enregistrer les dates</button>';
+  wrap.innerHTML = h;
+  container.appendChild(wrap);
+  var btn = document.getElementById('crm-dossier-save-' + clientId);
+  if (btn) btn.onclick = function() { saveClientDossierDates(clientId); };
+}
+
 function saveClientImportantDates(clientId, patch) {
   var c = ST.clients.find(function(x) { return x.id == clientId; });
   if (!c) return;
@@ -7398,7 +7650,6 @@ function renderClientModal(id) {
   }
   if (c.profession) rows.push(['Profession', c.profession]);
   if (c.montant)    rows.push(['Montant', parseFloat(c.montant).toLocaleString('fr-FR')+' €']);
-  if (c.closedAt)   rows.push(['Client depuis', new Date(c.closedAt).toLocaleDateString('fr-FR')]);
   if (c.last_interaction) rows.push(['Dernière relance', new Date(c.last_interaction).toLocaleDateString('fr-FR')]);
   if (rows.length) {
     var summary = document.createElement('div'); summary.className = 'pm-summary';
@@ -7409,12 +7660,13 @@ function renderClientModal(id) {
     container.appendChild(summary);
   }
 
+  appendClientDossierDatesPanel(container, id, c);
+
   var facBloc = document.createElement('div');
   facBloc.style.cssText = 'margin:10px 0 14px;display:flex;flex-direction:column;gap:6px';
   facBloc.innerHTML = '<button type="button" class="btn btn-bx" style="width:100%;justify-content:center;padding:11px 14px;font-weight:700;border-radius:var(--r2)" onclick="openAtelierRapportFromClient(\''+id+'\')">📋 Rapport diagnostique</button>';
   container.appendChild(facBloc);
 
-  appendSessionTrackingCRM(container, id);
   appendClientSuiviJalonsPanel(container, id);
 
   if (c.sig_offre_id || offreMode || resolveOffreForClient(c)) {
@@ -7478,9 +7730,12 @@ function renderClientModal(id) {
   }
 
   // ── Stages parcours
+  var finaleParcoursNewOffreShown = false;
   if (c.sig_offre_id || offreMode || resolveOffreForClient(c)) {
-    renderModeStages(id, c, container);
+    var _pmRet = renderModeStages(id, c, container);
+    finaleParcoursNewOffreShown = !!(_pmRet && _pmRet.finaleShowsNewOffre);
   } else {
+    finaleParcoursNewOffreShown = true;
     var empty = document.createElement('div'); empty.className = 'cm-empty';
     empty.innerHTML = '<div class="cm-empty-ico">💼</div>'
       + '<div class="cm-empty-h">Aucun parcours actif</div>'
@@ -7488,6 +7743,8 @@ function renderClientModal(id) {
       + '<button class="btn btn-bx btn-sm" onclick="openNewOffreForClient(\''+id+'\')">💼 Nouvelle offre</button>';
     container.appendChild(empty);
   }
+
+  appendSessionTrackingCRM(container, id);
 
   if (isAncien) {
     var reopenRow = document.createElement('div');
@@ -7497,13 +7754,16 @@ function renderClientModal(id) {
   }
 
   // ── Actions secondaires (en bas, discrètes)
+  var hideFooterNouvelleOffre = !!(isAncien || finaleParcoursNewOffreShown);
   var sec = document.createElement('div'); sec.className = 'pm-actions-sec';
   var editBtn = document.createElement('button'); editBtn.className = 'btn'; editBtn.innerHTML = '✏️ Modifier';
   editBtn.onclick = function(){ openEditClientModal(id); };
   sec.appendChild(editBtn);
-  var newOffreBtn = document.createElement('button'); newOffreBtn.className = 'btn'; newOffreBtn.innerHTML = '💼 Nouvelle offre';
-  newOffreBtn.onclick = function(){ openNewOffreForClient(id); };
-  sec.appendChild(newOffreBtn);
+  if (!hideFooterNouvelleOffre) {
+    var newOffreBtn = document.createElement('button'); newOffreBtn.className = 'btn'; newOffreBtn.innerHTML = '💼 Nouvelle offre';
+    newOffreBtn.onclick = function(){ openNewOffreForClient(id); };
+    sec.appendChild(newOffreBtn);
+  }
   var delBtn = document.createElement('button'); delBtn.className = 'btn btn-R';
   delBtn.innerHTML = '🗑 Supprimer';
   delBtn.onclick = function(){ deleteClient(id); };
@@ -7615,14 +7875,16 @@ async function loadFromSupabase(){
       // Ignorer les enregistrements sans nom (prospects vides/incomplets)
       if(!row.prenom && !row.nom) return;
       let pq=null,bilan=null,final=null,bilanRaw=null,rdvHistory=null,sess=null,sessionCycles=null,importantDates=null,parcoursStarted=null,testsData=null,rapportLeger=null,modeStagesRemote=null;
-      var nextChoice=null;
-      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;rdvHistory=j.rdv_history||null;sess=j.session_tracking||null;if(Array.isArray(j.session_cycles))sessionCycles=j.session_cycles;if(j.important_dates&&typeof j.important_dates==='object')importantDates=j.important_dates;if(j.parcours_started_at) parcoursStarted=j.parcours_started_at;if(j.tests_data&&typeof j.tests_data==='object')testsData=j.tests_data;if(j.rapport_leger)rapportLeger=j.rapport_leger;if(Array.isArray(j.mode_stages))modeStagesRemote=j.mode_stages;if(j.parcours_next_choice)nextChoice=j.parcours_next_choice;}catch(e){}
+      var nextChoice=null,parcoursCoachEarly=null,closingAtRemote=null;
+      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;rdvHistory=j.rdv_history||null;sess=j.session_tracking||null;if(Array.isArray(j.session_cycles))sessionCycles=j.session_cycles;if(j.important_dates&&typeof j.important_dates==='object')importantDates=j.important_dates;if(j.parcours_started_at) parcoursStarted=j.parcours_started_at;if(j.tests_data&&typeof j.tests_data==='object')testsData=j.tests_data;if(j.rapport_leger)rapportLeger=j.rapport_leger;if(Array.isArray(j.mode_stages))modeStagesRemote=j.mode_stages;if(j.parcours_next_choice)nextChoice=j.parcours_next_choice;if(j.parcours_coaching_early_end_at)parcoursCoachEarly=j.parcours_coaching_early_end_at;if(j.closing_at)closingAtRemote=j.closing_at;else if(j.closed_at)closingAtRemote=j.closed_at;}catch(e){}
       const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,rdv_history:rdvHistory,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offre,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,bilan_raw:bilanRaw,tests_data:testsData,rapport_leger:rapportLeger,updated_at:row.updated_at,groupId:row.group_id||null,group_name:row.group_name||null,is_group_leader:row.is_group_leader||false,sap_enabled:row.sap_enabled||false};
       if(parcoursStarted) sc.parcours_started_at = parcoursStarted;
       if(sessionCycles) sc.session_cycles = sessionCycles;
       if(importantDates) sc.important_dates = importantDates;
       if(modeStagesRemote) sc.mode_stages = modeStagesRemote;
       if(nextChoice) sc.parcours_next_choice = nextChoice;
+      if(parcoursCoachEarly) sc.parcours_coaching_early_end_at = parcoursCoachEarly;
+      if(closingAtRemote) sc.closedAt = closingAtRemote;
       if(sess){if(sess.seancesPrevues!=null)sc.seancesPrevues=sess.seancesPrevues;if(sess.seancesEffectuees!=null)sc.seancesEffectuees=sess.seancesEffectuees;if(sess.periodeDebut)sc.periodeDebut=sess.periodeDebut;if(sess.periodeFin)sc.periodeFin=sess.periodeFin;}
       const i=ST.clients.findIndex(c=>c.id===sc.id);
       if(i>=0){
@@ -7634,6 +7896,8 @@ async function loadFromSupabase(){
           if(prev.rapport_leger) sc.rapport_leger = prev.rapport_leger;
           if(prev.mode_stages && prev.mode_stages.length) sc.mode_stages = prev.mode_stages;
           if(prev.parcours_next_choice != null && prev.parcours_next_choice !== '') sc.parcours_next_choice = prev.parcours_next_choice;
+          if(prev.closedAt) sc.closedAt = prev.closedAt;
+          if(prev.parcours_started_at) sc.parcours_started_at = prev.parcours_started_at;
         }
         ST.clients[i]=sc;
       }else ST.clients.unshift(sc);
@@ -7677,7 +7941,7 @@ async function saveToSupabase(c){
       ? { seancesPrevues: cur.seancesPrevues != null ? cur.seancesPrevues : null, seancesEffectuees: cur.seancesEffectuees != null ? cur.seancesEffectuees : null, periodeDebut: cur.periodeDebut || null, periodeFin: cur.periodeFin || null }
       : { seancesPrevues: c.seancesPrevues != null ? c.seancesPrevues : null, seancesEffectuees: c.seancesEffectuees != null ? c.seancesEffectuees : null, periodeDebut: c.periodeDebut || null, periodeFin: c.periodeFin || null };
     var _sync = loadMaxConfig().sync;
-    var _rj = { pq:c.pq_summary, bilan:c.bilan_summary, final:c.final_report, bilan_raw:c.bilan_raw||null, rdv_history:c.rdv_history||null, session_tracking:legacySess, session_cycles:cycles, important_dates:c.important_dates||null, parcours_started_at:c.parcours_started_at||null, parcours_next_choice:c.parcours_next_choice||null };
+    var _rj = { pq:c.pq_summary, bilan:c.bilan_summary, final:c.final_report, bilan_raw:c.bilan_raw||null, rdv_history:c.rdv_history||null, session_tracking:legacySess, session_cycles:cycles, important_dates:c.important_dates||null, parcours_started_at:c.parcours_started_at||null, parcours_next_choice:c.parcours_next_choice||null, parcours_coaching_early_end_at:c.parcours_coaching_early_end_at||null, closing_at:c.closedAt||null };
     if (_sync.tests_data && c.tests_data && typeof c.tests_data === 'object') _rj.tests_data = c.tests_data;
     if (_sync.rapport_leger && c.rapport_leger) _rj.rapport_leger = c.rapport_leger;
     if (_sync.mode_stages && Array.isArray(c.mode_stages)) _rj.mode_stages = c.mode_stages;
