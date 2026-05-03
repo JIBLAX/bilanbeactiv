@@ -615,6 +615,31 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 /* Badge groupe */
 .badge-group{display:inline-flex;align-items:center;padding:2px 8px;border-radius:50px;font-size:10px;font-weight:700;background:rgba(108,92,231,.12);color:var(--V);border:1px solid rgba(108,92,231,.3);text-transform:uppercase;letter-spacing:.5px}
 
+/* Objectifs accueil — compact + édition gamifiée */
+.hf-card{border-radius:var(--r2);overflow:hidden;border:1px solid var(--rim3);background:linear-gradient(168deg,var(--bg2) 0%,var(--bg3) 100%);box-shadow:var(--sh)}
+.hf-compact{display:flex;align-items:center;gap:14px;padding:14px 16px}
+.hf-ring-wrap{flex-shrink:0;width:76px;height:76px;position:relative}
+.hf-ring-svg{width:76px;height:76px;transform:rotate(-90deg);display:block}
+.hf-ring-pct{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:var(--tx);line-height:1.1}
+.hf-ring-sub{font-size:8px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.hf-compact-meta{flex:1;min-width:0}
+.hf-mini-offers{display:flex;flex-wrap:wrap;gap:5px 8px;margin-top:8px}
+.hf-mini-pill{font-size:9px;font-weight:700;padding:3px 9px;border-radius:50px;background:var(--bg);border:1px solid var(--rim3);color:var(--tx2)}
+.hf-edit-panel{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.4,0,.2,1),opacity .25s;border-top:1px solid transparent}
+.hf-edit-panel.open{max-height:2400px;border-top-color:var(--rim3);opacity:1}
+.hf-edit-inner{padding:14px 16px 16px}
+.hf-offer-row{margin-bottom:10px;padding:11px 12px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--rim3)}
+.hf-offer-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
+.hf-offer-name{font-size:12px;font-weight:800;color:var(--tx);line-height:1.25}
+.hf-offer-sub{font-size:10px;color:var(--tx3);margin-top:2px}
+.hf-slider-row{display:flex;align-items:center;gap:10px}
+.hf-range{flex:1;min-width:0;height:6px;accent-color:var(--bx);cursor:pointer}
+.hf-val{font-variant-numeric:tabular-nums;font-weight:900;font-size:15px;min-width:28px;text-align:right;color:var(--bx)}
+.hf-plan-total{font-size:12px;font-weight:800;text-align:center;padding:10px 12px;border-radius:var(--r2);margin-top:10px}
+.hf-plan-ok{background:rgba(22,163,74,.1);color:#166534;border:1px solid rgba(22,163,74,.28)}
+.hf-plan-warn{background:rgba(234,179,8,.12);color:#92400e;border:1px solid rgba(234,179,8,.35)}
+.hf-plan-bad{background:rgba(214,48,49,.08);color:var(--R);border:1px solid rgba(214,48,49,.22)}
+
 /* ═══════════════════════════════════════════════════
    OFFRES
 ═══════════════════════════════════════════════════ */
@@ -1069,7 +1094,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
 <!-- ══════ PAGE PRÉ-QUALIF ══════ -->
 <div class="pg" id="pg-pq">
-  <div class="page-title">📋 Pré-qualification IA</div>
+  <div class="page-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <span>📋 Pré-qualification IA</span>
+    <button type="button" class="btn btn-dk btn-sm" onclick="navReturnToClientSheet()" style="font-size:12px">← Fiche client</button>
+  </div>
   <div class="steps">
     <div class="step act" id="s1"><div class="step-c">1</div><div class="step-l">Pré-qualif</div></div>
     <div class="step" id="s2"><div class="step-c">2</div><div class="step-l">Bilan</div></div>
@@ -1090,7 +1118,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
 <!-- ══════ PAGE BILAN ══════ -->
 <div class="pg" id="pg-bilan">
-  <div class="page-title">📋 Bilan Coach <span id="bilan-client-name"></span></div>
+  <div class="page-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <span>📋 Bilan Coach <span id="bilan-client-name"></span></span>
+    <button type="button" class="btn btn-dk btn-sm" onclick="navReturnToClientSheet()" style="font-size:12px">← Fiche client</button>
+  </div>
   <div class="steps">
     <div class="step done" id="b-s1"><div class="step-c">1</div><div class="step-l">Pré-qualif</div></div>
     <div class="step act" id="b-s2"><div class="step-c">2</div><div class="step-l">Bilan</div></div>
@@ -1098,7 +1129,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
   <div id="bilan-form-container"><!-- rempli par renderBilanForm() --></div>
   <div class="brow" style="margin-bottom:18px">
-    <button class="btn btn-dk" onclick="showPg('pq')">← Retour</button>
+    <button class="btn btn-dk" onclick="navBackFromBilanFooter()">← Retour</button>
     <button id="btn-save-bilan" class="btn btn-bx" onclick="saveBilanAndReturn()">💾 Enregistrer le Bilan</button>
   </div>
   <div id="bilan-result" style="display:none"></div>
@@ -1117,7 +1148,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
 <!-- ══════ PAGE TESTS ══════ -->
 <div class="pg" id="pg-tests">
-  <div class="page-title">📏 Tests Physiques</div>
+  <div class="page-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <span>📏 Tests Physiques</span>
+    <button type="button" class="btn btn-dk btn-sm" onclick="navReturnToClientSheet()" style="font-size:12px">← Fiche client</button>
+  </div>
   <div class="steps">
     <div class="step done" id="t-s1"><div class="step-c">1</div><div class="step-l">Pré-qualif</div></div>
     <div class="step done" id="t-s2"><div class="step-c">2</div><div class="step-l">Bilan</div></div>
@@ -1134,7 +1168,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <div class="pg" id="pg-rapport">
   <div class="page-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
     <span>📋 Rapport diagnostique</span>
-    <button type="button" class="btn btn-dk btn-sm" onclick="showPg('home')" style="font-size:12px">← Accueil</button>
+    <button type="button" class="btn btn-dk btn-sm" onclick="navReturnToClientSheet()" style="font-size:12px">← Fiche client</button>
   </div>
   <div id="rpt-hub-root"></div>
   <div id="rpt-empty" style="display:none"></div>
@@ -1909,6 +1943,7 @@ function renderProspectModal(id, c, container) {
     var testsTile = tilesWrap.querySelector('[data-act="tests"]');
     if (testsTile && t3Cls !== 'locked') testsTile.onclick = function(){
       closeModal('client');
+      ST.returnToClientId = String(id);
       ST.clientId = id;
       ST.pqSummary = c.pq_summary || null;
       ST.bilanSummary = c.bilan_summary || null;
@@ -1919,6 +1954,7 @@ function renderProspectModal(id, c, container) {
     var reportTile = tilesWrap.querySelector('[data-act="report"]');
     if (reportTile && t4Cls !== 'locked') reportTile.onclick = function(){
       closeModal('client');
+      ST.returnToClientId = String(id);
       ST.clientId = id;
       ST.pqSummary = c.pq_summary || null;
       ST.bilanSummary = c.bilan_summary || null;
@@ -1995,6 +2031,7 @@ function renderProspectModal(id, c, container) {
 function startPrequalifForProspect(clientId) {
   var c = ST.clients.find(function(x){ return x.id == clientId; });
   if (!c) return;
+  ST.returnToClientId = String(clientId);
   ST.clientId = clientId;
   ST.pqSummary = c.pq_summary || null;
   closeModal('client');
@@ -2158,6 +2195,7 @@ function startBilanForProspect(clientId) {
     } catch(e) { localStorage.removeItem('ba_bilan_draft'); }
   }
 
+  ST.returnToClientId = String(clientId);
   ST.clientId = clientId;
   ST.pqSummary = c.pq_summary || null;
   ST.bilanSummary = c.bilan_summary || null;
@@ -2842,7 +2880,9 @@ const ST = {
   clients:[], rdvs:[], statsYear:null,
   homeAlertsFilter:'all',
   filterStatut:'all', filterProfil:'all',
-  selectMode:false, selectedIds:[]
+  selectMode:false, selectedIds:[],
+  /** Contexte « retour fiche » : rapport, bilan, tests, préqualif, hub atelier. */
+  returnToClientId:null
 };
 try {
   var _haf = localStorage.getItem('ba_home_alerts_filter_v1');
@@ -3642,6 +3682,25 @@ function showPg(name) {
   }
 }
 
+/** Revenir à la fiche client/prospect si un contexte client existe, sinon liste Contacts. */
+function navReturnToClientSheet() {
+  var cid = ST.returnToClientId || ST.clientId;
+  ST.returnToClientId = null;
+  if (cid) {
+    var id = String(cid);
+    showPg('clients');
+    setTimeout(function() { openClient(id); }, 220);
+  } else {
+    showPg('clients');
+  }
+}
+/** Pied de page Bilan : fiche si dossier lié, sinon étape Pré-qualif (nouveau dossier). */
+function navBackFromBilanFooter() {
+  var cid = ST.returnToClientId || ST.clientId;
+  if (cid) navReturnToClientSheet();
+  else showPg('pq');
+}
+
 // ═══════════════════════════════════════════════════
 // HOME KPIs
 // ═══════════════════════════════════════════════════
@@ -3686,28 +3745,76 @@ function saveHomeFunnelSettings(patch) {
   Object.keys(patch || {}).forEach(function(k) { cur[k] = patch[k]; });
   try { localStorage.setItem('ba_home_funnel_v1', JSON.stringify(cur)); } catch (e) {}
 }
-/** Panier moyen (€) sur ventes JM PASS + ACTIV de l’année en cours, sinon 150. */
-function computeDefaultPanierJmActiv(year) {
-  var offs = loadOffres();
-  function isJmActiv(o) {
-    if (!o || !o.name) return false;
-    var n = String(o.name).toUpperCase();
-    if (n.indexOf('JM PASS') !== -1) return true;
-    if (n.indexOf('ACTIV') === -1) return false;
-    if (n.indexOf('COLLECTIF') !== -1 || n.indexOf('COLLECT') !== -1) return false;
-    return true;
-  }
-  var yc = ST.clients.filter(function(c) { return getYear(c.date) === year && isClosingStatusForKPI(c); });
-  var sums = [], ids = {};
-  offs.forEach(function(o) { if (isJmActiv(o)) ids[o.id] = true; });
-  yc.forEach(function(c) {
-    if (c.sig_offre_id && ids[c.sig_offre_id]) {
-      var m = parseFloat(c.montant);
-      if (!isNaN(m) && m > 0) sums.push(m);
-    }
+/** CA « par vente » selon mode : contrat = prix catalogue ; trésorerie = 1er versement (prix / n échéances). */
+function homeObjEffectivePrice(o, caMode) {
+  var p = parseFloat(o && o.price);
+  if (isNaN(p) || p <= 0) return 0;
+  var n = Math.max(1, parseInt(o && o.paiement, 10) || 1);
+  if (caMode === 'treso') return Math.round((p / n) * 100) / 100;
+  return Math.round(p * 100) / 100;
+}
+function homeObjPlannedCA(cfg, offerList) {
+  var mode = cfg.caMode || 'contrat';
+  var alloc = cfg.offerAlloc || {};
+  var s = 0;
+  (offerList || []).forEach(function(o) {
+    if (!o || !o.id) return;
+    var cnt = parseInt(alloc[o.id], 10) || 0;
+    s += cnt * homeObjEffectivePrice(o, mode);
   });
-  if (!sums.length) return 150;
-  return Math.round(sums.reduce(function(a, b) { return a + b; }, 0) / sums.length);
+  return Math.round(s * 100) / 100;
+}
+function homeObjRepartitionAuto(cfg, offerList) {
+  cfg.offerAlloc = cfg.offerAlloc || {};
+  var T = parseFloat(cfg.targetCA) || 0;
+  var mode = cfg.caMode || 'contrat';
+  (offerList || []).forEach(function(o) { if (o && o.id) cfg.offerAlloc[o.id] = 0; });
+  var effs = (offerList || []).map(function(o) {
+    return { id: o.id, e: homeObjEffectivePrice(o, mode), o: o };
+  }).filter(function(x) { return x.id && x.e > 0; });
+  if (!effs.length || T <= 0) return;
+  var sumW = effs.reduce(function(s, x) { return s + x.e; }, 0);
+  effs.forEach(function(x) {
+    var euros = T * (x.e / sumW);
+    cfg.offerAlloc[x.id] = Math.max(0, Math.floor(euros / x.e));
+  });
+  var cur, tries = 0;
+  while ((cur = homeObjPlannedCA(cfg, offerList)) < T - 0.5 && tries < 800) {
+    tries++;
+    effs.sort(function(a, b) { return b.e - a.e; });
+    cfg.offerAlloc[effs[0].id] = (cfg.offerAlloc[effs[0].id] || 0) + 1;
+  }
+  tries = 0;
+  while ((cur = homeObjPlannedCA(cfg, offerList)) > T + 0.5 && tries < 800) {
+    tries++;
+    effs.sort(function(a, b) { return a.e - b.e; });
+    if ((cfg.offerAlloc[effs[0].id] || 0) <= 0) break;
+    cfg.offerAlloc[effs[0].id]--;
+  }
+}
+function homeObjActualMonthCA(y, m0, caMode, offerList) {
+  var sum = 0;
+  ST.clients.forEach(function(c) {
+    if (!isClosingStatusForKPI(c) || !c.closedAt) return;
+    try {
+      var d = new Date(c.closedAt);
+      if (d.getFullYear() !== y || String(d.getMonth() + 1).padStart(2, '0') !== m0) return;
+    } catch (e) { return; }
+    var o = c.sig_offre_id ? (offerList || []).find(function(x) { return x.id === c.sig_offre_id; }) : null;
+    var total = parseFloat(c.montant) || (o ? parseFloat(o.price) : 0);
+    if (isNaN(total) || total <= 0) return;
+    var n = o ? Math.max(1, parseInt(o.paiement, 10) || 1) : 1;
+    if (caMode === 'treso') sum += Math.round((total / n) * 100) / 100;
+    else sum += Math.round(total * 100) / 100;
+  });
+  return Math.round(sum * 100) / 100;
+}
+function homeObjEsc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+}
+/** Suffixe DOM sûr pour ids liés aux offres (évite caractères invalides). */
+function homeObjSid(id) {
+  return String(id == null ? '' : id).replace(/[^a-zA-Z0-9_-]/g, '_');
 }
 function renderHomeObjectives() {
   var box = document.getElementById('home-objectif-funnel');
@@ -3715,25 +3822,37 @@ function renderHomeObjectives() {
   var year = new Date().getFullYear();
   var month = String(new Date().getMonth() + 1).padStart(2, '0');
   var monthKey = year + '-' + month;
+  var offerList = loadOffres().filter(function(o) { return o && o.id; });
   var cfg = getHomeFunnelSettings();
   if (cfg.monthKey !== monthKey) {
     cfg.monthKey = monthKey;
     if (cfg.targetCA == null) cfg.targetCA = 3000;
-    if (cfg.panierMoyen == null || cfg.panierMoyen <= 0) cfg.panierMoyen = computeDefaultPanierJmActiv(year);
+    if (cfg.caMode !== 'treso' && cfg.caMode !== 'contrat') cfg.caMode = 'contrat';
     if (cfg.tauxContactRdv == null) cfg.tauxContactRdv = 35;
+    if (cfg.tauxRdvVente == null) cfg.tauxRdvVente = 28;
+    cfg.offerAlloc = {};
+    homeObjRepartitionAuto(cfg, offerList);
     saveHomeFunnelSettings(cfg);
   }
+  if (!cfg.offerAlloc || typeof cfg.offerAlloc !== 'object') cfg.offerAlloc = {};
+  offerList.forEach(function(o) {
+    if (cfg.offerAlloc[o.id] == null || isNaN(parseInt(cfg.offerAlloc[o.id], 10))) cfg.offerAlloc[o.id] = 0;
+  });
   var yc = ST.clients.filter(function(c) { return getYear(c.date) === year; });
   var cohortVol = yc.length;
   var closings = yc.filter(isClosingStatusForKPI).length;
   var tauxYear = cohortVol > 0 ? Math.round(closings / cohortVol * 100) : 25;
   var targetCA = parseFloat(cfg.targetCA) || 0;
-  var panier = parseFloat(cfg.panierMoyen) || computeDefaultPanierJmActiv(year);
+  var mode = cfg.caMode || 'contrat';
+  var planned = homeObjPlannedCA(cfg, offerList);
+  var actual = homeObjActualMonthCA(year, month, mode, offerList);
   var tRdv = parseFloat(cfg.tauxRdvVente);
-  if (!(tRdv > 0)) tRdv = Math.max(5, Math.min(95, tauxYear));
+  if (!(tRdv > 0)) tRdv = Math.max(8, Math.min(92, tauxYear));
   var tContact = parseFloat(cfg.tauxContactRdv);
   if (!(tContact > 0)) tContact = 35;
-  var ventesBesoin = panier > 0 ? Math.ceil(targetCA / panier) : 0;
+  var ventesBesoin = Object.keys(cfg.offerAlloc).reduce(function(s, k) {
+    return s + (parseInt(cfg.offerAlloc[k], 10) || 0);
+  }, 0);
   var rdvBesoin = tRdv > 0 ? Math.ceil(ventesBesoin / (tRdv / 100)) : 0;
   var contactsBesoin = tContact > 0 ? Math.ceil(rdvBesoin / (tContact / 100)) : 0;
   var y = year, m0 = month;
@@ -3757,48 +3876,157 @@ function renderHomeObjectives() {
   }).length;
   function bar(pct) {
     pct = Math.max(0, Math.min(100, pct));
-    return '<div style="height:8px;background:var(--rim3);border-radius:6px;overflow:hidden;margin-top:4px"><div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--bx),var(--R));border-radius:6px"></div></div>';
+    return '<div style="height:7px;background:var(--rim3);border-radius:6px;overflow:hidden;margin-top:4px"><div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--bx),var(--R));border-radius:6px"></div></div>';
   }
+  var ringPct = targetCA > 0 ? Math.min(100, Math.round(actual / targetCA * 1000) / 10) : 0;
+  var cLen = 2 * Math.PI * 30;
+  var dash = Math.max(0.01, (ringPct / 100) * cLen);
+  var planCls = 'hf-plan-total ';
+  if (targetCA <= 0) planCls += 'hf-plan-warn';
+  else if (Math.abs(planned - targetCA) <= Math.max(1, targetCA * 0.02)) planCls += 'hf-plan-ok';
+  else if (planned < targetCA) planCls += 'hf-plan-warn';
+  else planCls += 'hf-plan-bad';
+  var compact = !!cfg.objSavedOnce && cfg.uiHomeObjEdit !== true;
+  var pills = offerList.filter(function(o) {
+    return (parseInt(cfg.offerAlloc[o.id], 10) || 0) > 0;
+  }).map(function(o) {
+    var n = parseInt(cfg.offerAlloc[o.id], 10) || 0;
+    return '<span class="hf-mini-pill">' + homeObjEsc((o.name || '').slice(0, 18)) + ' ×' + n + '</span>';
+  }).join('') || '<span class="hf-mini-pill">Répartir vos offres</span>';
+  var maxV = 40;
+  var gradId = 'hfGrad_' + String(monthKey).replace(/[^a-zA-Z0-9]/g, '_');
+  var offerRows = offerList.map(function(o) {
+    var sid = homeObjSid(o.id);
+    var cnt = Math.min(maxV, Math.max(0, parseInt(cfg.offerAlloc[o.id], 10) || 0));
+    var eff = homeObjEffectivePrice(o, mode);
+    var payN = Math.max(1, parseInt(o.paiement, 10) || 1);
+    var sub = (o.price || 0) + '€' + (payN > 1 ? ' · ' + payN + '×' : '') + ' → ' + eff + '€/' + (mode === 'treso' ? '1er vrs' : 'vente');
+    return '<div class="hf-offer-row">'
+      + '<div class="hf-offer-top"><div><div class="hf-offer-name">' + homeObjEsc((o.name || 'Offre').slice(0, 40)) + '</div>'
+      + '<div class="hf-offer-sub">' + homeObjEsc(sub) + '</div></div>'
+      + '<span class="hf-val" id="hf-n-' + sid + '">' + cnt + '</span></div>'
+      + '<div class="hf-slider-row"><input type="range" class="hf-range" min="0" max="' + maxV + '" value="' + cnt + '" data-oid="' + homeObjEsc(o.id) + '" id="hf-r-' + sid + '"></div>'
+      + '</div>';
+  }).join('');
+  var modeSel = '<select id="hf-mode" style="width:100%;padding:9px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px;margin-top:4px">'
+    + '<option value="contrat"' + (mode === 'contrat' ? ' selected' : '') + '>Contrat — CA prix total (signature)</option>'
+    + '<option value="treso"' + (mode === 'treso' ? ' selected' : '') + '>Trésorerie — 1er versement par vente (multi-×)</option>'
+    + '</select>';
   box.innerHTML =
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.45;margin-bottom:10px">'
-    + 'Objectif <strong>JM PASS + ACTIV</strong> : à partir du CA cible, estimez contacts → RDV bilan → ventes (taux ajustables).</div>'
-    + '<div style="display:grid;gap:10px">'
-    + '<div><label style="font-size:10px;color:var(--tx3)">CA cible du mois (€)</label>'
-    + '<input type="number" min="0" step="50" id="hf-ca" style="width:100%;margin-top:4px;padding:10px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:15px;font-weight:700" value="' + (cfg.targetCA != null ? cfg.targetCA : '') + '"></div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-    + '<div><label style="font-size:10px;color:var(--tx3)">Panier moyen JM+ACTIV (€)</label>'
-    + '<input type="number" min="1" step="10" id="hf-panier" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" value="' + panier + '"></div>'
-    + '<div><label style="font-size:10px;color:var(--tx3)">RDV → vente (%)</label>'
-    + '<input type="number" min="5" max="95" step="1" id="hf-trdv" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" value="' + Math.round(tRdv) + '"></div>'
-    + '<div style="grid-column:1/-1"><label style="font-size:10px;color:var(--tx3)">Contact → RDV bilan (%)</label>'
-    + '<input type="number" min="5" max="95" step="1" id="hf-tc" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" value="' + Math.round(tContact) + '"></div>'
-    + '</div>'
-    + '<div style="margin-top:12px;padding:12px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--rim3)">'
-    + '<div style="font-size:11px;font-weight:800;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Prévision du mois</div>'
-    + '<div style="display:grid;gap:10px;font-size:13px">'
-    + '<div><span style="color:var(--tx3)">Ventes à signer</span> <strong style="color:var(--tx)">' + ventesBesoin + '</strong> <span style="color:var(--tx4);font-size:11px">(objectif ' + Math.round(targetCA) + '€ ÷ ~' + panier + '€)</span></div>'
-    + '<div><span style="color:var(--tx3)">RDV bilan à tenir</span> <strong style="color:var(--B)">' + rdvBesoin + '</strong></div>'
-    + '<div><span style="color:var(--tx3)">Premiers contacts</span> <strong style="color:var(--V)">' + contactsBesoin + '</strong></div>'
-    + '</div></div>'
-    + '<div style="margin-top:12px;padding:12px;border-radius:var(--r2);border:1px dashed var(--rim3)">'
-    + '<div style="font-size:11px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:8px">Avancement mois en cours</div>'
-    + '<div style="font-size:12px;margin-bottom:6px">Contacts (1er contact) <strong>' + contactsFaits + '</strong> / ' + contactsBesoin + bar(contactsBesoin ? contactsFaits / contactsBesoin * 100 : 0) + '</div>'
-    + '<div style="font-size:12px;margin-bottom:6px">RDV bilan réalisés <strong>' + rdvFaits + '</strong> / ' + rdvBesoin + bar(rdvBesoin ? rdvFaits / rdvBesoin * 100 : 0) + '</div>'
-    + '<div style="font-size:12px">Ventes (closings du mois) <strong>' + ventesFaits + '</strong> / ' + ventesBesoin + bar(ventesBesoin ? ventesFaits / ventesBesoin * 100 : 0) + '</div>'
-    + '</div>'
-    + '<button type="button" class="btn btn-bx btn-sm" id="hf-save" style="width:100%;margin-top:12px">💾 Enregistrer l’objectif</button>'
-    + '</div>';
-  var btn = document.getElementById('hf-save');
-  if (btn) btn.onclick = function() {
-    saveHomeFunnelSettings({
-      monthKey: monthKey,
-      targetCA: parseFloat(document.getElementById('hf-ca').value) || 0,
-      panierMoyen: parseFloat(document.getElementById('hf-panier').value) || 150,
-      tauxRdvVente: parseFloat(document.getElementById('hf-trdv').value) || 25,
-      tauxContactRdv: parseFloat(document.getElementById('hf-tc').value) || 35
+    '<div class="hf-card" id="hf-root">'
+    + '<div class="hf-compact">'
+    +   '<div class="hf-ring-wrap">'
+    +     '<svg class="hf-ring-svg" viewBox="0 0 76 76" aria-hidden="true">'
+    +       '<circle cx="38" cy="38" r="30" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="6"/>'
+    +       '<circle cx="38" cy="38" r="30" fill="none" stroke="url(#' + gradId + ')" stroke-width="6" stroke-linecap="round" '
+    +       'stroke-dasharray="' + dash + ' ' + cLen + '" stroke-dashoffset="0"/>'
+    +       '<defs><linearGradient id="' + gradId + '" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="var(--bx)"/><stop offset="100%" stop-color="var(--R)"/></linearGradient></defs>'
+    +     '</svg>'
+    +     '<div class="hf-ring-pct">' + (targetCA > 0 ? ringPct + '<span style="font-size:9px;font-weight:700">%</span>' : '—')
+    +     '<span class="hf-ring-sub">CA mois</span></div></div>'
+    +   '<div class="hf-compact-meta">'
+    +     '<div style="font-size:13px;font-weight:900;color:var(--tx);letter-spacing:.2px">Objectif ' + month + '/' + year + '</div>'
+    +     '<div style="font-size:11px;color:var(--tx3);line-height:1.45;margin-top:4px">Réalisé <strong style="color:var(--tx)">' + actual + '€</strong> · Cible <strong>' + targetCA + '€</strong> · Plan <strong>' + planned + '€</strong></div>'
+    +     '<div class="hf-mini-offers">' + pills + '</div>'
+    +     '<button type="button" class="btn btn-dk btn-sm" id="hf-mod" style="margin-top:10px">' + (compact ? 'Modifier le plan' : 'Réduire') + '</button>'
+    +   '</div></div>'
+    + '<div class="hf-edit-panel' + (compact ? '' : ' open') + '" id="hf-edit-panel"><div class="hf-edit-inner">'
+    +   '<div style="font-size:11px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:8px">Plan par offre</div>'
+    +   '<div><label style="font-size:10px;color:var(--tx3)">CA cible du mois (€)</label>'
+    +   '<input type="number" min="0" step="50" id="hf-ca" value="' + (cfg.targetCA != null ? cfg.targetCA : '') + '" style="width:100%;margin-top:4px;padding:10px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:15px;font-weight:800"></div>'
+    +   '<div style="margin-top:10px"><label style="font-size:10px;color:var(--tx3)">Comptabilisation</label>' + modeSel + '</div>'
+    +   '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
+    +     '<button type="button" class="btn btn-bx btn-sm" id="hf-repartir">Répartir sur le CA</button>'
+    +     '<span style="font-size:10px;color:var(--tx3);align-self:center">Ajuste les quantités pour coller à la cible</span></div>'
+    +   '<div id="hf-offers-wrap" style="margin-top:12px;max-height:min(42vh,320px);overflow-y:auto;-webkit-overflow-scrolling:touch">' + offerRows + '</div>'
+    +   '<div id="hf-planned-live" class="' + planCls + '">Plan : <strong>' + planned + '€</strong> · Cible : <strong>' + targetCA + '€</strong></div>'
+    +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">'
+    +     '<div><label style="font-size:10px;color:var(--tx3)">RDV → vente (%)</label>'
+    +     '<input type="number" min="5" max="95" id="hf-trdv" value="' + Math.round(tRdv) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>'
+    +     '<div><label style="font-size:10px;color:var(--tx3)">Contact → RDV (%)</label>'
+    +     '<input type="number" min="5" max="95" id="hf-tc" value="' + Math.round(tContact) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div></div>'
+    +   '<div style="margin-top:12px;padding:11px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--rim3)">'
+    +     '<div style="font-size:10px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:6px">Pipeline (à partir du plan)</div>'
+    +     '<div style="font-size:12px">Ventes planifiées <strong>' + ventesBesoin + '</strong> · RDV <strong>' + rdvBesoin + '</strong> · Contacts <strong>' + contactsBesoin + '</strong></div></div>'
+    +   '<div style="margin-top:10px;padding:10px;border:1px dashed var(--rim3);border-radius:var(--r2)">'
+    +     '<div style="font-size:10px;font-weight:800;color:var(--tx3);margin-bottom:6px">Avancement réel</div>'
+    +     '<div style="font-size:11px;margin-bottom:5px">Contacts <strong>' + contactsFaits + '</strong>/' + contactsBesoin + bar(contactsBesoin ? contactsFaits / contactsBesoin * 100 : 0) + '</div>'
+    +     '<div style="font-size:11px;margin-bottom:5px">RDV bilan <strong>' + rdvFaits + '</strong>/' + rdvBesoin + bar(rdvBesoin ? rdvFaits / rdvBesoin * 100 : 0) + '</div>'
+    +     '<div style="font-size:11px">Closings mois <strong>' + ventesFaits + '</strong>/' + ventesBesoin + bar(ventesBesoin ? ventesFaits / ventesBesoin * 100 : 0) + '</div></div>'
+    +   '<button type="button" class="btn btn-bx btn-sm" id="hf-save" style="width:100%;margin-top:12px">Enregistrer le plan</button>'
+    + '</div></div></div>';
+  function readDraftCfg() {
+    var c2 = getHomeFunnelSettings();
+    c2.targetCA = parseFloat(document.getElementById('hf-ca') && document.getElementById('hf-ca').value) || 0;
+    c2.caMode = (document.getElementById('hf-mode') && document.getElementById('hf-mode').value) || 'contrat';
+    c2.tauxRdvVente = parseFloat(document.getElementById('hf-trdv') && document.getElementById('hf-trdv').value) || 28;
+    c2.tauxContactRdv = parseFloat(document.getElementById('hf-tc') && document.getElementById('hf-tc').value) || 35;
+    c2.offerAlloc = Object.assign({}, c2.offerAlloc || {});
+    offerList.forEach(function(o) {
+      var el = document.getElementById('hf-r-' + homeObjSid(o.id));
+      c2.offerAlloc[o.id] = el ? Math.min(maxV, Math.max(0, parseInt(el.value, 10) || 0)) : (c2.offerAlloc[o.id] || 0);
     });
-    toast('ok', '✅ Objectif enregistré');
-    renderHomeObjectives();
+    return c2;
+  }
+  function refreshLive() {
+    var live = document.getElementById('hf-planned-live');
+    if (!live) return;
+    var d = readDraftCfg();
+    var p = homeObjPlannedCA(d, offerList);
+    var t = d.targetCA || 0;
+    var cls = 'hf-plan-total ';
+    if (t <= 0) cls += 'hf-plan-warn';
+    else if (Math.abs(p - t) <= Math.max(1, t * 0.02)) cls += 'hf-plan-ok';
+    else if (p < t) cls += 'hf-plan-warn';
+    else cls += 'hf-plan-bad';
+    live.className = cls;
+    live.innerHTML = 'Plan : <strong>' + p + '€</strong> · Cible : <strong>' + t + '€</strong>';
+  }
+  box.oninput = function(ev) {
+    var tgt = ev.target;
+    if (!tgt) return;
+    if (tgt.classList && tgt.classList.contains('hf-range')) {
+      var oid = tgt.getAttribute('data-oid');
+      var lab = oid ? document.getElementById('hf-n-' + homeObjSid(oid)) : null;
+      if (lab) lab.textContent = tgt.value;
+    }
+    if (tgt.id === 'hf-ca' || tgt.id === 'hf-trdv' || tgt.id === 'hf-tc' || (tgt.classList && tgt.classList.contains('hf-range'))) refreshLive();
+  };
+  box.onchange = function(ev) {
+    var tgt = ev.target;
+    if (tgt && tgt.id === 'hf-mode') refreshLive();
+  };
+  box.onclick = function(ev) {
+    var t = ev.target && ev.target.closest ? ev.target.closest('[id]') : ev.target;
+    if (!t || !t.id) return;
+    if (t.id === 'hf-mod') {
+      if (compact) saveHomeFunnelSettings({ uiHomeObjEdit: true });
+      else {
+        var dCol = readDraftCfg();
+        dCol.uiHomeObjEdit = false;
+        saveHomeFunnelSettings(dCol);
+      }
+      renderHomeObjectives();
+      return;
+    }
+    if (t.id === 'hf-repartir') {
+      var d = readDraftCfg();
+      saveHomeFunnelSettings(d);
+      homeObjRepartitionAuto(d, offerList);
+      saveHomeFunnelSettings(d);
+      renderHomeObjectives();
+      toast('ok', 'Répartition appliquée');
+      return;
+    }
+    if (t.id === 'hf-save') {
+      var d = readDraftCfg();
+      d.objSavedOnce = true;
+      d.uiHomeObjEdit = false;
+      d.monthKey = monthKey;
+      saveHomeFunnelSettings(d);
+      toast('ok', 'Plan enregistré');
+      renderHomeObjectives();
+    }
   };
 }
 function updateKPIs() {
@@ -5101,6 +5329,7 @@ function reportHubNavigate(which) {
   if (!cid) return;
   var c = ST.clients.find(function(x){ return x.id === cid; });
   if (!c) return;
+  ST.returnToClientId = String(cid);
   ST.pqSummary = c.pq_summary || null;
   ST.bilanSummary = c.bilan_summary || null;
   ST.finalReport = c.final_report || null;
@@ -5133,6 +5362,7 @@ function reportHubNavigate(which) {
 function prepareWorkflowThenGenReport() {
   if (!ST.clientId) { toast('err', '⚠️ Sélectionnez un client'); return; }
   var cid = ST.clientId;
+  ST.returnToClientId = String(cid);
   var c = ST.clients.find(function(x){ return x.id === cid; });
   if (!c) return;
   ST.pqSummary = c.pq_summary || null;
@@ -7686,6 +7916,7 @@ function saveClientImportantDates(clientId, patch) {
 }
 /** Suivi coach : visible après lancement parcours (signature) — jalons, mini-bilans, anniversaire programme. */
 function openAtelierRapportFromClient(cid) {
+  ST.returnToClientId = String(cid);
   ST.clientId = cid;
   closeModal('client');
   showPg('rapport');
@@ -8787,7 +9018,7 @@ function newClient(){
 }
 
 function _doNewClient(){
-  ST.clientId=null;ST.pqSummary=null;ST.bilanSummary=null;ST.finalReport=null;
+  ST.returnToClientId=null;ST.clientId=null;ST.pqSummary=null;ST.bilanSummary=null;ST.finalReport=null;
   document.getElementById('pq-result').style.display='none';
   document.getElementById('pq-cta').style.display='none';
   document.getElementById('bilan-result').style.display='none';

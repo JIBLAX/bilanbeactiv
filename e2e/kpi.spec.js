@@ -74,7 +74,7 @@ test.describe('BILAN CRM — KPI', () => {
     await page.evaluate(() => window.updateKPIs());
 
     await expect(page.locator('#home-objectif-funnel')).toContainText('CA cible');
-    await expect(page.locator('#home-objectif-funnel')).toContainText('Prévision du mois');
+    await expect(page.locator('#home-objectif-funnel')).toContainText('Plan par offre');
   });
 
   test('Wrapped: closings = Closé + Ancien', async ({ page, context }) => {
