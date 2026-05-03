@@ -7,7 +7,7 @@ function cohortClientsPayload() {
     year,
     dateStr,
     json: JSON.stringify([
-      { id: 't1', prenom: 'A', nom: 'Open', statut: 'Contact', date: dateStr },
+      { id: 't1', prenom: 'A', nom: 'Open', statut: 'Contact', date: dateStr, first_contact_date: dateStr },
       {
         id: 't2',
         prenom: 'B',
@@ -51,6 +51,7 @@ test.describe('BILAN CRM — KPI', () => {
     await expect(page.locator('#st-p')).toHaveText('1');
     await expect(page.locator('#st-r')).toHaveText('3');
     await expect(page.locator('#st-c')).toHaveText('2');
+    await expect(page.locator('#st-contacts')).toHaveText('1');
     await expect(page.locator('#stat-closing-pct')).toContainText('67');
 
     const off = page.locator('#stats-offres');
@@ -59,21 +60,21 @@ test.describe('BILAN CRM — KPI', () => {
     await expect(off).not.toContainText('Libellé périmé');
   });
 
-  test('Accueil: pipeline ouvert vs cohorte RDV année', async ({ page, context }) => {
+  test('Accueil: objectif du mois (funnel)', async ({ page, context }) => {
     const { json } = cohortClientsPayload();
     await context.addInitScript((payload) => {
       sessionStorage.setItem('ba_pin', '1');
       localStorage.setItem('ba_clients_v8', payload);
       localStorage.setItem('ba_rdvs_v8', '[]');
+      localStorage.removeItem('ba_home_funnel_v1');
     }, json);
 
     await page.goto('/index.html');
     await page.waitForFunction(() => typeof window.updateKPIs === 'function');
     await page.evaluate(() => window.updateKPIs());
 
-    await expect(page.locator('#kp-p')).toHaveText('1');
-    await expect(page.locator('#kp-r')).toHaveText('3');
-    await expect(page.locator('#kp-t')).toContainText('67');
+    await expect(page.locator('#home-objectif-funnel')).toContainText('CA cible');
+    await expect(page.locator('#home-objectif-funnel')).toContainText('Prévision du mois');
   });
 
   test('Wrapped: closings = Closé + Ancien', async ({ page, context }) => {

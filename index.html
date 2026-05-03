@@ -534,6 +534,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .hero-cta{background:#fff;color:var(--bx);font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;padding:12px 22px;border-radius:50px;border:none;cursor:pointer;transition:all .16s;white-space:nowrap;flex-shrink:0}
 .hero-cta:hover{transform:scale(1.03);box-shadow:0 4px 16px rgba(0,0,0,.2)}
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:14px}
+.kpi-grid-5{grid-template-columns:repeat(auto-fit,minmax(104px,1fr))}
 .kpi-box{background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r);padding:16px 14px;box-shadow:var(--sh);transition:transform var(--dur-fast) var(--ease),box-shadow var(--dur-med) var(--ease),border-color var(--dur-fast) var(--ease)}
 .kpi-box:hover{border-color:var(--rim);box-shadow:var(--sh2)}
 .kpi-box.kpi-bx{border-color:var(--rim);background:rgba(139,21,32,.04)}
@@ -592,8 +593,9 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex-shrink:0;padding:6px 14px;border-radius:50px;font-size:11.5px;font-weight:700;cursor:pointer;border:1.5px solid var(--rim3);color:var(--tx3);background:#fff;transition:all .13s;white-space:nowrap;box-shadow:0 4px 14px rgba(22,24,33,.06)}
 .chip.on{background:linear-gradient(180deg,var(--bx),var(--bx2));color:#fff;border-color:var(--bx);box-shadow:0 7px 18px rgba(139,21,32,.25)}
-.ccrd{background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:14px 16px;margin-bottom:9px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;box-shadow:var(--sh)}
-.ccrd:hover{border-color:var(--rim);box-shadow:var(--sh2);transform:translateX(2px)}
+#clients-list{display:flex;flex-direction:column;gap:10px}
+.ccrd{background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:14px 16px;margin-bottom:0;cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:12px;box-shadow:var(--sh);position:relative;z-index:1}
+.ccrd:hover{border-color:var(--rim);box-shadow:var(--sh2)}
 .cav{width:42px;height:42px;border-radius:11px;flex-shrink:0;background:var(--bx);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff}
 .cinfo{flex:1;min-width:0}
 .cname{font-weight:700;font-size:14.5px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -849,8 +851,8 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   .pg{padding-top:10px;padding-bottom:max(58px,calc(44px + env(safe-area-inset-bottom,0px)))}
   /* Hero home réduit */
   .home-hero{padding:14px 16px}
-  /* KPI grid 4 colonnes même sur petits écrans */
-  .kpi-grid{grid-template-columns:repeat(4,1fr)!important}
+  /* KPI stats : grille 5 tuiles (auto-fit) */
+  .kpi-grid.kpi-grid-5{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))!important}
   /* Toasts plus hauts */
   #toast{bottom:60px}
   /* Modals plus basses */
@@ -983,30 +985,20 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     </div>
     <div style="display:flex;flex-direction:column;gap:8px"><button class="hero-cta" onclick="showPg('prospect')">＋ Ajouter Prospect</button></div>
   </div>
-  <div class="sh no-mt">📊 Activité <span id="home-year" style="font-size:10px;color:var(--tx3);font-weight:400;margin-left:3px"></span></div>
-  <div class="kpi-grid">
-    <div class="kpi-box"><div class="kpi-v" id="kp-p">—</div><div class="kpi-l">En pipeline</div></div>
-    <div class="kpi-box"><div class="kpi-v bl" id="kp-r">—</div><div class="kpi-l">Cohorte RDV (année)</div></div>
-    <div class="kpi-box kpi-bx"><div class="kpi-v bx" id="kp-t">—</div><div class="kpi-l">Taux Closing</div></div>
-    <div class="kpi-box kpi-Y"><div class="kpi-v ye" id="kp-ca">—</div><div class="kpi-l">CA <span id="kp-ca-year"></span></div></div>
-  </div>
+  <div class="sh no-mt">🎯 Objectif du mois <span id="home-year" style="font-size:10px;color:var(--tx3);font-weight:400;margin-left:3px"></span></div>
+  <div class="card" id="home-objectif-funnel" style="margin-bottom:14px;padding:14px 16px"></div>
   <div class="sh sh-B">📅 Prochain RDV Bilan</div>
   <div id="home-rdv"><div class="rdv-empty">Aucun RDV — ajoutez en via le bouton ci-dessous</div></div>
   <button class="btn btn-dk btn-sm" onclick="openRDVModal()" style="margin-bottom:14px">📅 + Ajouter un RDV</button>
-  <div class="sh" style="color:var(--V)">🔔 Alertes prioritaires <span id="home-alerts-count" style="font-size:10px;color:var(--tx3);font-weight:500"></span></div>
-  <div class="chips home-alerts-chips" id="home-alerts-filters" style="margin:-4px 0 8px">
-    <div class="chip on" data-f="all" onclick="setHomeAlertsFilter('all')">Toutes</div>
-    <div class="chip" data-f="urgent" onclick="setHomeAlertsFilter('urgent')">Urgentes</div>
-    <div class="chip" data-f="suivi" onclick="setHomeAlertsFilter('suivi')">Suivi</div>
-  </div>
-  <div id="home-alerts"><div class="rdv-empty">Aucune alerte prioritaire pour le moment</div></div>
+  <div class="sh" style="color:var(--V)">🔔 Alertes <span id="home-alerts-count" style="font-size:10px;color:var(--tx3);font-weight:500"></span></div>
+  <div id="home-alerts"><div class="rdv-empty">Aucune alerte pour le moment</div></div>
 </div>
 
 <!-- ══════ PAGE STATS ══════ -->
 <div class="pg" id="pg-stats">
   <div class="stat-hero">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px">
-      <div class="stat-sub">Taux de closing</div>
+      <div class="stat-sub">Taux de conversion</div>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn btn-dk btn-sm" onclick="openWrapped()" style="font-size:11px;padding:5px 10px">🎁 Wrapped</button>
         <div class="year-nav">
@@ -1018,11 +1010,12 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     </div>
     <div class="stat-main" id="stat-closing-pct">—</div>
   </div>
-  <div class="kpi-grid" style="margin-bottom:16px">
-    <div class="kpi-box" style="padding:12px"><div class="kpi-v" id="st-p" style="font-size:22px">—</div><div class="kpi-l">Non closés (cohorte)</div></div>
-    <div class="kpi-box" style="padding:12px"><div class="kpi-v bl" id="st-r" style="font-size:22px">—</div><div class="kpi-l">Volume année (date RDV)</div></div>
-    <div class="kpi-box" style="padding:12px"><div class="kpi-v" id="st-c" style="font-size:22px;color:var(--G)">—</div><div class="kpi-l">Closings</div></div>
+  <div class="kpi-grid kpi-grid-5" style="margin-bottom:16px">
+    <div class="kpi-box" style="padding:12px"><div class="kpi-v" id="st-p" style="font-size:22px">—</div><div class="kpi-l">Non conclu (cohorte)</div></div>
+    <div class="kpi-box" style="padding:12px"><div class="kpi-v bl" id="st-r" style="font-size:22px">—</div><div class="kpi-l">RDV Bilan</div></div>
+    <div class="kpi-box" style="padding:12px"><div class="kpi-v" id="st-c" style="font-size:22px;color:var(--G)">—</div><div class="kpi-l">Ventes</div></div>
     <div class="kpi-box" style="padding:12px"><div class="kpi-v ye" id="st-ca" style="font-size:18px">—</div><div class="kpi-l">CA total</div></div>
+    <div class="kpi-box" style="padding:12px"><div class="kpi-v" id="st-contacts" style="font-size:22px;color:var(--V)">—</div><div class="kpi-l">Contacts (1er contact)</div></div>
   </div>
   <div class="sh sh-m">📈 Évolution CA & RDV</div>
   <div class="graph-wrap"><div id="graph-container" style="min-height:130px"></div><div class="graph-legend"><div class="gl-item"><div class="gl-dot" style="background:var(--bx)"></div>CA</div><div class="gl-item"><div class="gl-dot" style="background:var(--B)"></div>RDV</div></div></div>
@@ -1036,7 +1029,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div class="sh sh-m">📅 Historique mensuel</div>
   <div class="card">
     <div style="display:flex;gap:8px;font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;padding:0 0 8px;border-bottom:1px solid var(--rim3)">
-      <span style="min-width:68px">Mois</span><span style="flex:1;text-align:center">RDV</span><span style="flex:1;text-align:center">Closings</span><span style="flex:1;text-align:center">CA</span><span style="min-width:50px;text-align:right">Taux</span>
+      <span style="min-width:68px">Mois</span><span style="flex:1;text-align:center">RDV</span><span style="flex:1;text-align:center">Ventes</span><span style="flex:1;text-align:center">CA</span><span style="min-width:50px;text-align:right">Taux</span>
     </div>
     <div id="stats-monthly-rows"></div>
   </div>
@@ -1058,8 +1051,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div class="chips" id="chips-statut">
     <div class="chip on" data-v="all">Tous</div>
     <div class="chip" data-v="Contact">Contact</div>
-    <div class="chip" data-v="Attente RDV">Attente RDV</div>
-    <div class="chip" data-v="Non Closé">Non Closé</div>
+    <div class="chip" data-v="Non Closé">Non closé</div>
     <div class="chip" data-v="Sans Suite">Sans Suite</div>
   </div>
   <div id="clients-list"></div>
@@ -1698,9 +1690,14 @@ function deleteSelected(){
 }
 
 function renderProspectModal(id, c, container) {
-  var sp={'Prospect':'pill-B','Closé':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Non Closé':'pill-R','Sans Suite':'pill-V','Ancien Client':'pill-V','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R','Closing en cours':'pill-Y'};
+  var sp={'Prospect':'pill-B','Closé':'pill-G','Client':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Non Closé':'pill-R','Sans Suite':'pill-V','Ancien Client':'pill-V','Ancien':'pill-V','Non closé':'pill-R','À relancer':'pill-Y','Refusé':'pill-R','Closing en cours':'pill-Y'};
   var isClosingEnCours = (c.sig_started === true);
   var statutLabel = c.statut || 'Prospect';
+  if (c.statut === 'Non Closé' || c.statut === 'Non closé') statutLabel = 'Non closé';
+  else if (c.statut === 'Closé') statutLabel = 'Client';
+  else if (c.statut === 'Ancien Client') statutLabel = 'Ancien';
+  else if (c.rdvStatut !== 'Présent' && c.rdvStatut !== 'Absent' && (c.statut === 'Contact' || c.statut === 'Attente RDV' || c.statut === 'Prospect' || !c.statut))
+    statutLabel = 'Contact';
   var inactifStatuts = ['Prospect','Non Closé','Sans Suite','Contact','Attente RDV','Membre CC','','Refusé','Non closé','À relancer'];
   var fullName = ((c.prenom||'') + ' ' + (c.nom||'')).trim() || 'Prospect';
   var initials = c.isPro ? '🏢' : (((c.prenom||'?').charAt(0))+((c.nom||'?').charAt(0))).toUpperCase();
@@ -1714,19 +1711,19 @@ function renderProspectModal(id, c, container) {
 
   // ── Title bar (close)
   var titleEl=document.createElement('div'); titleEl.className='mdl-t';
-  titleEl.innerHTML='<span style="font-size:14px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px">Fiche Prospect</span>';
+  titleEl.innerHTML='<span style="font-size:14px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px">Fiche client</span>';
   var closeBtn=document.createElement('button'); closeBtn.className='mdl-x'; closeBtn.textContent='✕';
   closeBtn.onclick=function(){closeModal('client');}; titleEl.appendChild(closeBtn);
   container.appendChild(titleEl);
 
   // ── Header premium (avatar + nom + meta)
   var head = document.createElement('div'); head.className = 'pm-head';
-  var metaPills = '<span class="pill '+(sp[c.statut]||'pill-B')+'">'+statutLabel+'</span>'
+  var metaPills = '<span class="pill '+(sp[statutLabel]||sp[c.statut]||'pill-B')+'">'+statutLabel+'</span>'
     +(c.source?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.source+'</span>':'')
     +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
     +(c.sap_enabled?'<span class="pill" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">🏠 SAP</span>':'')
     +(c.group_name?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">👥 '+c.group_name+(c.is_group_leader?' ★':'')+'</span>':'')
-    +(isClosingEnCours?'<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(200,130,10,.12);color:var(--Y);border:1.5px solid rgba(200,130,10,.35);animation:pulse-y 1.5s ease-in-out infinite">🔶 Closing en cours</span>':'');
+    +(isClosingEnCours?'<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(200,130,10,.12);color:var(--Y);border:1.5px solid rgba(200,130,10,.35);animation:pulse-y 1.5s ease-in-out infinite">🔶 En signature</span>':'');
   var rdvChip = '';
   head.innerHTML = '<div class="pm-avatar">'+initials+'</div>'
     + '<div class="pm-name-wrap">'
@@ -2029,6 +2026,8 @@ function hydrateBilanFormFromClient(clientId, opts) {
   if (!c) return;
   if (document.getElementById('b-pn')) document.getElementById('b-pn').value = c.prenom || '';
   if (document.getElementById('b-nn')) document.getElementById('b-nn').value = c.nom || '';
+  if (document.getElementById('b-first-contact')) document.getElementById('b-first-contact').value = c.first_contact_date || '';
+  if (document.getElementById('b-anniversaire')) document.getElementById('b-anniversaire').value = c.anniversaire || (c.important_dates && c.important_dates.anniversaire_client) || '';
   if (document.getElementById('b-age')) document.getElementById('b-age').value = c.age || '';
   if (document.getElementById('b-ville')) document.getElementById('b-ville').value = c.ville || '';
   if (document.getElementById('b-prof')) document.getElementById('b-prof').value = c.profession || '';
@@ -2928,6 +2927,8 @@ const BILAN_FORM_DEFAULT = [
   {id:'bf1',section:'👤 Le Prospect',type:'group',fields:[
     {id:'b-pn',label:'Prénom',type:'text',placeholder:'Prénom'},
     {id:'b-nn',label:'Nom',type:'text',placeholder:'Nom'},
+    {id:'b-first-contact',label:'Date 1er contact',type:'date'},
+    {id:'b-anniversaire',label:'Date de naissance (anniversaire)',type:'date'},
     {id:'b-age',label:'Âge',type:'number',placeholder:'30'},
     {id:'b-ville',label:'Ville',type:'text',placeholder:'Grenoble'},
     {id:'b-prof',label:'Profession',type:'text',placeholder:'Infirmière, étudiant…'}
@@ -3018,7 +3019,7 @@ const TESTS_FORM_DEFAULT = [
   ]}
 ];
 
-var BILAN_FORM_VERSION = 5; // Incrémenter à chaque suppression/ajout de champ obligatoire
+var BILAN_FORM_VERSION = 6; // Incrémenter à chaque suppression/ajout de champ obligatoire
 function loadFormDef(key) {
   try {
     const s = localStorage.getItem('ba_form_'+key);
@@ -3648,27 +3649,170 @@ function getYear(dateStr) {
   if(!dateStr) return null;
   try{const p=dateStr.split('/');return p.length===3?parseInt('20'+p[2]):parseInt(dateStr.slice(0,4));}catch(e){return null;}
 }
+/** Année ISO `YYYY-MM-DD` ou FR `DD/MM/YY`. */
+function getYearFromAnyDate(d) {
+  if (!d) return null;
+  var s = String(d).trim();
+  if (s.indexOf('/') >= 0) return getYear(s);
+  if (s.length >= 4 && /^\d{4}/.test(s)) return parseInt(s.slice(0, 4), 10);
+  return null;
+}
 /** Closé + Ancien client = engagement passé (même logique Stats / Wrapped / CA). */
 function isClosingStatusForKPI(c) {
   return !!(c && (c.statut === 'Closé' || c.statut === 'Ancien Client'));
 }
-function updateKPIs() {
-  const year=new Date().getFullYear();
-  document.getElementById('home-year').textContent=year;
-  document.getElementById('kp-ca-year').textContent=year;
-  const yc=ST.clients.filter(c=>getYear(c.date)===year);
-  var pipelineOpen = ST.clients.filter(function(c){
-    return c && (c.prenom || c.nom) && !isClosingStatusForKPI(c);
+var BILAN_OBJECTION_LABELS = ['Budget','Manque de temps','Peur/Confiance','Besoin de réfléchir'];
+/** Regroupe les libellés d’objections hétérogènes sur les 4 cases du bilan. */
+function normalizeObjectionStatLabel(raw) {
+  if (!raw) return '';
+  var s = String(raw).trim().toLowerCase();
+  if (s === 'aucun' || s === 'aucune' || s === 'ras') return '';
+  if (s.indexOf('budget') !== -1) return 'Budget';
+  if (s.indexOf('réfléchir') !== -1 || s.indexOf('reflechir') !== -1) return 'Besoin de réfléchir';
+  if (s.indexOf('peur') !== -1 || s.indexOf('confiance') !== -1) return 'Peur/Confiance';
+  if (s.indexOf('temps') !== -1) return 'Manque de temps';
+  if (BILAN_OBJECTION_LABELS.indexOf(String(raw).trim()) >= 0) return String(raw).trim();
+  return '';
+}
+function getHomeFunnelSettings() {
+  try {
+    var s = localStorage.getItem('ba_home_funnel_v1');
+    if (s) return JSON.parse(s) || {};
+  } catch (e) {}
+  return {};
+}
+function saveHomeFunnelSettings(patch) {
+  var cur = getHomeFunnelSettings();
+  Object.keys(patch || {}).forEach(function(k) { cur[k] = patch[k]; });
+  try { localStorage.setItem('ba_home_funnel_v1', JSON.stringify(cur)); } catch (e) {}
+}
+/** Panier moyen (€) sur ventes JM PASS + ACTIV de l’année en cours, sinon 150. */
+function computeDefaultPanierJmActiv(year) {
+  var offs = loadOffres();
+  function isJmActiv(o) {
+    if (!o || !o.name) return false;
+    var n = String(o.name).toUpperCase();
+    if (n.indexOf('JM PASS') !== -1) return true;
+    if (n.indexOf('ACTIV') === -1) return false;
+    if (n.indexOf('COLLECTIF') !== -1 || n.indexOf('COLLECT') !== -1) return false;
+    return true;
+  }
+  var yc = ST.clients.filter(function(c) { return getYear(c.date) === year && isClosingStatusForKPI(c); });
+  var sums = [], ids = {};
+  offs.forEach(function(o) { if (isJmActiv(o)) ids[o.id] = true; });
+  yc.forEach(function(c) {
+    if (c.sig_offre_id && ids[c.sig_offre_id]) {
+      var m = parseFloat(c.montant);
+      if (!isNaN(m) && m > 0) sums.push(m);
+    }
+  });
+  if (!sums.length) return 150;
+  return Math.round(sums.reduce(function(a, b) { return a + b; }, 0) / sums.length);
+}
+function renderHomeObjectives() {
+  var box = document.getElementById('home-objectif-funnel');
+  if (!box) return;
+  var year = new Date().getFullYear();
+  var month = String(new Date().getMonth() + 1).padStart(2, '0');
+  var monthKey = year + '-' + month;
+  var cfg = getHomeFunnelSettings();
+  if (cfg.monthKey !== monthKey) {
+    cfg.monthKey = monthKey;
+    if (cfg.targetCA == null) cfg.targetCA = 3000;
+    if (cfg.panierMoyen == null || cfg.panierMoyen <= 0) cfg.panierMoyen = computeDefaultPanierJmActiv(year);
+    if (cfg.tauxContactRdv == null) cfg.tauxContactRdv = 35;
+    saveHomeFunnelSettings(cfg);
+  }
+  var yc = ST.clients.filter(function(c) { return getYear(c.date) === year; });
+  var cohortVol = yc.length;
+  var closings = yc.filter(isClosingStatusForKPI).length;
+  var tauxYear = cohortVol > 0 ? Math.round(closings / cohortVol * 100) : 25;
+  var targetCA = parseFloat(cfg.targetCA) || 0;
+  var panier = parseFloat(cfg.panierMoyen) || computeDefaultPanierJmActiv(year);
+  var tRdv = parseFloat(cfg.tauxRdvVente);
+  if (!(tRdv > 0)) tRdv = Math.max(5, Math.min(95, tauxYear));
+  var tContact = parseFloat(cfg.tauxContactRdv);
+  if (!(tContact > 0)) tContact = 35;
+  var ventesBesoin = panier > 0 ? Math.ceil(targetCA / panier) : 0;
+  var rdvBesoin = tRdv > 0 ? Math.ceil(ventesBesoin / (tRdv / 100)) : 0;
+  var contactsBesoin = tContact > 0 ? Math.ceil(rdvBesoin / (tContact / 100)) : 0;
+  var y = year, m0 = month;
+  var contactsFaits = ST.clients.filter(function(c) {
+    var fc = c.first_contact_date || '';
+    if (!fc || fc.length < 7) return false;
+    return fc.slice(0, 7) === y + '-' + m0;
   }).length;
+  var rdvFaits = ST.clients.filter(function(c) {
+    if (!c.date || c.date.length < 7) return false;
+    if (c.date.indexOf('/') >= 0) return false;
+    if (c.date.slice(0, 7) !== y + '-' + m0) return false;
+    return c.rdvStatut === 'Présent' || c.rdvStatut === 'Absent';
+  }).length;
+  var ventesFaits = ST.clients.filter(function(c) {
+    if (!isClosingStatusForKPI(c) || !c.closedAt) return false;
+    try {
+      var d = new Date(c.closedAt);
+      return d.getFullYear() === y && String(d.getMonth() + 1).padStart(2, '0') === m0;
+    } catch (e) { return false; }
+  }).length;
+  function bar(pct) {
+    pct = Math.max(0, Math.min(100, pct));
+    return '<div style="height:8px;background:var(--rim3);border-radius:6px;overflow:hidden;margin-top:4px"><div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--bx),var(--R));border-radius:6px"></div></div>';
+  }
+  box.innerHTML =
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.45;margin-bottom:10px">'
+    + 'Objectif <strong>JM PASS + ACTIV</strong> : à partir du CA cible, estimez contacts → RDV bilan → ventes (taux ajustables).</div>'
+    + '<div style="display:grid;gap:10px">'
+    + '<div><label style="font-size:10px;color:var(--tx3)">CA cible du mois (€)</label>'
+    + '<input type="number" min="0" step="50" id="hf-ca" style="width:100%;margin-top:4px;padding:10px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:15px;font-weight:700" value="' + (cfg.targetCA != null ? cfg.targetCA : '') + '"></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    + '<div><label style="font-size:10px;color:var(--tx3)">Panier moyen JM+ACTIV (€)</label>'
+    + '<input type="number" min="1" step="10" id="hf-panier" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" value="' + panier + '"></div>'
+    + '<div><label style="font-size:10px;color:var(--tx3)">RDV → vente (%)</label>'
+    + '<input type="number" min="5" max="95" step="1" id="hf-trdv" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" value="' + Math.round(tRdv) + '"></div>'
+    + '<div style="grid-column:1/-1"><label style="font-size:10px;color:var(--tx3)">Contact → RDV bilan (%)</label>'
+    + '<input type="number" min="5" max="95" step="1" id="hf-tc" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" value="' + Math.round(tContact) + '"></div>'
+    + '</div>'
+    + '<div style="margin-top:12px;padding:12px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--rim3)">'
+    + '<div style="font-size:11px;font-weight:800;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Prévision du mois</div>'
+    + '<div style="display:grid;gap:10px;font-size:13px">'
+    + '<div><span style="color:var(--tx3)">Ventes à signer</span> <strong style="color:var(--tx)">' + ventesBesoin + '</strong> <span style="color:var(--tx4);font-size:11px">(objectif ' + Math.round(targetCA) + '€ ÷ ~' + panier + '€)</span></div>'
+    + '<div><span style="color:var(--tx3)">RDV bilan à tenir</span> <strong style="color:var(--B)">' + rdvBesoin + '</strong></div>'
+    + '<div><span style="color:var(--tx3)">Premiers contacts</span> <strong style="color:var(--V)">' + contactsBesoin + '</strong></div>'
+    + '</div></div>'
+    + '<div style="margin-top:12px;padding:12px;border-radius:var(--r2);border:1px dashed var(--rim3)">'
+    + '<div style="font-size:11px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:8px">Avancement mois en cours</div>'
+    + '<div style="font-size:12px;margin-bottom:6px">Contacts (1er contact) <strong>' + contactsFaits + '</strong> / ' + contactsBesoin + bar(contactsBesoin ? contactsFaits / contactsBesoin * 100 : 0) + '</div>'
+    + '<div style="font-size:12px;margin-bottom:6px">RDV bilan réalisés <strong>' + rdvFaits + '</strong> / ' + rdvBesoin + bar(rdvBesoin ? rdvFaits / rdvBesoin * 100 : 0) + '</div>'
+    + '<div style="font-size:12px">Ventes (closings du mois) <strong>' + ventesFaits + '</strong> / ' + ventesBesoin + bar(ventesBesoin ? ventesFaits / ventesBesoin * 100 : 0) + '</div>'
+    + '</div>'
+    + '<button type="button" class="btn btn-bx btn-sm" id="hf-save" style="width:100%;margin-top:12px">💾 Enregistrer l’objectif</button>'
+    + '</div>';
+  var btn = document.getElementById('hf-save');
+  if (btn) btn.onclick = function() {
+    saveHomeFunnelSettings({
+      monthKey: monthKey,
+      targetCA: parseFloat(document.getElementById('hf-ca').value) || 0,
+      panierMoyen: parseFloat(document.getElementById('hf-panier').value) || 150,
+      tauxRdvVente: parseFloat(document.getElementById('hf-trdv').value) || 25,
+      tauxContactRdv: parseFloat(document.getElementById('hf-tc').value) || 35
+    });
+    toast('ok', '✅ Objectif enregistré');
+    renderHomeObjectives();
+  };
+}
+function updateKPIs() {
+  var year = new Date().getFullYear();
+  var hy = document.getElementById('home-year');
+  if (hy) hy.textContent = year;
+  var yc = ST.clients.filter(function(c) { return getYear(c.date) === year; });
   var cohortRdv = yc.length;
-  const closings=yc.filter(isClosingStatusForKPI).length;
-  const taux=cohortRdv>0?Math.round(closings/cohortRdv*100):0;
-  const ca=yc.filter(isClosingStatusForKPI).reduce((s,c)=>s+(parseFloat(c.montant)||0),0);
-  sv2('kp-p', pipelineOpen || '0');
-  sv2('kp-r', cohortRdv || '—');
-  sv2('kp-t',taux?taux+'%':'—'); sv2('kp-ca',ca>0?ca+'€':'—');
-  sv2('sb-closing',taux?taux+'%':'—'); sv2('tb-closing',taux?taux+'%':'—');
-  sv2('sb-year',year);
+  var closings = yc.filter(isClosingStatusForKPI).length;
+  var taux = cohortRdv > 0 ? Math.round(closings / cohortRdv * 100) : 0;
+  sv2('sb-closing', taux ? taux + '%' : '—');
+  sv2('tb-closing', taux ? taux + '%' : '—');
+  sv2('sb-year', year);
+  renderHomeObjectives();
 }
 
 // ═══════════════════════════════════════════════════
@@ -3797,56 +3941,34 @@ function _homeAlertShouldShow(alert, snoozeMap, todayIso) {
   if (!until) return true;
   return until <= todayIso;
 }
+function _birthIsoFromClient(c) {
+  if (!c) return '';
+  var a = (c.anniversaire || '').trim();
+  if (a.length >= 10) return a.slice(0, 10);
+  if (c.important_dates && c.important_dates.anniversaire_client) return String(c.important_dates.anniversaire_client).slice(0, 10);
+  return '';
+}
+/** Prochains jours (0–7) avant la date anniversaire (mois/jour), ou -1 si inconnu. */
+function _daysUntilBirthday(birthIso, todayIso) {
+  if (!birthIso || birthIso.length < 10 || !todayIso) return null;
+  var md = birthIso.slice(5, 10);
+  var y = parseInt(todayIso.slice(0, 4), 10);
+  var cand = y + '-' + md;
+  var tCand = new Date(cand + 'T12:00:00');
+  var tFrom = new Date(todayIso + 'T12:00:00');
+  if (isNaN(tCand.getTime()) || isNaN(tFrom.getTime())) return null;
+  if (tCand < tFrom) {
+    tCand = new Date((y + 1) + '-' + md + 'T12:00:00');
+  }
+  return Math.round((tCand - tFrom) / 86400000);
+}
 function _buildHomeAlerts() {
   var alerts = [];
   var todayIso = new Date().toISOString().slice(0, 10);
   var snoozeMap = _homeAlertSnoozeMap();
-  var windowDays = 7;
   var remainingThreshold = 2;
-  var seenRdv = {};
 
-  // 1) RDV dans 7 jours
-  if (!ST.rdvs) ST.rdvs = [];
-  ST.rdvs.forEach(function(r) {
-    if (!r || !r.clientId || !r.date) return;
-    var d = _diffDaysFromToday(r.date);
-    if (d == null || d < 0 || d > windowDays) return;
-    var cl = ST.clients.find(function(x) { return x.id === r.clientId; });
-    var nm = cl ? _clientName(cl) : (r.name || 'Client');
-    var rdvSig = String(r.clientId || '') + '|' + String(r.date || '') + '|' + String(r.time || '');
-    seenRdv[rdvSig] = true;
-    var key = 'rdv:' + (r.id || (r.clientId + ':' + r.date + ':' + (r.time || '')));
-    var a = {
-      key: key,
-      priority: 1,
-      dueDate: r.date,
-      clientId: r.clientId,
-      title: '📅 RDV BILAN avec ' + nm,
-      meta: _relDaysLabel(d) + (r.time ? ' · ' + r.time : '')
-    };
-    if (_homeAlertShouldShow(a, snoozeMap, todayIso)) alerts.push(a);
-  });
-  ST.clients.forEach(function(c) {
-    if (!c || !c.rdvType || !c.date) return;
-    if (c.statut === 'Closé' || c.statut === 'Non Closé' || c.statut === 'Refusé' || c.statut === 'Ancien Client') return;
-    if (c.rdvStatut === 'Présent' || c.rdvStatut === 'Absent') return;
-    var rdvSig2 = String(c.id || '') + '|' + String(c.date || '') + '|' + String(c.rdvTime || '');
-    if (seenRdv[rdvSig2]) return;
-    var dc = _diffDaysFromToday(c.date);
-    if (dc == null || dc < 0 || dc > windowDays) return;
-    var k2 = 'rdv-client:' + c.id + ':' + c.date + ':' + (c.rdvTime || '');
-    var a2 = {
-      key: k2,
-      priority: 1,
-      dueDate: c.date,
-      clientId: c.id,
-      title: '📋 RDV BILAN avec ' + _clientName(c),
-      meta: _relDaysLabel(dc) + (c.rdvTime ? ' · ' + c.rdvTime : '')
-    };
-    if (_homeAlertShouldShow(a2, snoozeMap, todayIso)) alerts.push(a2);
-  });
-
-  // 2) Séances restantes (cycle actif uniquement)
+  // 1) Séances restantes / manquantes (cycle actif)
   ST.clients.forEach(function(c) {
     if (!c || !c.sig_offre_id) return;
     var off = _offerForClient(c);
@@ -3860,15 +3982,15 @@ function _buildHomeAlerts() {
     var key = 'sessions:' + c.id + ':' + (cy.id || 'active') + ':' + prev + ':' + eff;
     var titleSess, metaSess;
     if (prev > 0 && rest === 0) {
-      titleSess = '✅ ' + _clientName(c) + ' — parcours séances complété (' + eff + '/' + prev + ')';
-      metaSess = (off.name || 'Offre') + ' · quota atteint';
+      titleSess = _clientName(c) + ' — parcours séances terminé (' + eff + '/' + prev + ')';
+      metaSess = (off.name || 'Offre') + ' · pensez renouvellement ou autre offre';
     } else {
-      titleSess = '🎯 Il reste ' + rest + ' séance' + (rest > 1 ? 's' : '') + ' pour ' + _clientName(c);
+      titleSess = _clientName(c) + ' — il manque ' + rest + ' séance' + (rest > 1 ? 's' : '') + ' à réaliser';
       metaSess = (off.name || 'Offre') + ' · ' + eff + '/' + prev + ' effectuées';
     }
     var a = {
       key: key,
-      priority: 2,
+      priority: 1,
       dueDate: cy.periodeFin || todayIso,
       clientId: c.id,
       title: titleSess,
@@ -3877,93 +3999,7 @@ function _buildHomeAlerts() {
     if (_homeAlertShouldShow(a, snoozeMap, todayIso)) alerts.push(a);
   });
 
-  // 3) Bilans hebdo/mensuel saisis manuellement (offres programmes ciblées)
-  ST.clients.forEach(function(c) {
-    if (!c || !c.important_dates) return;
-    if (!clientQualifiesForImportantDatesCRM(c)) return;
-    var imp = c.important_dates || {};
-    if (imp.next_weekly_bilan) {
-      var dw = _diffDaysFromToday(imp.next_weekly_bilan);
-      if (dw != null && dw <= 0) {
-        var kw = 'weekly:' + c.id + ':' + imp.next_weekly_bilan;
-        var aw = {
-          key: kw,
-          priority: 3,
-          dueDate: imp.next_weekly_bilan,
-          clientId: c.id,
-          title: '🗓️ Bilan hebdomadaire à faire pour ' + _clientName(c),
-          meta: 'Échéance ' + _relDaysLabel(dw)
-        };
-        if (_homeAlertShouldShow(aw, snoozeMap, todayIso)) alerts.push(aw);
-      }
-    }
-    if (imp.next_monthly_bilan) {
-      var dm = _diffDaysFromToday(imp.next_monthly_bilan);
-      if (dm != null && dm <= 0) {
-        var km = 'monthly:' + c.id + ':' + imp.next_monthly_bilan;
-        var am = {
-          key: km,
-          priority: 3,
-          dueDate: imp.next_monthly_bilan,
-          clientId: c.id,
-          title: '📆 Bilan mensuel à faire pour ' + _clientName(c),
-          meta: 'Échéance ' + _relDaysLabel(dm)
-        };
-        if (_homeAlertShouldShow(am, snoozeMap, todayIso)) alerts.push(am);
-      }
-    }
-  });
-
-  // 3b) Étapes parcours — dépassement délai (durée par étape, une fois l’étape « en cours »)
-  ST.clients.forEach(function(c) {
-    if (!c || !c.sig_offre_id || !c.mode_stages) return;
-    if (c.statut === 'Ancien Client') return;
-    var stagesDef = getActiveStageDefs(c);
-    if (!stagesDef || !stagesDef.length) return;
-    var anchorStart = c.parcours_started_at ? new Date(c.parcours_started_at).getTime() : null;
-    stagesDef.forEach(function(stageDef, si) {
-      if (!stageDef.steps || String(stageDef._mode || '').indexOf('continue_') === 0) return;
-      var stageData = c.mode_stages[si];
-      if (!stageData || !stageData.steps) return;
-      stageDef.steps.forEach(function(step, stepIdx) {
-        var msDur = stepDurationToMs(step);
-        if (msDur <= 0) return;
-        var st = stageData.steps[stepIdx];
-        if (st && st.done) return;
-        var prevT = null;
-        if (stepIdx > 0) {
-          var p = stageData.steps[stepIdx - 1];
-          if (!p || !p.done || !p.doneAt) return;
-          prevT = new Date(p.doneAt).getTime();
-        } else if (si > 0) {
-          var ps = c.mode_stages[si - 1];
-          if (!ps || !ps.steps || !ps.steps.length) return;
-          var last = ps.steps[ps.steps.length - 1];
-          if (!last || !last.done || !last.doneAt) return;
-          prevT = new Date(last.doneAt).getTime();
-        } else {
-          if (!anchorStart) return;
-          prevT = anchorStart;
-        }
-        var due = prevT + msDur;
-        if (Date.now() <= due) return;
-        var daysLate = Math.ceil((Date.now() - due) / (24 * 3600 * 1000));
-        var k = 'stepdue:' + c.id + ':' + si + ':' + stepIdx + ':' + step.id;
-        var offN = _offerForClient(c);
-        var a = {
-          key: k,
-          priority: 3,
-          dueDate: new Date(due).toISOString().slice(0, 10),
-          clientId: c.id,
-          title: '⏰ Étape « ' + (step.lbl || step.id) + ' » — ' + _clientName(c),
-          meta: (offN && offN.name ? offN.name + ' · ' : '') + 'dépassement ~' + daysLate + ' j · délai ' + String(step.durVal) + ' ' + String(step.durUnit || 'jours')
-        };
-        if (_homeAlertShouldShow(a, snoozeMap, todayIso)) alerts.push(a);
-      });
-    });
-  });
-
-  // 4) Fin de programme (info utile) — pas pour offres one-shot / à la carte
+  // 2) Fin d’offre / période (~2 semaines)
   ST.clients.forEach(function(c) {
     var cy = _activeCycleForClient(c);
     if (!cy || !cy.periodeFin) return;
@@ -3974,11 +4010,29 @@ function _buildHomeAlerts() {
     var key = 'end:' + c.id + ':' + (cy.id || 'active') + ':' + cy.periodeFin;
     var a = {
       key: key,
-      priority: 4,
+      priority: 2,
       dueDate: cy.periodeFin,
       clientId: c.id,
-      title: '⏳ ' + _clientName(c) + ' finit son programme ' + _relDaysLabel(de),
-      meta: 'Fin prévue le ' + cy.periodeFin
+      title: _clientName(c) + ' — fin de période coaching ' + _relDaysLabel(de),
+      meta: 'Pensez à renouveler l’offre ou proposer autre chose · fin le ' + cy.periodeFin
+    };
+    if (_homeAlertShouldShow(a, snoozeMap, todayIso)) alerts.push(a);
+  });
+
+  // 3) Anniversaires (7 jours)
+  ST.clients.forEach(function(c) {
+    if (!c || !(c.prenom || c.nom)) return;
+    var biso = _birthIsoFromClient(c);
+    var du = _daysUntilBirthday(biso, todayIso);
+    if (du == null || du > 7) return;
+    var key = 'bday:' + c.id + ':' + biso;
+    var a = {
+      key: key,
+      priority: 3,
+      dueDate: todayIso,
+      clientId: c.id,
+      title: '🎂 Anniversaire de ' + _clientName(c),
+      meta: du === 0 ? "Aujourd'hui" : _relDaysLabel(du)
     };
     if (_homeAlertShouldShow(a, snoozeMap, todayIso)) alerts.push(a);
   });
@@ -3987,7 +4041,7 @@ function _buildHomeAlerts() {
     if (a.priority !== b.priority) return a.priority - b.priority;
     return String(a.dueDate || '').localeCompare(String(b.dueDate || ''));
   });
-  return alerts.slice(0, 6);
+  return alerts.slice(0, 8);
 }
 function snoozeHomeAlert(key) {
   if (!key) return;
@@ -4003,26 +4057,15 @@ function renderHomeAlerts() {
   var countEl = document.getElementById('home-alerts-count');
   if (!el) return;
   var alerts = _buildHomeAlerts();
-  var filter = ST.homeAlertsFilter || 'all';
-  var filtered = alerts.filter(function(a) {
-    if (filter === 'urgent') return a.priority === 1;
-    if (filter === 'suivi') return a.priority === 2 || a.priority === 3;
-    return true;
-  });
-  if (countEl) countEl.textContent = filtered.length ? '(' + filtered.length + ')' : '(0)';
+  if (countEl) countEl.textContent = alerts.length ? '(' + alerts.length + ')' : '(0)';
   if (!alerts.length) {
-    el.innerHTML = '<div class="rdv-empty">Aucune alerte prioritaire pour le moment</div>';
+    el.innerHTML = '<div class="rdv-empty">Aucune alerte pour le moment</div>';
     return;
   }
-  if (!filtered.length) {
-    el.innerHTML = '<div class="rdv-empty">Aucune alerte pour ce filtre</div>';
-    return;
-  }
-  el.innerHTML = filtered.map(function(a) {
-    var level = a.priority === 1 ? { txt: 'Urgent', bg: 'var(--R-l)', col: 'var(--R)' }
-      : a.priority === 2 ? { txt: 'Attention', bg: 'var(--Y-l)', col: 'var(--Y)' }
-      : a.priority === 3 ? { txt: 'Suivi', bg: 'var(--B-l)', col: 'var(--B)' }
-      : { txt: 'Info', bg: 'var(--bg3)', col: 'var(--tx3)' };
+  el.innerHTML = alerts.map(function(a) {
+    var level = a.priority === 1 ? { txt: 'Séances', bg: 'var(--Y-l)', col: 'var(--Y)' }
+      : a.priority === 2 ? { txt: 'Offre', bg: 'var(--R-l)', col: 'var(--R)' }
+      : { txt: 'Perso', bg: 'var(--B-l)', col: 'var(--B)' };
     return '<div class="rdv-card" style="cursor:default;align-items:flex-start;border-color:' + level.col + '33;background:linear-gradient(160deg,' + level.bg + ',var(--bg2))">'
       + '<div style="flex:1;min-width:0">'
       + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
@@ -4033,7 +4076,7 @@ function renderHomeAlerts() {
       + '<div class="rdv-meta" style="margin-top:4px">' + _escHtml(a.meta || '') + '</div>'
       + '</div>'
       + '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'
-      + '<button class="btn btn-dk btn-sm" style="padding:5px 9px;font-size:10px" onclick="openClient(\'' + _escHtml(a.clientId) + '\')">Ouvrir</button>'
+      + '<button class="btn btn-dk btn-sm" style="padding:5px 9px;font-size:10px" onclick="openClient(\'' + String(a.clientId || '').replace(/'/g, "\\'") + '\')">Ouvrir</button>'
       + '</div>'
       + '</div>';
   }).join('');
@@ -4064,25 +4107,31 @@ function renderStats() {
   const closings=yc.filter(_isC).length;
   const taux=cohortVol>0?Math.round(closings/cohortVol*100):0;
   const ca=yc.filter(_isC).reduce((s,c)=>s+(parseFloat(c.montant)||0),0);
-  const objTotal=yc.reduce((s,c)=>s+(c.objections||[]).length,0);
+  const contactsYear = ST.clients.filter(function(c) { return getYearFromAnyDate(c.first_contact_date) === year; }).length;
   sv2('stat-closing-pct',taux+'%');
   sv2('st-p', String(pipelineCohort));
   sv2('st-r', cohortVol || '—');
   sv2('st-c',closings||'—');
   sv2('st-ca',ca>0?ca+'€':'—');
+  sv2('st-contacts', String(contactsYear));
   function barEl(cid,data,col){
     const el=document.getElementById(cid);if(!el)return;
     const sorted=Object.entries(data).sort((a,b)=>b[1]-a[1]);
     const max=sorted[0]?sorted[0][1]:1;
     el.innerHTML=sorted.length?sorted.map(([k,v])=>'<div class="stat-bar-item"><div class="stat-bar-lbl">'+k.slice(0,20)+'</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width:'+(v/max*100)+'%;background:'+col+'"></div></div><div class="stat-bar-val">'+v+'</div></div>').join(''):'<div class="note">Aucune donnée</div>';
   }
-  const offresCount={};
-  yc.filter(_isC).forEach(function(c){
-    var o = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
-    var t = (o && o.name) ? String(o.name).trim() : ((c.offres||'').split(',')[0]||'').trim();
-    if (t) offresCount[t]=(offresCount[t]||0)+1;
+  const offById = {};
+  yc.filter(_isC).forEach(function(c) {
+    if (!c.sig_offre_id) return;
+    offById[c.sig_offre_id] = (offById[c.sig_offre_id] || 0) + 1;
   });
-  barEl('stats-offres',offresCount,'var(--Y)');
+  const offresCount = {};
+  Object.keys(offById).forEach(function(oid) {
+    var o = loadOffres().find(function(x) { return x.id === oid; });
+    var label = o && o.name ? String(o.name).trim() : oid;
+    offresCount[label] = offById[oid];
+  });
+  barEl('stats-offres', offresCount, 'var(--Y)');
   const srcs={};yc.forEach(c=>{if(c.source)srcs[c.source]=(srcs[c.source]||0)+1;});
   barEl('stats-sources',srcs,'var(--bx)');
   const objs={};yc.forEach(c=>{if(c.objectif)objs[c.objectif]=(objs[c.objectif]||0)+1;});
@@ -4094,8 +4143,14 @@ function renderStats() {
   const ages={'18-24':0,'25-34':0,'35-44':0,'45-54':0,'55+':0};
   yc.forEach(c=>{const a=parseInt(c.age);if(!a)return;if(a<25)ages['18-24']++;else if(a<35)ages['25-34']++;else if(a<45)ages['35-44']++;else if(a<55)ages['45-54']++;else ages['55+']++;});
   barEl('stats-ages',ages,'var(--G)');
-  const objMap={};yc.forEach(c=>{(c.objections||[]).forEach(o=>{if(o)objMap[o]=(objMap[o]||0)+1;});});
-  barEl('stats-objections-detail',objMap,'var(--R)');
+  const objMap = {};
+  yc.forEach(function(c) {
+    (c.objections || []).forEach(function(raw) {
+      var k = normalizeObjectionStatLabel(raw);
+      if (k) objMap[k] = (objMap[k] || 0) + 1;
+    });
+  });
+  barEl('stats-objections-detail', objMap, 'var(--R)');
   const monthly={};
   const mLabels=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
   yc.forEach(c=>{
@@ -4130,17 +4185,45 @@ function openWrapped() {
   var srcs = {}; yc.forEach(function(c){ if(c.source) srcs[c.source]=(srcs[c.source]||0)+1; });
   var topSrc = Object.entries(srcs).sort(function(a,b){return b[1]-a[1];})[0];
 
-  // Top offre
-  var offs = {}; closings.forEach(function(c){
-    var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
-    var n = o ? o.name : (c.offres||'').split(',')[0].trim();
-    if(n) offs[n]=(offs[n]||0)+1;
+  var offByIdW = {};
+  closings.forEach(function(c) {
+    if (!c.sig_offre_id) return;
+    offByIdW[c.sig_offre_id] = (offByIdW[c.sig_offre_id] || 0) + 1;
   });
-  var topOff = Object.entries(offs).sort(function(a,b){return b[1]-a[1];})[0];
+  var offs = {};
+  Object.keys(offByIdW).forEach(function(oid) {
+    var o = loadOffres().find(function(x) { return x.id === oid; });
+    var n = o && o.name ? String(o.name).trim() : oid;
+    if (n) offs[n] = offByIdW[oid];
+  });
+  var topOffs = Object.entries(offs).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 2);
 
-  // Top ville
-  var villes = {}; yc.forEach(function(c){ if(c.ville) villes[c.ville]=(villes[c.ville]||0)+1; });
-  var topVille = Object.entries(villes).sort(function(a,b){return b[1]-a[1];})[0];
+  var villes = {}; yc.forEach(function(c) { if (c.ville) villes[c.ville] = (villes[c.ville] || 0) + 1; });
+  var topVilles = Object.entries(villes).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 2);
+
+  var noteVals = [];
+  yc.forEach(function(c) {
+    (c.bilan_final_notes || []).forEach(function(n) {
+      var v = typeof n === 'number' ? n : (n && n.v != null ? parseFloat(n.v) : NaN);
+      var nd = typeof n === 'object' && n && n.d ? n.d : '';
+      var dy = nd ? getYearFromAnyDate(nd) : year;
+      if (!isNaN(v) && v >= 1 && v <= 5 && dy === year) noteVals.push(v);
+    });
+  });
+  var avgNotes = noteVals.length ? noteVals.reduce(function(a, b) { return a + b; }, 0) / noteVals.length : null;
+  var starsRow = '';
+  if (avgNotes == null || isNaN(avgNotes)) {
+    starsRow = '<div style="font-size:12px;color:rgba(255,255,255,.45)">Pas encore de note bilan final (' + year + ')</div>';
+  } else {
+    var sc = '';
+    for (var si = 1; si <= 5; si++) {
+      var on = avgNotes >= si;
+      sc += '<span style="font-size:24px;line-height:1;color:' + (on ? '#ffd60a' : 'rgba(255,255,255,.12)') + '">' + (on ? '★' : '☆') + '</span>';
+    }
+    starsRow = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' + sc
+      + '<span style="font-size:14px;font-weight:800;color:#fff">' + avgNotes.toFixed(1).replace('.', ',') + '/5</span>'
+      + '<span style="font-size:11px;color:rgba(255,255,255,.45)">(' + noteVals.length + ' bilan' + (noteVals.length > 1 ? 'x' : '') + ')</span></div>';
+  }
 
   // Best month
   var monthly = {}; yc.forEach(function(c){
@@ -4187,9 +4270,14 @@ function openWrapped() {
 
     '<div class="wr-grid">' +
       '<div class="wr-kpi"><div class="wr-kpi-v">'+total+'</div><div class="wr-kpi-l">Cohorte (RDV année)</div></div>' +
-      '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#4cd964">'+closings.length+'</div><div class="wr-kpi-l">Closings (Closé + anciens)</div></div>' +
-      '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#ff9f0a">'+taux+'%</div><div class="wr-kpi-l">Taux closing</div></div>' +
+      '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#4cd964">'+closings.length+'</div><div class="wr-kpi-l">Ventes (Closé + anciens)</div></div>' +
+      '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#ff9f0a">'+taux+'%</div><div class="wr-kpi-l">Taux conversion</div></div>' +
       '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#ffd60a">'+(ca>0?ca+'€':'—')+'</div><div class="wr-kpi-l">CA total</div></div>' +
+    '</div>' +
+
+    '<div class="wr-section">' +
+      '<div class="wr-section-title">⭐ Note globale du coaching</div>' +
+      '<div style="padding:4px 0 8px">' + starsRow + '</div>' +
     '</div>' +
 
     '<div class="wr-section">' +
@@ -4197,8 +4285,10 @@ function openWrapped() {
       '<div style="display:flex;flex-direction:column;gap:8px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">📅 Meilleur mois</span><span class="wr-badge">'+bestMonthLbl+'</span></div>' +
         '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">📡 Source #1</span><span class="wr-badge">'+(topSrc?topSrc[0]:'—')+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">💼 Offre #1</span><span class="wr-badge" style="font-size:10px">'+(topOff?topOff[0].slice(0,22):'—')+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">📍 Ville #1</span><span class="wr-badge">'+(topVille?topVille[0]:'—')+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">💼 Offre #1</span><span class="wr-badge" style="font-size:10px">'+(topOffs[0]?topOffs[0][0].slice(0,22):'—')+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">💼 Offre #2</span><span class="wr-badge" style="font-size:10px">'+(topOffs[1]?topOffs[1][0].slice(0,22):'—')+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">📍 Ville #1</span><span class="wr-badge">'+(topVilles[0]?topVilles[0][0]:'—')+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">📍 Ville #2</span><span class="wr-badge">'+(topVilles[1]?topVilles[1][0]:'—')+'</span></div>' +
       '</div>' +
     '</div>' +
 
@@ -4239,31 +4329,91 @@ function closeWrapped() {
 function exportWrappedPDF() {
   var year = ST.statsYear || new Date().getFullYear();
   if (!window.jspdf) { toast('err','jsPDF non disponible'); return; }
-  var doc = new window.jspdf.jsPDF({ orientation:'portrait', unit:'mm', format:[100,180] });
   var card = document.getElementById('wrapped-content');
   if (!card) return;
-  // Simple text-based PDF
-  doc.setFillColor(26,10,12);
-  doc.rect(0,0,100,180,'F');
-  doc.setTextColor(255,255,255);
-  doc.setFontSize(10); doc.setFont('helvetica','bold');
-  doc.setFontSize(18); doc.text('MON ANNÉE '+year+' 🎯', 50, 18, {align:'center'});
-  doc.setFontSize(9); doc.text('Coach JM · BE ACTIV BILAN CRM', 50, 26, {align:'center'});
-  // Extract KPIs from DOM
-  var kpis = card.querySelectorAll('.wr-kpi');
-  var y = 40;
-  kpis.forEach(function(k){
-    var v = k.querySelector('.wr-kpi-v'); var l = k.querySelector('.wr-kpi-l');
-    if(v && l){ doc.setFontSize(14); doc.text((v.textContent||''), 30, y, {align:'center'}); doc.setFontSize(8); doc.text((l.textContent||''), 30, y+6, {align:'center'}); y += 2; }
+  var pageW = 100;
+  var pageH = 200;
+  var doc = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: [pageW, pageH] });
+  var y;
+  function pdfSafe(s) {
+    return String(s || '').replace(/★/g, '*').replace(/☆/g, ' ').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').replace(/[\u2600-\u27BF]/g, '').trim();
+  }
+  function splitLines(text, w) {
+    if (typeof doc.splitTextToSize === 'function') return doc.splitTextToSize(text, w) || [];
+    var t = String(text || '');
+    return t.length ? [t.length > 90 ? t.slice(0, 87) + '...' : t] : [];
+  }
+  function paintBg() {
+    doc.setFillColor(26, 10, 12);
+    doc.rect(0, 0, pageW, pageH, 'F');
+    doc.setTextColor(255, 255, 255);
+  }
+  function newPage() {
+    doc.addPage([pageW, pageH]);
+    paintBg();
+    y = 12;
+  }
+  function ensureSpace(mm) {
+    if (y + mm > pageH - 8) newPage();
+  }
+  paintBg();
+  y = 14;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.text('MON ANNÉE ' + year, pageW / 2, y, { align: 'center' });
+  y += 7;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text('Coach JM · BE ACTIV BILAN CRM', pageW / 2, y, { align: 'center' });
+  y += 11;
+
+  card.querySelectorAll('.wr-kpi').forEach(function(k) {
+    var v = k.querySelector('.wr-kpi-v');
+    var l = k.querySelector('.wr-kpi-l');
+    if (!v || !l) return;
+    ensureSpace(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(String(v.textContent || '').trim(), pageW / 2, y, { align: 'center' });
+    y += 4.5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    var lab = String(l.textContent || '').trim();
+    splitLines(lab, 88).forEach(function(line) {
+      doc.text(line, pageW / 2, y, { align: 'center' });
+      y += 3.2;
+    });
+    y += 3;
   });
-  // Badges
-  var badges = card.querySelectorAll('.wr-badge');
-  y = 40;
-  badges.forEach(function(b){
-    doc.setFontSize(8); doc.text((b.textContent||'').slice(0,22), 75, y, {align:'center'}); y += 14;
+
+  y += 2;
+  card.querySelectorAll('.wr-section').forEach(function(sec) {
+    var tit = sec.querySelector('.wr-section-title');
+    var title = tit ? String(tit.textContent || '').trim() : '';
+    ensureSpace(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text(pdfSafe(title).slice(0, 52), 7, y);
+    y += 4.5;
+    var clone = sec.cloneNode(true);
+    var titClone = clone.querySelector('.wr-section-title');
+    if (titClone) titClone.remove();
+    var plain = pdfSafe(String(clone.textContent || '').replace(/\s+/g, ' ').trim());
+    if (plain.length > 1200) plain = plain.slice(0, 1200) + '…';
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.8);
+    var lines = splitLines(plain, 86);
+    var maxLines = title.indexOf('Sources') !== -1 ? 14 : 22;
+    lines.slice(0, maxLines).forEach(function(line) {
+      ensureSpace(4);
+      doc.text(line, 7, y);
+      y += 3.4;
+    });
+    y += 3;
   });
-  doc.save('beactiv-wrapped-'+year+'.pdf');
-  toast('ok','📄 PDF exporté !');
+
+  doc.save('beactiv-wrapped-' + year + '.pdf');
+  toast('ok', '📄 PDF exporté !');
 }
 
 function exportWrappedPNG() {
@@ -4363,6 +4513,7 @@ function getCheckedByFid(fid){
 function collectBilan(){
   return{
     prenom:gv('b-pn'),nom:gv('b-nn'),age:gv('b-age'),ville:gv('b-ville'),profession:gv('b-prof'),
+    first_contact_date:gv('b-first-contact'),anniversaire:gv('b-anniversaire'),
     source:getRadioVal('source'),rdvStatut:gv('b-rdv-statut'),rdvType:gv('b-rdv-type'),date:gv('b-date'),
     notesTrain:gv('b-notes-train'),dispoJours:Array.from(document.querySelectorAll('input[name="dispo"]:checked')).map(i=>i.value).join(', '),
     'b-relation-train':getCheckedByFid('b-relation-train'),
@@ -5475,6 +5626,8 @@ function openEditClientModal(clientId) {
       {id:'nom',     label:'Nom',        type:'text',   value: c.nom||''},
       {id:'age',     label:'Âge',        type:'number', value: c.age||''},
       {id:'sexe',    label:'Sexe',       type:'select', value: c.sexe||(c.sex==='F'?'Femme':c.sex==='M'?'Homme':''), options:['|— Choisir —','Homme|Homme','Femme|Femme']},
+      {id:'first_contact_date', label:'Date 1er contact', type:'date', value: c.first_contact_date||''},
+      {id:'anniversaire', label:'Date de naissance', type:'date', value: c.anniversaire||(c.important_dates&&c.important_dates.anniversaire_client)||''},
       {id:'tel',     label:'Téléphone',  type:'text',   value: c.tel||''},
       {id:'email',   label:'Email',      type:'email',  value: c.email||''},
       {id:'ville',   label:'Ville',      type:'text',   value: c.ville||''},
@@ -5493,6 +5646,11 @@ function openEditClientModal(clientId) {
     c.ville      = r.values.ville.trim();
     c.profession = r.values.prof.trim();
     c.notes      = r.values.notes.trim();
+    c.first_contact_date = (r.values.first_contact_date || '').trim();
+    c.anniversaire = (r.values.anniversaire || '').trim();
+    if (c.important_dates && c.important_dates.anniversaire_client && c.anniversaire) {
+      delete c.important_dates.anniversaire_client;
+    }
     c.updated_at = new Date().toISOString();
     localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
     saveToSupabase(c);
@@ -5527,7 +5685,12 @@ function saveClient(){
     profil_code:(r&&r.profilTypeCodeFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeCodeUpdated)||b.profilTypeCode||((existingClient||{}).profil_code)||'',
     profil_label:(r&&r.profilTypeLabelFinal)||(ST.bilanSummary&&ST.bilanSummary.profilTypeLabelUpdated)||'',
     offres:b.offres||((existingClient||{}).offres)||'',
-    montant:b.montant,objections:b.objections,
+    montant:b.montant,
+    objections:(b.objections||[]).filter(function(x){
+      return ['Budget','Manque de temps','Peur/Confiance','Besoin de réfléchir','Aucun'].indexOf(x) >= 0;
+    }),
+    first_contact_date:(b.first_contact_date && String(b.first_contact_date).trim()) || ((existingClient||{}).first_contact_date) || '',
+    anniversaire:(b.anniversaire && String(b.anniversaire).trim()) || ((existingClient||{}).anniversaire) || '',
     statut:((existingClient||{}).statut)||'Contact',
     rdvStatut: b.rdvStatut || ((existingClient||{}).rdvStatut) || '',
     rdvType: b.rdvType || ((existingClient||{}).rdvType) || '',
@@ -5653,7 +5816,7 @@ function renderClients(){
   });
   var emptySub = isProspectTab ? 'Ajoutez votre premier prospect.' : (isClientsTab ? 'Aucun client actif.' : 'Aucun ancien client.');
   if(!list.length){document.getElementById('clients-list').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun contact</div><div class="empty-s">'+emptySub+'</div></div>';return;}
-  const sp={'Closé':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Non Closé':'pill-R','Sans Suite':'pill-V','Ancien Client':'pill-V','Membre CC':'pill-V','Non closé':'pill-B','À relancer':'pill-Y','Refusé':'pill-R','En cours':'pill-B','Closing en cours':'pill-Y'};
+  const sp={'Closé':'pill-G','Client':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Non Closé':'pill-R','Sans Suite':'pill-V','Ancien Client':'pill-V','Ancien':'pill-V','Membre CC':'pill-V','Non closé':'pill-R','À relancer':'pill-Y','Refusé':'pill-R','En cours':'pill-B','Closing en cours':'pill-Y'};
   // Compter les membres par groupId pour les badges
   var groupCounts={};
   ST.clients.forEach(function(c){ if(c.groupId){ groupCounts[c.groupId]=(groupCounts[c.groupId]||0)+1; } });
@@ -5664,11 +5827,16 @@ function renderClients(){
     var dt=c.updated_at?new Date(c.updated_at).toLocaleDateString('fr-FR'):'';
     var offRaw = ((c.offres||'').split(',')[0]||'').trim();
     var displayStatut = c.statut;
-    var todayStr = new Date().toISOString().split('T')[0];
-    if ((c.statut === 'Non closé' || c.statut === 'Contact' || c.statut === 'Attente RDV') && c.date && c.date >= todayStr) displayStatut = 'Attente RDV';
+    if (isClientsTab && c.statut === 'Closé') displayStatut = 'Client';
+    if (isAnciensTab && c.statut === 'Ancien Client') displayStatut = 'Ancien';
+    if (isProspectTab) {
+      if (c.statut === 'Non Closé' || c.statut === 'Non closé') displayStatut = 'Non closé';
+      else if (c.rdvStatut !== 'Présent' && c.rdvStatut !== 'Absent' && (c.statut === 'Contact' || c.statut === 'Attente RDV' || c.statut === 'Prospect' || !c.statut))
+        displayStatut = 'Contact';
+    }
     var statPill = c.statut ? '<span class="pill '+(sp[displayStatut]||sp[c.statut]||'')+'" style="font-size:10px'+(isClosing?';animation:pulse-y 2s ease-in-out infinite':'')+'">'+(isNew?'🆕 ':'')+displayStatut+'</span>' : '';
     var newBadge = isNew ? '<span class="badge-new">New</span>' : '';
-    var closingBadge = isClosing ? '<span class="badge-closing">Closing</span>' : '';
+    var closingBadge = (isClosing && c.statut !== 'Closé' && c.statut !== 'Ancien Client') ? '<span class="badge-closing">En signature</span>' : '';
     var retourBadge = (c.relances && c.relances.length > 0) ? '<span style="font-size:9px;font-weight:700;background:rgba(130,80,200,.15);color:#8a50c8;border:1px solid rgba(130,80,200,.3);border-radius:50px;padding:1px 6px;margin-left:2px">🔄 Retour</span>' : '';
     // Badge groupe
     var groupBadge='';
@@ -7440,24 +7608,60 @@ function saveClientDossierDates(clientId) {
   renderClientModal(clientId);
 }
 
+function saveBilanFinalNoteForClient(clientId) {
+  var c = ST.clients.find(function(x) { return x.id == clientId; });
+  if (!c) return;
+  var inp = document.getElementById('bf-note-val-' + clientId);
+  if (!inp) return;
+  var v = parseFloat(String(inp.value).replace(',', '.'));
+  if (isNaN(v) || v < 1 || v > 5) { toast('err', '⚠️ Note entre 1 et 5'); return; }
+  if (!Array.isArray(c.bilan_final_notes)) c.bilan_final_notes = [];
+  c.bilan_final_notes.push({ v: Math.round(v * 10) / 10, d: new Date().toISOString().slice(0, 10), offerId: c.sig_offre_id || '' });
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  inp.value = '';
+  toast('ok', '✅ Note bilan enregistrée');
+  renderClientModal(clientId);
+}
+
+function appendClientBilanFinalNotePanel(container, clientId, c) {
+  if (!container || !c) return;
+  var arr = Array.isArray(c.bilan_final_notes) ? c.bilan_final_notes : [];
+  var recent = arr.slice(-4).reverse();
+  var hist = recent.map(function(n) {
+    var vv = typeof n === 'number' ? n : n.v;
+    var dd = typeof n === 'object' && n.d ? n.d.slice(0, 10) : '';
+    return '<div style="font-size:11px;color:var(--tx3)">' + (dd ? dd + ' · ' : '') + vv + '/5</div>';
+  }).join('');
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'margin:10px 0;padding:12px;border-radius:var(--r2);border:1px solid var(--rim3);background:var(--bg2)';
+  wrap.innerHTML = '<div style="font-size:11px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:8px">⭐ Bilan final (parcours)</div>'
+    + '<div style="font-size:11px;color:var(--tx3);margin-bottom:8px">À la fin d’un parcours / avant renouvellement — une note sur 5 pour le recap annuel.</div>'
+    + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    + '<input type="number" step="0.1" min="1" max="5" id="bf-note-val-' + clientId + '" placeholder="ex. 4,2" style="flex:1;min-width:100px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:14px">'
+    + '<button type="button" class="btn btn-bx btn-sm" onclick="saveBilanFinalNoteForClient(\'' + clientId + '\')">Ajouter</button></div>'
+    + (hist ? '<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--rim3)">' + hist + '</div>' : '');
+  container.appendChild(wrap);
+}
+
 function appendClientDossierDatesPanel(container, clientId, c) {
   if (!container || !c) return;
   var showParcours = !!(c.sig_offre_id || resolveOffreForClient(c) || (Array.isArray(c.mode_stages) && c.mode_stages.length) || c.parcours_started_at);
-  var wrap = document.createElement('div');
-  wrap.style.cssText = 'margin:10px 0 12px;padding:12px 14px;border:1px dashed var(--rim3);border-radius:var(--r2);background:var(--bg3)';
+  var wrap = document.createElement('details');
+  wrap.style.cssText = 'margin:8px 0 10px;border:1px solid var(--rim3);border-radius:var(--r2);background:var(--bg3);overflow:hidden';
   var closedVal = c.closedAt ? String(c.closedAt).slice(0, 10) : '';
   var parcVal = c.parcours_started_at ? String(c.parcours_started_at).slice(0, 10) : '';
-  var h = '<div style="font-size:11px;font-weight:800;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">📅 Dates dossier</div>'
-    + '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.45">Corrigez l’engagement (closing) et le premier démarrage de parcours pour les dossiers rétro ou importés.</div>'
-    + '<div style="display:grid;gap:10px">'
-    + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Engagement client (closing)</div>'
-    + '<input type="date" id="crm-dossier-closed-' + clientId + '" value="' + closedVal + '" style="width:100%;max-width:280px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" title="Date à laquelle le client est enregistré comme engagé"></div>';
+  var h = '<summary style="list-style:none;cursor:pointer;padding:10px 12px;font-size:12px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px">📅 Dates dossier <span style="float:right;opacity:.5">▸</span></summary>'
+    + '<div style="padding:0 12px 12px;display:grid;gap:10px">'
+    + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Engagement client</div>'
+    + '<input type="date" id="crm-dossier-closed-' + clientId + '" value="' + closedVal + '" style="width:100%;max-width:280px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>';
   if (showParcours) {
     h += '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Démarrage parcours coaching</div>'
-      + '<input type="date" id="crm-dossier-parcours-' + clientId + '" value="' + parcVal + '" style="width:100%;max-width:280px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" title="Aligne le bandeau « Démarré le » du parcours"></div>';
+      + '<input type="date" id="crm-dossier-parcours-' + clientId + '" value="' + parcVal + '" style="width:100%;max-width:280px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>';
   }
-  h += '</div>'
-    + '<button type="button" class="btn btn-bx btn-sm" id="crm-dossier-save-' + clientId + '" style="width:100%;margin-top:12px">💾 Enregistrer les dates</button>';
+  h += '<button type="button" class="btn btn-bx btn-sm" id="crm-dossier-save-' + clientId + '" style="width:100%">💾 Enregistrer les dates</button>'
+    + '</div>';
   wrap.innerHTML = h;
   container.appendChild(wrap);
   var btn = document.getElementById('crm-dossier-save-' + clientId);
@@ -7496,7 +7700,6 @@ function appendClientSuiviJalonsPanel(container, clientId) {
   var imp = c.important_dates;
   var weekly = imp.next_weekly_bilan || '';
   var monthly = imp.next_monthly_bilan || '';
-  var anniv = imp.anniversaire_client || imp.anniversaire_programme || '';
   var perBC = imp.bilan_complet_period || '7';
   var perMB = imp.mini_bilan_period || '30';
 
@@ -7530,10 +7733,6 @@ function appendClientSuiviJalonsPanel(container, clientId) {
     + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Prochaine échéance</div><input type="date" id="imp-monthly-' + clientId + '" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" value="' + monthly + '"></div>'
     + '<select id="imp-per-mb-' + clientId + '" style="padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px;max-width:120px">' + periodOpts(null, perMB) + '</select>'
     + '<button type="button" class="btn btn-sm" id="imp-monthly-plus30-' + clientId + '" style="padding:7px 10px">+1 période</button></div></div>'
-    + '<div>'
-    + '<div style="font-size:15px;font-weight:800;color:var(--tx);letter-spacing:.3px;margin-bottom:8px">Anniversaire client</div>'
-    + '<input type="date" id="imp-anniv-' + clientId + '" style="width:100%;max-width:280px;padding:10px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" value="' + anniv + '" title="Date de naissance du client">'
-    + '</div>'
     + '<button type="button" class="btn btn-bx btn-sm" id="imp-save-all-' + clientId + '" style="width:100%">💾 Enregistrer</button>'
     + '</div></div>';
   container.appendChild(wrap);
@@ -7551,7 +7750,6 @@ function appendClientSuiviJalonsPanel(container, clientId) {
 
   var wEl = document.getElementById('imp-weekly-' + clientId);
   var mEl = document.getElementById('imp-monthly-' + clientId);
-  var aEl = document.getElementById('imp-anniv-' + clientId);
   var bcPerEl = document.getElementById('imp-per-bc-' + clientId);
   var mbPerEl = document.getElementById('imp-per-mb-' + clientId);
   var wP7 = document.getElementById('imp-weekly-plus7-' + clientId);
@@ -7562,8 +7760,6 @@ function appendClientSuiviJalonsPanel(container, clientId) {
     saveClientImportantDates(clientId, {
       next_weekly_bilan: wEl ? wEl.value : '',
       next_monthly_bilan: mEl ? mEl.value : '',
-      anniversaire_client: aEl ? aEl.value : '',
-      anniversaire_programme: aEl ? aEl.value : '',
       bilan_complet_period: bcPerEl ? bcPerEl.value : '',
       mini_bilan_period: mbPerEl ? mbPerEl.value : '',
       prochain_mini_bilan: '',
@@ -7622,7 +7818,7 @@ function renderClientModal(id) {
 
   // ── Header premium
   var head = document.createElement('div'); head.className = 'cm-head';
-  var statutLbl = isAncien ? 'Ancien Client' : 'Closé';
+  var statutLbl = isAncien ? 'Ancien' : 'Client';
   var statutCls = isAncien ? 'pill-V' : 'pill-G';
   var meta = '<span class="pill '+statutCls+'">'+(isNew?'🆕 ':'')+statutLbl+'</span>'
     + (offreMode ? '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(offreMode)+'</span>' : '')
@@ -7661,6 +7857,7 @@ function renderClientModal(id) {
   }
 
   appendClientDossierDatesPanel(container, id, c);
+  appendClientBilanFinalNotePanel(container, id, c);
 
   var facBloc = document.createElement('div');
   facBloc.style.cssText = 'margin:10px 0 14px;display:flex;flex-direction:column;gap:6px';
