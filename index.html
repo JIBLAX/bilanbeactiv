@@ -1234,14 +1234,14 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   </div>
   <div id="editor-parcours" style="display:none">
     <div style="background:linear-gradient(135deg,rgba(139,21,32,.06),rgba(26,110,219,.05));border:1.5px solid var(--rim3);border-radius:var(--r3);padding:14px 16px;margin-bottom:16px">
-      <div style="font-weight:800;font-size:14px;color:var(--tx);margin-bottom:8px">🗺️ Parcours par offre &amp; suites</div>
-      <div style="font-size:12.5px;color:var(--tx2);line-height:1.65">Chaque <strong>offre avec parcours</strong> a sa carte : ordre des blocs et des étapes, <strong>délai</strong> par étape (jours ou semaines) pour le suivi et les <strong>alertes</strong> d’accueil, et en bas de carte les <strong>suites</strong> proposées quand le cycle est terminé. La durée « macro » du programme (ex. reset 12 sem.) reste celle du produit ; ici vous cadencez le réel étape par étape.</div>
+      <div style="font-weight:800;font-size:14px;color:var(--tx);margin-bottom:8px">🗺️ Parcours &amp; propositions de suite</div>
+      <div style="font-size:12.5px;color:var(--tx2);line-height:1.65"><strong>Suite</strong> = une fois le parcours fini, ce que vous pouvez proposer au client (programmes, CONTINUE, etc.). Vous cochez ça <strong>par offre</strong> dans chaque carte. Ensuite vous affinez les <strong>étapes</strong> et les délais si besoin.</div>
     </div>
-    <p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Vue groupée par famille (Action, Transformation, Essentiel, Collectif). La <strong>signature</strong> reste commune ; le catalogue des libellés de suites est sous la liste des offres.</p>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Offres triées par famille. Signature commune en haut. Liste des libellés réutilisables en bas.</p>
     <div id="parcours-modes-view"></div>
     <div style="margin:22px 0 12px;padding-top:16px;border-top:2px dashed var(--rim3)">
-      <div style="font-weight:800;font-size:13px;color:var(--bx);margin-bottom:8px">📚 Catalogue des suites</div>
-      <div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Définissez ici les <strong>suites possibles</strong> (nom, icône, phase). Vous les activez ensuite <strong>par offre</strong> dans chaque carte ci-dessus ; sans coches sur une offre, l’app garde les boutons par défaut (ex. les trois CONTINUE après GO ACTIV).</div>
+      <div style="font-weight:800;font-size:13px;color:var(--bx);margin-bottom:8px">📚 Liste des propositions (catalogue)</div>
+      <div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Noms et icônes affichés dans les cases à cocher « quand le parcours est terminé ». Ajoutez ici une ligne si vous manquez d’une proposition.</div>
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
         <button class="btn btn-bx btn-sm" onclick="addSuiteOption()">＋ Ajouter une suite</button>
         <button class="btn btn-dk btn-sm" onclick="resetSuiteOptions()">↩ Réinitialiser</button>
@@ -7703,11 +7703,11 @@ function _pInpSm(key, dflt) {
 // ── Parcours editor helpers ─────────────────────────
 function _pcInp(val, onchangeJs) {
   val = (val||'').replace(/"/g,'&quot;');
-  return '<input type="text" value="'+val+'" style="font-size:12px;flex:1;min-width:0;border:1px solid var(--rim2);border-radius:5px;padding:3px 8px;background:var(--bg3);color:var(--tx);font-family:inherit;box-sizing:border-box" onchange="'+onchangeJs+'">';
+  return '<input type="text" value="'+val+'" style="font-size:12px;flex:0 1 auto;max-width:min(100%,260px);width:100%;min-width:0;border:1px solid var(--rim2);border-radius:5px;padding:6px 8px;background:var(--bg3);color:var(--tx);font-family:inherit;box-sizing:border-box" onchange="'+onchangeJs+'">';
 }
 function _pcInpBold(val, onchangeJs) {
   val = (val||'').replace(/"/g,'&quot;');
-  return '<input type="text" value="'+val+'" style="font-size:11px;font-weight:700;flex:1;min-width:0;border:1px solid var(--rim2);border-radius:5px;padding:2px 7px;background:var(--bg3);color:var(--tx3);font-family:inherit;text-transform:uppercase;letter-spacing:.4px;box-sizing:border-box" onchange="'+onchangeJs+'">';
+  return '<input type="text" value="'+val+'" style="font-size:11px;font-weight:700;flex:0 1 auto;max-width:min(100%,300px);width:100%;min-width:0;border:1px solid var(--rim2);border-radius:5px;padding:6px 8px;background:var(--bg3);color:var(--tx3);font-family:inherit;text-transform:uppercase;letter-spacing:.4px;box-sizing:border-box" onchange="'+onchangeJs+'">';
 }
 function _pcDelBtn(onclick) {
   return '<button onclick="'+onclick+'" style="flex-shrink:0;background:none;border:none;color:var(--R);font-size:14px;cursor:pointer;padding:2px 4px;line-height:1" title="Supprimer">🗑</button>';
@@ -7911,8 +7911,6 @@ function oeToggleSuiteKey(offerId, suiteKey, checked) {
   if (!checked && ix >= 0) arr.splice(ix, 1);
   all[offerId].suiteKeys = arr;
   saveOfferParcoursAll(all);
-  renderParcoursEditor();
-  toast('ok', 'Suites mises à jour');
 }
 
 function renderParcoursEditor() {
@@ -7942,7 +7940,7 @@ function renderParcoursEditor() {
   });
   html += '</div></div>';
 
-  html += '<p style="font-size:12px;color:var(--tx3);margin:0 0 14px;line-height:1.55">Chaque <strong>offre avec parcours</strong> a son propre enchaînement. Renseignez une <strong>durée</strong> sur chaque étape (pour le suivi et les alertes). Les <strong>suites</strong> proposées à la fin se cochent par offre ; le catalogue des libellés est la section en bas de page.</p>';
+  html += '<p style="font-size:12px;color:var(--tx3);margin:0 0 14px;line-height:1.5">Pour chaque offre : d’abord <strong>ce que vous proposez quand le parcours est fini</strong>, puis les <strong>étapes</strong> et leurs délais (alertes). En bas de page : le catalogue des propositions (libellés).</p>';
 
   modeOrder.forEach(function(mk) {
     var list = byMode[mk];
@@ -7956,13 +7954,30 @@ function renderParcoursEditor() {
       var suiteCat = loadSuiteOptions();
 
       html += '<div style="background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2);padding:12px 14px;margin-bottom:12px">'
-        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px">'
-        + '<div><div style="font-weight:700;font-size:14px;color:var(--tx)">' + _escHtml(off.name) + '</div>'
-        + '<div style="font-size:11px;color:var(--tx4);margin-top:4px">' + (hasCustom ? 'Parcours personnalisé pour cette offre' : 'Modèle du mode (éditez pour enregistrer une copie)') + '</div></div>'
+        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px">'
+        + '<div><div style="font-weight:700;font-size:15px;color:var(--tx)">' + _escHtml(off.name) + '</div>'
+        + '<div style="font-size:11px;color:var(--tx4);margin-top:4px">' + (hasCustom ? 'Parcours adapté pour cette offre' : 'Identique au modèle du mode jusqu’à modification') + '</div></div>'
         + '<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end">'
-        + '<button type="button" onclick="oeResetOffer(\'' + oid + '\')" style="font-size:10px;padding:4px 8px;border-radius:4px;border:1px solid var(--rim2);background:var(--bg3);color:var(--tx3);cursor:pointer">↩ Modèle par défaut</button>'
+        + '<button type="button" onclick="oeResetOffer(\'' + oid + '\')" style="font-size:10px;padding:4px 8px;border-radius:4px;border:1px solid var(--rim2);background:var(--bg3);color:var(--tx3);cursor:pointer">↩ Réinit.</button>'
         + '<button type="button" onclick="oeAddStageOffer(\'' + oid + '\')" style="font-size:10px;padding:4px 8px;border-radius:4px;border:1px solid var(--bx);background:none;color:var(--bx);cursor:pointer">＋ Bloc</button>'
         + '</div></div>';
+
+      html += '<div style="margin-bottom:14px;padding:12px;background:linear-gradient(135deg,rgba(26,110,219,.08),transparent);border:1px solid rgba(26,110,219,.25);border-radius:var(--r2)">'
+        + '<div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Quand ce parcours est terminé, que proposez-vous ?</div>'
+        + '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.45">Cochez les propositions qui auront du sens pour ce client. Rien de coché = l’app garde ses boutons par défaut.</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">';
+      var selKeys = cfg.suiteKeys || [];
+      suiteCat.forEach(function(su) {
+        var ck = selKeys.indexOf(su.key) >= 0 ? ' checked' : '';
+        var sk = String(su.key).replace(/'/g, "\\'");
+        html += '<label style="display:flex;align-items:center;gap:10px;margin:0;padding:10px 12px;background:var(--bg2);border:1px solid var(--rim3);border-radius:10px;cursor:pointer;font-size:13px;color:var(--tx);line-height:1.35;box-sizing:border-box">'
+          + '<input type="checkbox"' + ck + ' onchange="oeToggleSuiteKey(\'' + oid + '\',\'' + sk + '\',this.checked)" style="width:18px;height:18px;margin:0;flex-shrink:0;accent-color:var(--bx);cursor:pointer">'
+          + '<span style="flex:1;min-width:0;word-break:break-word">' + su.ico + ' ' + _escHtml(su.label) + '</span>'
+          + '</label>';
+      });
+      html += '</div></div>';
+
+      html += '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin:4px 0 8px">Étapes du parcours</div>';
 
       stages.forEach(function(stage) {
         var sid = String(stage.id).replace(/'/g, "\\'");
@@ -7981,12 +7996,12 @@ function renderParcoursEditor() {
           var isSem = (String(uVal).toLowerCase().indexOf('sem') !== -1);
           var selJ = !isSem ? ' selected' : '';
           var selS = isSem ? ' selected' : '';
-          html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:4px">'
-            + '<span style="font-size:10px;color:var(--tx4);flex-shrink:0;width:14px">' + (s.isFinal ? '✅' : '→') + '</span>'
+          html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px;padding:8px 0;border-bottom:1px dashed var(--rim3)">'
+            + '<span style="font-size:11px;color:var(--tx4);flex-shrink:0;width:18px">' + (s.isFinal ? '✅' : '→') + '</span>'
             + _pcInp(s.lbl, 'oeEditStepLblOffer(\'' + oid + '\',\'' + sid + '\',' + si + ',this.value)')
-            + '<span style="font-size:10px;color:var(--tx4);white-space:nowrap">délai</span>'
-            + '<input type="number" min="0" step="1" value="' + _escHtml(dVal) + '" placeholder="—" style="width:52px;padding:5px 6px;border-radius:6px;border:1px solid var(--rim3);font-size:12px;background:var(--bg3)" title="Durée pour valider cette étape après la précédente" onchange="oeStepDurChange(\'' + oid + '\',\'' + sid + '\',' + si + ',this.value,this.nextElementSibling.value)">'
-            + '<select style="padding:5px 8px;border-radius:6px;border:1px solid var(--rim3);font-size:11px;background:var(--bg3);color:var(--tx)" onchange="oeStepDurChange(\'' + oid + '\',\'' + sid + '\',' + si + ',this.previousElementSibling.value,this.value)">'
+            + '<span style="font-size:10px;color:var(--tx4);white-space:nowrap">max</span>'
+            + '<input type="number" min="0" step="1" value="' + _escHtml(dVal) + '" placeholder="—" style="width:56px;flex-shrink:0;padding:6px 8px;border-radius:6px;border:1px solid var(--rim3);font-size:12px;background:var(--bg3);color:var(--tx)" title="Délai après l’étape précédente (alertes)" onchange="oeStepDurChange(\'' + oid + '\',\'' + sid + '\',' + si + ',this.value,this.nextElementSibling.value)">'
+            + '<select style="flex-shrink:0;padding:6px 8px;border-radius:6px;border:1px solid var(--rim3);font-size:11px;background:var(--bg3);color:var(--tx)" onchange="oeStepDurChange(\'' + oid + '\',\'' + sid + '\',' + si + ',this.previousElementSibling.value,this.value)">'
             + '<option value="jours"' + selJ + '>jours</option>'
             + '<option value="semaines"' + selS + '>semaines</option>'
             + '</select>'
@@ -7999,19 +8014,6 @@ function renderParcoursEditor() {
           + '<button type="button" onclick="oeAddStepOffer(\'' + oid + '\',\'' + sid + '\')" style="margin-top:6px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px dashed var(--bx);background:none;color:var(--bx);cursor:pointer;width:100%">＋ Ajouter une étape</button>'
           + '</div>';
       });
-
-      html += '<div style="margin-top:12px;padding:10px;background:var(--bg3);border-radius:var(--r2);border:1px dashed var(--rim3)">'
-        + '<div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:6px">🔀 Suites après ce parcours</div>'
-        + '<div style="font-size:11px;color:var(--tx4);margin-bottom:8px;line-height:1.45">Cochez les suites proposées quand le client termine le cycle (ex. après « GO ACTIV »). Laisser tout décoché = boutons par défaut de l’application.</div>';
-      var selKeys = cfg.suiteKeys || [];
-      suiteCat.forEach(function(su) {
-        var ck = selKeys.indexOf(su.key) >= 0 ? ' checked' : '';
-        var sk = String(su.key).replace(/'/g, "\\'");
-        html += '<label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;cursor:pointer;font-size:12px;color:var(--tx2)">'
-          + '<input type="checkbox"' + ck + ' onchange="oeToggleSuiteKey(\'' + oid + '\',\'' + sk + '\',this.checked)" style="margin-top:3px">'
-          + '<span>' + su.ico + ' ' + _escHtml(su.label) + '</span></label>';
-      });
-      html += '</div>';
 
       html += '</div>';
     });
