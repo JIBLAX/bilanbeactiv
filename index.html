@@ -6673,18 +6673,8 @@ function renderModeStages(clientId, c, container) {
           fuseWrap.textContent = (parcoursCoachingEarlyEndActive(c)
             ? 'Fin coaching hors objectif enregistrée · '
             : '')
-            + gInline.eff + ' / ' + gInline.min + ' séances pour la finale · compteur partagé avec le bandeau du parcours.';
-          var bLnk = document.createElement('button');
-          bLnk.type = 'button';
-          bLnk.className = 'btn btn-sm';
-          bLnk.style.cssText = 'margin-top:8px;display:block;width:100%;padding:8px;font-weight:700';
-          bLnk.textContent = 'Détails · suivi séances';
-          bLnk.onclick = function(e) {
-            e.stopPropagation();
-            scrollToCrmSuiviSeancesAnchor(clientId);
-          };
+            + gInline.eff + ' / ' + gInline.min + ' séances pour la finale.';
           body.appendChild(fuseWrap);
-          body.appendChild(bLnk);
         }
       }
       stageDef.steps.forEach(function(step, stepIdx){
@@ -6916,7 +6906,7 @@ function validateModeStep(clientId, stageIdx, stepIdx) {
     if (offerParcoursCompletionUsesSessions(offGate)) {
       var gs = getSessionGateStats(c);
       if (gs && gs.min > 0 && !gs.met && !parcoursCoachingEarlyEndActive(c)) {
-        toast('err', '⚠️ Objectif séances : ' + gs.eff + '/' + gs.min + '. Utilisez −1/+1 dans le bandeau parcours ou « Détails · suivi séances », ou « Fin coaching (sans objectif) » si abandon.');
+        toast('err', '⚠️ Objectif séances : ' + gs.eff + '/' + gs.min + '. Ajustez dans « Suivi séances », ou utilisez « Fin coaching » si abandon.');
         return;
       }
     }
@@ -7545,7 +7535,7 @@ function attachSessionGateCompactUi(hostEl, clientId, options) {
   var pctBar = g.min > 0 ? Math.min(100, Math.round(g.eff / g.min * 100)) : 0;
   var hdr = document.createElement('div');
   hdr.style.cssText = 'font-weight:700;color:var(--tx);margin-bottom:6px';
-  hdr.textContent = '📊 Séances (parcours)';
+  hdr.textContent = '📊 Objectif séances';
   hostEl.appendChild(hdr);
 
   if (parcoursCoachingEarlyEndActive(c)) {
@@ -7560,64 +7550,19 @@ function attachSessionGateCompactUi(hostEl, clientId, options) {
 
   var lblNb = document.createElement('span');
   lblNb.style.flex = '1 1 120px';
-  lblNb.innerHTML = '<strong style="color:var(--tx)">' + g.eff + '</strong> / <strong>' + g.min + '</strong> séances pour valider « Terminée »';
-
-  var ctl = document.createElement('span');
-  ctl.style.cssText = 'display:flex;align-items:center;gap:8px;margin-left:auto';
-
-  var btnM = document.createElement('button');
-  btnM.type = 'button';
-  btnM.className = 'btn';
-  btnM.style.cssText = 'padding:4px 10px;font-size:12px';
-  btnM.textContent = '−1';
-  btnM.id = 'sess-comp-min' + suffix + '-' + clientId;
-
-  var btnP = document.createElement('button');
-  btnP.type = 'button';
-  btnP.className = 'btn';
-  btnP.style.cssText = 'padding:4px 10px;font-size:12px';
-  btnP.textContent = '+1';
-  btnP.id = 'sess-comp-plus' + suffix + '-' + clientId;
-
-  ctl.appendChild(btnM);
-  ctl.appendChild(btnP);
+  lblNb.innerHTML = '<strong style="color:var(--tx)">' + g.eff + '</strong> / <strong>' + g.min + '</strong> séances (objectif finale)';
   row.appendChild(lblNb);
-  row.appendChild(ctl);
   hostEl.appendChild(row);
-
-  function wireDelta(delta) {
-    var cl = ST.clients.find(function(x) { return x.id == clientId; });
-    if (!cl || !delta) return;
-    migrateClientSessionCycles(cl);
-    var gg = getSessionGateStats(cl);
-    if (!gg || !gg.cy) return;
-    var cur = Number(gg.cy.seancesEffectuees) || 0;
-    patchSessionCycle(clientId, gg.cy.id, { seancesEffectuees: Math.max(0, cur + delta) });
-  }
-
-  btnM.onclick = function(ev) { ev.stopPropagation(); wireDelta(-1); };
-  btnP.onclick = function(ev) { ev.stopPropagation(); wireDelta(+1); };
 
   var linkRow = document.createElement('div');
   linkRow.style.cssText = 'margin-top:4px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:11px';
-
-  var a = document.createElement('button');
-  a.type = 'button';
-  a.className = 'btn btn-sm btn-V';
-  a.style.cssText = 'padding:4px 10px;font-weight:700';
-  a.textContent = 'Détails · suivi séances';
-  a.onclick = function(ev) {
-    ev.stopPropagation();
-    scrollToCrmSuiviSeancesAnchor(clientId);
-  };
-  linkRow.appendChild(a);
 
   if (showEarlyEnd) {
     var ab = document.createElement('button');
     ab.type = 'button';
     ab.className = 'btn btn-sm';
     ab.style.cssText = 'padding:4px 8px;color:var(--tx3)';
-    ab.textContent = 'Fin coaching (sans objectif)';
+    ab.textContent = 'Fin coaching';
     ab.onclick = function(ev) {
       ev.stopPropagation();
       openFinCoachingSansObjectifConfirm(clientId);
@@ -7625,7 +7570,7 @@ function attachSessionGateCompactUi(hostEl, clientId, options) {
     linkRow.appendChild(ab);
   }
 
-  hostEl.appendChild(linkRow);
+  if (linkRow.childNodes.length > 0) hostEl.appendChild(linkRow);
 
   if (g.min > 0) {
     var bar = document.createElement('div');
@@ -7845,22 +7790,6 @@ function appendSessionTrackingCRM(container, clientId) {
   if (!c) return;
   if (!clientQualifiesForSessionTrackingCRM(c)) return;
   migrateClientSessionCycles(c);
-  appendClientSessionStatsCorner(container, clientId);
-
-  var hist = (c.session_cycles || []).filter(function(x) { return x.completedAt; }).slice(-5).reverse();
-  if (hist.length) {
-    var hEl = document.createElement('div');
-    hEl.style.cssText = 'margin:0 0 12px;font-size:11px;color:var(--tx3)';
-    hEl.innerHTML = '<div style="font-weight:700;margin-bottom:6px;color:var(--tx2)">Historique récent</div>'
-      + hist.map(function(h) {
-        return '<div style="padding:6px 0;border-bottom:1px dashed var(--rim3)">'
-          + '<strong style="color:var(--tx)">' + (h.offerName || 'Offre') + '</strong> · '
-          + (h.seancesEffectuees || 0) + '/' + (h.seancesPrevues || 0) + ' séances'
-          + (h.completedAt ? ' · <span style="color:var(--tx4)">' + String(h.completedAt).slice(0, 10) + '</span>' : '')
-          + '</div>';
-      }).join('');
-    container.appendChild(hEl);
-  }
 
   var cy = ensureActiveSessionCycle(c);
   if (!cy || cy.completedAt) return;
@@ -7887,7 +7816,7 @@ function appendSessionTrackingCRM(container, clientId) {
   var wrap = document.createElement('div');
   wrap.id = 'ba-crm-suivi-seances-' + clientId;
   wrap.style.cssText = 'margin:14px 0;padding:14px;background:var(--bg2);border:1.5px solid var(--rim3);border-radius:var(--r2)';
-  wrap.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Suivi des séances — parcours actuel</div>'
+  wrap.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Suivi séances</div>'
     + '<div style="font-size:11px;color:var(--tx2);margin-bottom:10px">' + (offLbl ? offLbl.name : '') + minLab + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
     + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Séances prévues</div>'
