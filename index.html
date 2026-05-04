@@ -8454,7 +8454,7 @@ async function saveToSupabase(c){
       ? { seancesPrevues: cur.seancesPrevues != null ? cur.seancesPrevues : null, seancesEffectuees: cur.seancesEffectuees != null ? cur.seancesEffectuees : null, periodeDebut: cur.periodeDebut || null, periodeFin: cur.periodeFin || null }
       : { seancesPrevues: c.seancesPrevues != null ? c.seancesPrevues : null, seancesEffectuees: c.seancesEffectuees != null ? c.seancesEffectuees : null, periodeDebut: c.periodeDebut || null, periodeFin: c.periodeFin || null };
     var _sync = loadMaxConfig().sync;
-    var _rj = { pq:c.pq_summary, bilan:c.bilan_summary, final:c.final_report, bilan_raw:c.bilan_raw||null, rdv_history:c.rdv_history||null, session_tracking:legacySess, session_cycles:cycles, important_dates:c.important_dates||null, parcours_started_at:c.parcours_started_at||null, parcours_next_choice:c.parcours_next_choice||null, parcours_coaching_early_end_at:c.parcours_coaching_early_end_at||null, closing_at:c.closedAt||null };
+    var _rj = { pq:c.pq_summary, bilan:c.bilan_summary, final:c.final_report, bilan_raw:c.bilan_raw||null, rdv_history:c.rdv_history||null, session_tracking:legacySess, session_cycles:cycles, important_dates:c.important_dates||null, parcours_started_at:c.parcours_started_at||null, parcours_next_choice:c.parcours_next_choice||null, parcours_coaching_early_end_at:c.parcours_coaching_early_end_at||null, closing_at:c.closedAt||null, is_pro:!!c.isPro, structure_name:c.structureName||null };
     if (_sync.tests_data && c.tests_data && typeof c.tests_data === 'object') _rj.tests_data = c.tests_data;
     if (_sync.rapport_leger && c.rapport_leger) _rj.rapport_leger = c.rapport_leger;
     if (_sync.mode_stages && Array.isArray(c.mode_stages)) _rj.mode_stages = c.mode_stages;
