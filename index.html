@@ -8101,104 +8101,74 @@ function renderClientModal(id) {
     + '</div>';
   container.appendChild(head);
 
-  // ── Bloc résumé compact (réutilise pm-summary)
-  var rows = [];
-  if (c.tel)        rows.push(['Téléphone', c.tel]);
-  if (c.email)      rows.push(['Email', '<span style="word-break:break-all">'+cleanEmail(c.email)+'</span>']);
-  if (c.ville)      rows.push(['Ville', c.ville]);
-  if (c.age || c.sexe || c.sex) {
-    var bits = [];
-    if (c.age) bits.push(c.age+' ans');
-    var _sx = c.sexe || (c.sex==='F'?'Femme':c.sex==='M'?'Homme':'');
-    if (_sx) bits.push(_sx);
-    rows.push(['Profil', bits.join(' · ')]);
-  }
-  if (c.profession) rows.push(['Profession', c.profession]);
-  if (c.montant)    rows.push(['Montant', parseFloat(c.montant).toLocaleString('fr-FR')+' €']);
-  if (c.last_interaction) rows.push(['Dernière relance', new Date(c.last_interaction).toLocaleDateString('fr-FR')]);
-  if (rows.length) {
-    var summary = document.createElement('div'); summary.className = 'pm-summary';
-    summary.innerHTML = rows.map(function(r){
-      return '<div class="pm-row"><div class="pm-row-lbl">'+r[0]+'</div><div class="pm-row-val">'+r[1]+'</div></div>';
-    }).join('');
-    if (c.notes) summary.innerHTML += '<div class="pm-note">'+c.notes+'</div>';
-    container.appendChild(summary);
+  var hasParcours = !!(c.sig_offre_id || offreMode || resolveOffreForClient(c));
+  var parcoursStats = { pct: 0, done: 0, total: 0, activeLbl: 'Parcours non démarré' };
+  if (hasParcours && Array.isArray(c.mode_stages) && c.mode_stages.length) {
+    try {
+      var _sDef = getActiveStageDefs(c);
+      migrateClientModeStagesToNewDefs(c, _sDef);
+      initModeStages(c, _sDef);
+      var _lastDone = -1;
+      _sDef.forEach(function(sd, si){
+        var sData = c.mode_stages[si] || {steps:[]};
+        parcoursStats.total += sData.steps.length;
+        var sDone = sData.steps.filter(function(s){return s.done;}).length;
+        parcoursStats.done += sDone;
+        if (sData.steps.length && sData.steps.every(function(s){return s.done;})) _lastDone = si;
+      });
+      var _activeIdx = Math.min(_lastDone + 1, _sDef.length - 1);
+      var _activeDef = _sDef[_activeIdx];
+      if (_activeDef) {
+        var _mA = _activeDef._mode || 'action';
+        parcoursStats.activeLbl = getPLbl('stage_'+_mA+'_'+_activeDef.id, _activeDef.lbl);
+      }
+      parcoursStats.pct = parcoursStats.total ? Math.round(parcoursStats.done / parcoursStats.total * 100) : 0;
+    } catch (eProg) {}
   }
 
-  appendClientDossierDatesPanel(container, id, c);
-  appendClientBilanFinalNotePanel(container, id, c);
+  // ── Résumé compact (montant + progression)
+  var topSummary = document.createElement('div');
+  topSummary.className = 'card';
+  topSummary.style.cssText = 'padding:12px 14px;margin:8px 0 10px';
+  var montantTxt = c.montant ? (parseFloat(c.montant).toLocaleString('fr-FR') + ' €') : '—';
+  topSummary.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">'
+      + '<div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px">Montant</div><div style="font-size:32px;font-weight:800;line-height:1;color:var(--tx)">' + montantTxt + '</div></div>'
+      + '<div style="text-align:right"><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px">Progression</div><div style="font-size:24px;font-weight:800;line-height:1;color:var(--bx)">' + parcoursStats.pct + '%</div></div>'
+    + '</div>'
+    + '<div style="margin-top:10px;height:5px;background:var(--rim3);border-radius:5px;overflow:hidden"><div style="height:100%;width:' + parcoursStats.pct + '%;background:linear-gradient(90deg,var(--bx),var(--G))"></div></div>'
+    + '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:8px;font-size:11px;color:var(--tx3)">'
+      + '<span><strong style="color:var(--tx2)">' + parcoursStats.done + '/' + parcoursStats.total + '</strong> étapes</span>'
+      + '<span style="max-width:62%;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + parcoursStats.activeLbl + '</span>'
+    + '</div>';
+  container.appendChild(topSummary);
 
   var facBloc = document.createElement('div');
   facBloc.style.cssText = 'margin:10px 0 14px;display:flex;flex-direction:column;gap:6px';
-  facBloc.innerHTML = '<button type="button" class="btn btn-bx" style="width:100%;justify-content:center;padding:11px 14px;font-weight:700;border-radius:var(--r2)" onclick="openAtelierRapportFromClient(\''+id+'\')">📋 Rapport diagnostique</button>';
+  facBloc.innerHTML = '<button type="button" class="btn btn-dk" style="width:100%;justify-content:center;padding:10px 14px;font-weight:700;border-radius:var(--r2)" onclick="openAtelierRapportFromClient(\''+id+'\')">📋 Rapport diagnostique</button>';
   container.appendChild(facBloc);
 
-  appendClientSuiviJalonsPanel(container, id);
-
-  if (c.sig_offre_id || offreMode || resolveOffreForClient(c)) {
+  if (hasParcours) {
     var _sdInit = getActiveStageDefs(c);
     migrateClientModeStagesToNewDefs(c, _sdInit);
     initModeStages(c, _sdInit);
   }
 
-  // ── Cockpit progression (si parcours actif)
-  if ((c.sig_offre_id || offreMode || resolveOffreForClient(c)) && Array.isArray(c.mode_stages) && c.mode_stages.length) {
-    try {
-      var stagesDef = getActiveStageDefs(c);
-      migrateClientModeStagesToNewDefs(c, stagesDef);
-      initModeStages(c, stagesDef);
-      var totalSteps = 0, doneSteps = 0;
-      var activeStageLbl = '—';
-      var nextStepLbl = null;
-      var lastDone = -1;
-      stagesDef.forEach(function(sd, si){
-        var sData = c.mode_stages[si] || {steps:[]};
-        totalSteps += sData.steps.length;
-        var sDone = sData.steps.filter(function(s){return s.done;}).length;
-        doneSteps += sDone;
-        if (sData.steps.length && sData.steps.every(function(s){return s.done;})) lastDone = si;
-      });
-      var activeIdx = Math.min(lastDone + 1, stagesDef.length - 1);
-      var activeDef = stagesDef[activeIdx];
-      var activeData = c.mode_stages[activeIdx] || {steps:[]};
-      if (activeDef) {
-        var _m = activeDef._mode || 'action';
-        activeStageLbl = getPLbl('stage_'+_m+'_'+activeDef.id, activeDef.lbl);
-        for (var i=0;i<(activeDef.steps||[]).length;i++) {
-          var st = activeData.steps[i];
-          if (st && !st.done) { nextStepLbl = getPLbl('step_'+_m+'_'+activeDef.id+'_'+activeDef.steps[i].id+'_'+i, activeDef.steps[i].lbl); break; }
-        }
-      }
-      var pctG = totalSteps ? Math.round(doneSteps/totalSteps*100) : 0;
-      var allDone = totalSteps && doneSteps === totalSteps;
-      var cockpit = document.createElement('div'); cockpit.className = 'cm-cockpit';
-      cockpit.innerHTML = '<div class="cm-cockpit-h">'
-        +   '<span class="cm-cockpit-h-lbl">Progression parcours</span>'
-        +   '<span class="cm-cockpit-pct">'+pctG+'%</span>'
-        + '</div>'
-        + '<div class="cm-cockpit-bar"><div class="cm-cockpit-bar-fill" style="width:'+pctG+'%"></div></div>'
-        + '<div class="cm-cockpit-meta"><strong>'+activeStageLbl+'</strong> · '+doneSteps+'/'+totalSteps+' étapes complétées</div>';
-      if (!allDone && nextStepLbl) {
-        cockpit.innerHTML += '<button class="cm-cockpit-next" data-jump="'+activeIdx+'"><span>→</span><span>Prochaine action : '+nextStepLbl+'</span><span class="cm-arrow">⇲</span></button>';
-      } else if (allDone) {
-        cockpit.innerHTML += '<div style="font-size:12.5px;font-weight:700;color:var(--G);text-align:center;padding:8px 0">🏁 Parcours complet</div>';
-      }
-      container.appendChild(cockpit);
-      var jumpBtn = cockpit.querySelector('[data-jump]');
-      if (jumpBtn) jumpBtn.onclick = function(){
-        var t = container.querySelector('.cm-stage[data-stage-idx="'+activeIdx+'"]');
-        if (t) {
-          t.classList.add('open');
-          t.scrollIntoView({behavior:'smooth', block:'start'});
-        }
-      };
-    } catch(e) { console.warn('cockpit render error', e); }
-  }
+  // ── Suivi séances en priorité
+  appendSessionTrackingCRM(container, id);
 
-  // ── Stages parcours
+  // ── Détail parcours repliable
   var finaleParcoursNewOffreShown = false;
-  if (c.sig_offre_id || offreMode || resolveOffreForClient(c)) {
-    var _pmRet = renderModeStages(id, c, container);
+  var parcoursFold = document.createElement('details');
+  parcoursFold.style.cssText = 'margin:10px 0 12px';
+  var parcSummary = document.createElement('summary');
+  parcSummary.style.cssText = 'cursor:pointer;list-style:none;padding:10px 12px;border:1px solid var(--rim3);border-radius:var(--r2);background:var(--bg2);font-size:12px;font-weight:700;color:var(--tx2)';
+  parcSummary.textContent = 'Parcours détaillé';
+  parcoursFold.appendChild(parcSummary);
+  var parcBody = document.createElement('div');
+  parcBody.style.cssText = 'margin-top:10px';
+  if (hasParcours) {
+    var _pmRet = renderModeStages(id, c, parcBody);
     finaleParcoursNewOffreShown = !!(_pmRet && _pmRet.finaleShowsNewOffre);
   } else {
     finaleParcoursNewOffreShown = true;
@@ -8207,10 +8177,15 @@ function renderClientModal(id) {
       + '<div class="cm-empty-h">Aucun parcours actif</div>'
       + '<div class="cm-empty-sub">Démarrez le parcours client en sélectionnant une nouvelle offre.</div>'
       + '<button class="btn btn-bx btn-sm" onclick="openNewOffreForClient(\''+id+'\')">💼 Nouvelle offre</button>';
-    container.appendChild(empty);
+    parcBody.appendChild(empty);
   }
+  parcoursFold.appendChild(parcBody);
+  container.appendChild(parcoursFold);
 
-  appendSessionTrackingCRM(container, id);
+  // ── Infos secondaires
+  appendClientDossierDatesPanel(container, id, c);
+  appendClientBilanFinalNotePanel(container, id, c);
+  appendClientSuiviJalonsPanel(container, id);
 
   if (isAncien) {
     var reopenRow = document.createElement('div');
@@ -8222,15 +8197,16 @@ function renderClientModal(id) {
   // ── Actions secondaires (en bas, discrètes)
   var hideFooterNouvelleOffre = !!(isAncien || finaleParcoursNewOffreShown);
   var sec = document.createElement('div'); sec.className = 'pm-actions-sec';
-  var editBtn = document.createElement('button'); editBtn.className = 'btn'; editBtn.innerHTML = '✏️ Modifier';
+  sec.style.cssText = 'margin-top:8px;opacity:.92';
+  var editBtn = document.createElement('button'); editBtn.className = 'btn btn-sm'; editBtn.innerHTML = '✏️ Modifier';
   editBtn.onclick = function(){ openEditClientModal(id); };
   sec.appendChild(editBtn);
   if (!hideFooterNouvelleOffre) {
-    var newOffreBtn = document.createElement('button'); newOffreBtn.className = 'btn'; newOffreBtn.innerHTML = '💼 Nouvelle offre';
+    var newOffreBtn = document.createElement('button'); newOffreBtn.className = 'btn btn-sm'; newOffreBtn.innerHTML = '💼 Nouvelle offre';
     newOffreBtn.onclick = function(){ openNewOffreForClient(id); };
     sec.appendChild(newOffreBtn);
   }
-  var delBtn = document.createElement('button'); delBtn.className = 'btn btn-R';
+  var delBtn = document.createElement('button'); delBtn.className = 'btn btn-R btn-sm';
   delBtn.innerHTML = '🗑 Supprimer';
   delBtn.onclick = function(){ deleteClient(id); };
   sec.appendChild(delBtn);
