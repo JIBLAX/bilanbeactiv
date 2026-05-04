@@ -8,6 +8,21 @@
 <title>BE ACTIV | BILAN CRM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<script>
+(function(){
+  function applyLogoSrc(){
+    document.querySelectorAll('img[data-ba-logo]').forEach(function(el){
+      try {
+        var rel = el.getAttribute('data-ba-logo');
+        if (!rel) return;
+        el.src = new URL(rel, window.location.href).href;
+      } catch (e) {}
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyLogoSrc);
+  else applyLogoSrc();
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -109,6 +124,7 @@ input, select, textarea { touch-action: manipulation; }
 ═══════════════════════════════════════════════════ */
 #pin-screen{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#5c0e18 0%,#8b1520 45%,#3d0a10 100%);display:flex;flex-direction:column;align-items:center;justify-content:center}
 .pin-brand{margin-bottom:30px;text-align:center}
+.pin-logo{display:block;width:min(220px,78vw);height:auto;margin:0 auto 18px;object-fit:contain;filter:drop-shadow(0 6px 20px rgba(0,0,0,.35))}
 .pin-brand-name{font-size:30px;font-weight:300;color:rgba(255,255,255,.9);letter-spacing:2px;line-height:1.1}
 .pin-brand-name b{font-weight:800}
 .pin-brand-name .sep{color:rgba(255,255,255,.4);font-weight:300;margin:0 4px}
@@ -142,7 +158,9 @@ input, select, textarea { touch-action: manipulation; }
 /* Sidebar (PC/tablette) */
 #sidebar{width:220px;flex-shrink:0;background:var(--bx);display:flex;flex-direction:column;transition:width .25s}
 .sb-brand{padding:calc(14px + env(safe-area-inset-top, 0px)) 14px 12px;border-bottom:1px solid rgba(255,255,255,.1)}
-.sb-brand-text{min-width:0}
+.sb-brand-row{display:flex;align-items:center;gap:10px}
+.sb-brand-logo{width:42px;height:42px;object-fit:contain;flex-shrink:0;border-radius:8px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.2))}
+.sb-brand-text{min-width:0;flex:1}
 .sb-brand-name{font-size:15px;font-weight:300;color:rgba(255,255,255,.9);line-height:1.2}
 .sb-brand-name b{font-weight:800}
 .sb-brand-name .sep{color:rgba(255,255,255,.35);font-weight:300}
@@ -163,6 +181,7 @@ input, select, textarea { touch-action: manipulation; }
 
 /* Main content */
 .tb-brand-wrap{display:flex;align-items:center;gap:8px;min-width:0}
+.tb-brand-logo-m{width:28px;height:28px;object-fit:contain;flex-shrink:0;border-radius:6px}
 .tb-brand{font-size:15px;font-weight:300;color:var(--tx);min-width:0}
 .tb-brand b{font-weight:800;color:var(--bx)}
 .tb-brand .sep{color:var(--tx4);font-weight:300}
@@ -933,6 +952,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 ══════════════════════════════════════════════════ -->
 <div id="pin-screen">
   <div class="pin-brand">
+    <img class="pin-logo" src="assets/logo-beactiv.png" data-ba-logo="assets/logo-beactiv.png" width="220" height="80" alt="Be ACTIV"/>
     <div class="pin-brand-name">BE <b>ACTIV</b><span class="sep">|</span><b>BILAN CRM</b></div>
     <div class="pin-brand-sub">Accès sécurisé</div>
   </div>
@@ -964,9 +984,12 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <!-- SIDEBAR (PC/tablette) -->
   <div id="sidebar">
     <div class="sb-brand">
-      <div class="sb-brand-text">
-        <div class="sb-brand-name" onclick="showPg('home')" style="cursor:pointer">BE <b>ACTIV</b><br><b>BILAN CRM</b></div>
-        <div class="sb-brand-sub">Coach JM</div>
+      <div class="sb-brand-row">
+        <img class="sb-brand-logo" src="assets/logo-beactiv.png" data-ba-logo="assets/logo-beactiv.png" width="42" height="42" alt=""/>
+        <div class="sb-brand-text">
+          <div class="sb-brand-name" onclick="showPg('home')" style="cursor:pointer">BE <b>ACTIV</b><br><b>BILAN CRM</b></div>
+          <div class="sb-brand-sub">Coach JM</div>
+        </div>
       </div>
     </div>
     <div class="sb-kpi">
@@ -994,6 +1017,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <!-- TOPBAR MOBILE -->
     <div id="topbar-mobile">
       <div class="tb-brand-wrap" onclick="showPg('home')" style="cursor:pointer">
+        <img class="tb-brand-logo-m" src="assets/logo-beactiv.png" data-ba-logo="assets/logo-beactiv.png" width="28" height="28" alt=""/>
         <div class="tb-brand">BE <b>ACTIV</b><span class="sep"> | </span><b>BILAN CRM</b></div>
       </div>
       <div class="tb-right">
