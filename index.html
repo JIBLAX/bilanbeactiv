@@ -2478,6 +2478,7 @@ function validateSigStep(clientId, stepIdx) {
       for (var vi = 0; vi < nPay; vi++) {
         c.versements.push({num: vi+1, montant: payAmt, done: false, doneAt: null});
       }
+      upsertCurrentOfferInHistory(c);
     }
   }
   // Pour paiement en plusieurs fois : bloquer la validation directe, passer par validateVersement
@@ -6693,8 +6694,7 @@ function renderModeStages(clientId, c, container) {
         if (step.durVal && Number(step.durVal) > 0 && step.durUnit) {
           durHint = ' <span style="font-size:10px;font-weight:500;color:var(--tx4)">· ' + String(step.durVal) + ' ' + String(step.durUnit) + '</span>';
         }
-        lbl.innerHTML = getPLbl('step_'+_stageM+'_'+stageDef.id+'_'+step.id+'_'+stepIdx, step.lbl) + durHint
-          + (sessionLocksFinal ? ' <span style="font-size:10px;font-weight:600;color:var(--Y)">· objectif séances</span>' : '');
+        lbl.innerHTML = getPLbl('step_'+_stageM+'_'+stageDef.id+'_'+step.id+'_'+stepIdx, step.lbl) + durHint;
         if (!st.done && !isLocked && isActive) {
           chk.onclick = (function(cid, sIdx, stIdx){ return function(e){
             e.stopPropagation();
@@ -7415,6 +7415,8 @@ function openNewOffreForClient(clientId) {
   var c = ST.clients.find(function(x){ return x.id == clientId; });
   if (!c) return;
   if (c.statut === 'Ancien Client') c.reopen_from_ancien = true;
+  upsertCurrentOfferInHistory(c);
+  archiveCurrentOfferInHistory(c);
   delete c.parcours_coaching_early_end_at;
   archiveSessionCyclesForClient(c);
   // Reset sig_steps et mode_stages pour une nouvelle offre
@@ -7890,12 +7892,106 @@ function appendClientBilanFinalNotePanel(container, clientId, c) {
   }).join('');
   var wrap = document.createElement('div');
   wrap.style.cssText = 'margin:10px 0;padding:12px;border-radius:var(--r2);border:1px solid var(--rim3);background:var(--bg2)';
-  wrap.innerHTML = '<div style="font-size:11px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:8px">⭐ Bilan final (parcours)</div>'
-    + '<div style="font-size:11px;color:var(--tx3);margin-bottom:8px">À la fin d’un parcours / avant renouvellement — une note sur 5 pour le recap annuel.</div>'
+  var infoId = 'bf-note-info-' + clientId;
+  wrap.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">'
+    + '<div style="font-size:11px;font-weight:800;color:var(--tx3);text-transform:uppercase">⭐ Bilan final (parcours)</div>'
+    + '<button type="button" class="btn btn-sm" style="padding:2px 8px;min-height:24px;font-size:11px" onclick="toggleInlineInfo(\'' + infoId + '\')">ⓘ</button></div>'
+    + '<div id="' + infoId + '" style="display:none;font-size:11px;color:var(--tx3);margin-bottom:8px;padding:8px 10px;background:var(--bg3);border:1px solid var(--rim3);border-radius:var(--r2)">Note finale sur 5 en fin de parcours (utile pour le suivi annuel).</div>'
     + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
     + '<input type="number" step="0.1" min="1" max="5" id="bf-note-val-' + clientId + '" placeholder="ex. 4,2" style="flex:1;min-width:100px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:14px">'
     + '<button type="button" class="btn btn-bx btn-sm" onclick="saveBilanFinalNoteForClient(\'' + clientId + '\')">Ajouter</button></div>'
     + (hist ? '<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--rim3)">' + hist + '</div>' : '');
+  container.appendChild(wrap);
+}
+
+function toggleInlineInfo(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function ensureClientOfferHistory(c) {
+  if (!c.offer_history || !Array.isArray(c.offer_history)) c.offer_history = [];
+}
+
+function upsertCurrentOfferInHistory(c) {
+  if (!c) return;
+  ensureClientOfferHistory(c);
+  var offId = c.business_offer_id || c.sig_offre_id || '';
+  if (!offId) return;
+  var offName = c.business_offer_name || c.offres || '';
+  if (!offName && c.sig_offre_id) {
+    var o = loadOffres().find(function(x){ return x.id === c.sig_offre_id; });
+    if (o) offName = o.name;
+  }
+  var amt = c.actual_amount != null ? Number(c.actual_amount) : (c.montant != null ? Number(c.montant) : null);
+  var startedAt = c.parcours_started_at
+    || (c.sig_steps && c.sig_steps[0] && c.sig_steps[0].doneAt ? String(c.sig_steps[0].doneAt).slice(0, 10) : '')
+    || String(new Date().toISOString().slice(0, 10));
+  var existing = c.offer_history.find(function(h){ return h && h.offerId === offId && !h.endedAt; });
+  if (existing) {
+    existing.offerName = offName || existing.offerName;
+    if (amt != null && !isNaN(amt)) existing.amount = Math.round(amt * 100) / 100;
+    existing.updatedAt = new Date().toISOString();
+  } else {
+    c.offer_history.push({
+      offerId: offId,
+      offerName: offName || 'Offre',
+      amount: amt != null && !isNaN(amt) ? Math.round(amt * 100) / 100 : null,
+      startedAt: String(startedAt).slice(0, 10),
+      endedAt: null,
+      updatedAt: new Date().toISOString()
+    });
+  }
+}
+
+function archiveCurrentOfferInHistory(c) {
+  if (!c || !Array.isArray(c.offer_history)) return;
+  var offId = c.business_offer_id || c.sig_offre_id || '';
+  if (!offId) return;
+  var now = new Date().toISOString().slice(0, 10);
+  c.offer_history.forEach(function(h){
+    if (h && h.offerId === offId && !h.endedAt) h.endedAt = now;
+  });
+}
+
+function appendClientOfferHistoryPanel(container, c) {
+  if (!container || !c) return;
+  ensureClientOfferHistory(c);
+  var hasCurrent = !!(c.business_offer_id || c.sig_offre_id || c.business_offer_name || c.offres);
+  var list = (c.offer_history || []).slice().sort(function(a, b) {
+    var ad = (a && (a.startedAt || a.updatedAt)) ? String(a.startedAt || a.updatedAt) : '';
+    var bd = (b && (b.startedAt || b.updatedAt)) ? String(b.startedAt || b.updatedAt) : '';
+    return bd.localeCompare(ad);
+  });
+  if (!hasCurrent && list.length === 0) return;
+  var wrap = document.createElement('details');
+  wrap.style.cssText = 'margin:8px 0 10px;border:1px solid var(--rim3);border-radius:var(--r2);background:var(--bg2);overflow:hidden';
+  var html = '<summary style="list-style:none;cursor:pointer;padding:10px 12px;font-size:12px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px">💼 Historique offres & montants <span style="float:right;opacity:.5">▸</span></summary>'
+    + '<div style="padding:0 12px 12px;display:grid;gap:8px">';
+  if (hasCurrent) {
+    var curName = c.business_offer_name || c.offres || 'Offre active';
+    var curAmt = c.actual_amount != null ? Number(c.actual_amount) : (c.montant != null ? Number(c.montant) : null);
+    html += '<div style="padding:9px 10px;border:1px solid var(--rim3);border-radius:var(--r2);background:var(--bg3)">'
+      + '<div style="font-size:11px;font-weight:700;color:var(--bx);margin-bottom:3px">En cours</div>'
+      + '<div style="font-size:13px;font-weight:700;color:var(--tx)">' + curName + '</div>'
+      + '<div style="font-size:11px;color:var(--tx3)">' + (curAmt != null && !isNaN(curAmt) ? (curAmt.toLocaleString('fr-FR') + ' €') : 'Montant non renseigné') + '</div>'
+      + '</div>';
+  }
+  if (list.length) {
+    list.slice(0, 8).forEach(function(h){
+      if (!h) return;
+      var dateTxt = h.startedAt || '';
+      if (h.endedAt) dateTxt += ' → ' + h.endedAt;
+      var aTxt = h.amount != null && !isNaN(Number(h.amount)) ? (Number(h.amount).toLocaleString('fr-FR') + ' €') : '—';
+      html += '<div style="padding:8px 10px;border:1px dashed var(--rim3);border-radius:var(--r2)">'
+        + '<div style="font-size:12px;font-weight:700;color:var(--tx2)">' + (h.offerName || 'Offre') + '</div>'
+        + '<div style="font-size:11px;color:var(--tx3)">' + aTxt + (dateTxt ? ' · ' + dateTxt : '') + '</div>'
+        + '</div>';
+    });
+  }
+  html += '</div>';
+  wrap.innerHTML = html;
   container.appendChild(wrap);
 }
 
@@ -8128,6 +8224,8 @@ function renderClientModal(id) {
       + '<span style="max-width:62%;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + parcoursStats.activeLbl + '</span>'
     + '</div>';
   container.appendChild(topSummary);
+
+  appendClientOfferHistoryPanel(container, c);
 
   var facBloc = document.createElement('div');
   facBloc.style.cssText = 'margin:10px 0 14px;display:flex;flex-direction:column;gap:6px';
