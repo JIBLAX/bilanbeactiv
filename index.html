@@ -6673,7 +6673,7 @@ function renderModeStages(clientId, c, container) {
           fuseWrap.textContent = (parcoursCoachingEarlyEndActive(c)
             ? 'Fin coaching hors objectif enregistrée · '
             : '')
-            + gInline.eff + ' / ' + gInline.min + ' séances pour la finale.';
+            + gInline.eff + ' / ' + gInline.min + ' séances validées (minimum).';
           body.appendChild(fuseWrap);
         }
       }
@@ -7535,7 +7535,7 @@ function attachSessionGateCompactUi(hostEl, clientId, options) {
   var pctBar = g.min > 0 ? Math.min(100, Math.round(g.eff / g.min * 100)) : 0;
   var hdr = document.createElement('div');
   hdr.style.cssText = 'font-weight:700;color:var(--tx);margin-bottom:6px';
-  hdr.textContent = '📊 Objectif séances';
+  hdr.textContent = '📊 Suivi séances';
   hostEl.appendChild(hdr);
 
   if (parcoursCoachingEarlyEndActive(c)) {
@@ -7545,17 +7545,8 @@ function attachSessionGateCompactUi(hostEl, clientId, options) {
     hostEl.appendChild(bye);
   }
 
-  var row = document.createElement('div');
-  row.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:6px';
-
-  var lblNb = document.createElement('span');
-  lblNb.style.flex = '1 1 120px';
-  lblNb.innerHTML = '<strong style="color:var(--tx)">' + g.eff + '</strong> / <strong>' + g.min + '</strong> séances (objectif finale)';
-  row.appendChild(lblNb);
-  hostEl.appendChild(row);
-
   var linkRow = document.createElement('div');
-  linkRow.style.cssText = 'margin-top:4px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:11px';
+  linkRow.style.cssText = 'margin-top:2px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:11px';
 
   if (showEarlyEnd) {
     var ab = document.createElement('button');
@@ -7632,7 +7623,7 @@ function tryAutoValidateSessionGatedParcours(clientId) {
     localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
     saveToSupabase(c);
   } catch (e) {}
-  toast('ok', '✅ Objectif séances atteint — étape finale du parcours validée');
+  toast('ok', '✅ Minimum de séances validé — étape finale du parcours validée');
 }
 /** Option B CRM : suivi séances visible seulement si offre + flag offre + parcours/signature démarré (sig_started). */
 function clientQualifiesForSessionTrackingCRM(c) {
