@@ -109,6 +109,7 @@ input, select, textarea { touch-action: manipulation; }
 ═══════════════════════════════════════════════════ */
 #pin-screen{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#5c0e18 0%,#8b1520 45%,#3d0a10 100%);display:flex;flex-direction:column;align-items:center;justify-content:center}
 .pin-brand{margin-bottom:30px;text-align:center}
+.pin-logo{display:block;width:min(220px,78vw);height:auto;margin:0 auto 18px;object-fit:contain;filter:drop-shadow(0 6px 20px rgba(0,0,0,.35))}
 .pin-brand-name{font-size:30px;font-weight:300;color:rgba(255,255,255,.9);letter-spacing:2px;line-height:1.1}
 .pin-brand-name b{font-weight:800}
 .pin-brand-name .sep{color:rgba(255,255,255,.4);font-weight:300;margin:0 4px}
@@ -141,8 +142,11 @@ input, select, textarea { touch-action: manipulation; }
 
 /* Sidebar (PC/tablette) */
 #sidebar{width:220px;flex-shrink:0;background:var(--bx);display:flex;flex-direction:column;transition:width .25s}
-.sb-brand{padding:calc(16px + env(safe-area-inset-top, 0px)) 20px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
-.sb-brand-name{font-size:16px;font-weight:300;color:rgba(255,255,255,.9);line-height:1.2}
+.sb-brand{padding:calc(14px + env(safe-area-inset-top, 0px)) 14px 12px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-brand-row{display:flex;align-items:center;gap:10px}
+.sb-brand-logo{width:42px;height:42px;object-fit:contain;flex-shrink:0;border-radius:8px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.2))}
+.sb-brand-text{min-width:0;flex:1}
+.sb-brand-name{font-size:15px;font-weight:300;color:rgba(255,255,255,.9);line-height:1.2}
 .sb-brand-name b{font-weight:800}
 .sb-brand-name .sep{color:rgba(255,255,255,.35);font-weight:300}
 .sb-brand-sub{font-size:9px;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase;margin-top:3px}
@@ -161,7 +165,9 @@ input, select, textarea { touch-action: manipulation; }
 .sb-cfg-btn:hover{background:rgba(255,255,255,.1);color:#fff}
 
 /* Main content */
-.tb-brand{font-size:15px;font-weight:300;color:var(--tx)}
+.tb-brand-wrap{display:flex;align-items:center;gap:8px;min-width:0}
+.tb-brand-logo-m{ width:28px;height:28px;object-fit:contain;flex-shrink:0;border-radius:6px }
+.tb-brand{font-size:15px;font-weight:300;color:var(--tx);min-width:0}
 .tb-brand b{font-weight:800;color:var(--bx)}
 .tb-brand .sep{color:var(--tx4);font-weight:300}
 .tb-right{display:flex;align-items:center;gap:7px}
@@ -931,6 +937,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 ══════════════════════════════════════════════════ -->
 <div id="pin-screen">
   <div class="pin-brand">
+    <img class="pin-logo" src="assets/logo-beactiv.png" width="220" height="80" alt="Be ACTIV"/>
     <div class="pin-brand-name">BE <b>ACTIV</b><span class="sep">|</span><b>BILAN CRM</b></div>
     <div class="pin-brand-sub">Accès sécurisé</div>
   </div>
@@ -989,7 +996,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 
     <!-- TOPBAR MOBILE -->
     <div id="topbar-mobile">
-      <div class="tb-brand" onclick="showPg('home')" style="cursor:pointer">BE <b>ACTIV</b><span class="sep"> | </span><b>BILAN CRM</b></div>
+      <div class="tb-brand-wrap" onclick="showPg('home')" style="cursor:pointer">
+        <img class="tb-brand-logo-m" src="assets/logo-beactiv.png" width="28" height="28" alt=""/>
+        <div class="tb-brand">BE <b>ACTIV</b><span class="sep"> | </span><b>BILAN CRM</b></div>
+      </div>
       <div class="tb-right">
         
         
@@ -1023,7 +1033,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 <div class="pg" id="pg-stats">
   <div class="stat-hero">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px">
-      <div class="stat-sub">Taux de conversion</div>
+      <div class="stat-sub">Prospects → clients</div>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn btn-dk btn-sm" onclick="openWrapped()" style="font-size:11px;padding:5px 10px">🎁 Wrapped</button>
         <div class="year-nav">
@@ -1036,11 +1046,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="stat-main" id="stat-closing-pct">—</div>
   </div>
   <div class="kpi-grid kpi-grid-5" style="margin-bottom:16px">
-    <div class="kpi-box" style="padding:12px"><div class="kpi-v" id="st-p" style="font-size:22px">—</div><div class="kpi-l">Non conclu (cohorte)</div></div>
+    <div class="kpi-box" style="padding:12px"><div class="kpi-v" id="st-p" style="font-size:22px;color:var(--V)">—</div><div class="kpi-l" id="st-p-lbl">1er contact</div></div>
     <div class="kpi-box" style="padding:12px"><div class="kpi-v bl" id="st-r" style="font-size:22px">—</div><div class="kpi-l">RDV Bilan</div></div>
     <div class="kpi-box" style="padding:12px"><div class="kpi-v" id="st-c" style="font-size:22px;color:var(--G)">—</div><div class="kpi-l">Ventes</div></div>
     <div class="kpi-box" style="padding:12px"><div class="kpi-v ye" id="st-ca" style="font-size:18px">—</div><div class="kpi-l">CA total</div></div>
-    <div class="kpi-box" style="padding:12px"><div class="kpi-v" id="st-contacts" style="font-size:22px;color:var(--V)">—</div><div class="kpi-l">Contacts (1er contact)</div></div>
   </div>
   <div class="sh sh-m">📈 Évolution CA & RDV</div>
   <div class="graph-wrap"><div id="graph-container" style="min-height:130px"></div><div class="graph-legend"><div class="gl-item"><div class="gl-dot" style="background:var(--bx)"></div>CA</div><div class="gl-item"><div class="gl-dot" style="background:var(--B)"></div>RDV</div></div></div>
@@ -3742,52 +3751,105 @@ function getHomeFunnelSettings() {
 }
 function saveHomeFunnelSettings(patch) {
   var cur = getHomeFunnelSettings();
-  Object.keys(patch || {}).forEach(function(k) { cur[k] = patch[k]; });
+  Object.keys(patch || {}).forEach(function(k) {
+    if (patch[k] === undefined) return;
+    if (patch[k] === null) delete cur[k];
+    else cur[k] = patch[k];
+  });
   try { localStorage.setItem('ba_home_funnel_v1', JSON.stringify(cur)); } catch (e) {}
 }
-/** CA compté pour l’objectif du mois, par vente signée : 1× = prix total ; N× = mensualité (prix ÷ N). */
-function homeObjEffectivePrice(o) {
-  var p = parseFloat(o && o.price);
-  if (isNaN(p) || p <= 0) return 0;
-  var n = Math.max(1, parseInt(o && o.paiement, 10) || 1);
-  if (n <= 1) return Math.round(p * 100) / 100;
-  return Math.round((p / n) * 100) / 100;
+/** Lignes plan objectif : clés `id__full` et éventuellement `id__frac` si l’offre catalogue est en N×. */
+function homeObjPlanRows(offerList) {
+  var rows = [];
+  (offerList || []).forEach(function(o) {
+    if (!o || !o.id) return;
+    var n = Math.max(1, parseInt(o.paiement, 10) || 1);
+    var p = parseFloat(o.price);
+    if (isNaN(p) || p <= 0) return;
+    var pR = Math.round(p * 100) / 100;
+    if (n <= 1) {
+      rows.push({ key: o.id + '__full', o: o, euro: pR, title: (o.name || 'Offre') + ' · 1×', sub: pR + '€' });
+    } else {
+      var mR = Math.round((p / n) * 100) / 100;
+      rows.push({ key: o.id + '__full', o: o, euro: pR, title: (o.name || 'Offre') + ' · comptant', sub: pR + '€' });
+      rows.push({ key: o.id + '__frac', o: o, euro: mR, title: (o.name || 'Offre') + ' · ' + n + '×', sub: mR + '€ / mois' });
+    }
+  });
+  return rows;
+}
+function homeObjMigrateOfferAlloc(cfg, offerList) {
+  var a = cfg.offerAlloc;
+  if (!a || typeof a !== 'object') return false;
+  var touched = false;
+  (offerList || []).forEach(function(o) {
+    if (!o || !o.id) return;
+    if (a[o.id] == null) return;
+    if (a[o.id + '__full'] != null || a[o.id + '__frac'] != null) {
+      delete a[o.id];
+      touched = true;
+      return;
+    }
+    var leg = parseInt(a[o.id], 10) || 0;
+    var n = Math.max(1, parseInt(o.paiement, 10) || 1);
+    if (n <= 1) a[o.id + '__full'] = leg;
+    else {
+      a[o.id + '__frac'] = leg;
+      a[o.id + '__full'] = 0;
+    }
+    delete a[o.id];
+    touched = true;
+  });
+  return touched;
+}
+/** Closing → ligne comptant vs fractionné pour offres N×. */
+function homeObjClosingLane(c, o) {
+  if (!o) return 'full';
+  var n = Math.max(1, parseInt(o.paiement, 10) || 1);
+  if (n <= 1) return 'full';
+  var v = c.versements;
+  if (Array.isArray(v) && v.length > 1) return 'frac';
+  if (Array.isArray(v) && v.length === 1) {
+    var m1 = parseFloat(v[0].montant);
+    var tot = parseFloat(c.montant) || parseFloat(o.price);
+    if (!isNaN(m1) && !isNaN(tot) && Math.abs(m1 - tot) < 1) return 'full';
+  }
+  var mon = String(c.moyen_paiement || '').toLowerCase();
+  if (mon.indexOf('comptant') !== -1 || mon.indexOf('1 fois') !== -1 || mon.indexOf('1×') !== -1) return 'full';
+  return 'frac';
 }
 function homeObjPlannedCA(cfg, offerList) {
   var alloc = cfg.offerAlloc || {};
   var s = 0;
-  (offerList || []).forEach(function(o) {
-    if (!o || !o.id) return;
-    var cnt = parseInt(alloc[o.id], 10) || 0;
-    s += cnt * homeObjEffectivePrice(o);
+  homeObjPlanRows(offerList).forEach(function(r) {
+    var cnt = parseInt(alloc[r.key], 10) || 0;
+    s += cnt * r.euro;
   });
   return Math.round(s * 100) / 100;
 }
 function homeObjRepartitionAuto(cfg, offerList) {
   cfg.offerAlloc = cfg.offerAlloc || {};
   var T = parseFloat(cfg.targetCA) || 0;
-  (offerList || []).forEach(function(o) { if (o && o.id) cfg.offerAlloc[o.id] = 0; });
-  var effs = (offerList || []).map(function(o) {
-    return { id: o.id, e: homeObjEffectivePrice(o), o: o };
-  }).filter(function(x) { return x.id && x.e > 0; });
+  var rows = homeObjPlanRows(offerList);
+  rows.forEach(function(r) { cfg.offerAlloc[r.key] = 0; });
+  var effs = rows.map(function(r) { return { key: r.key, e: r.euro }; }).filter(function(x) { return x.e > 0; });
   if (!effs.length || T <= 0) return;
   var sumW = effs.reduce(function(s, x) { return s + x.e; }, 0);
   effs.forEach(function(x) {
     var euros = T * (x.e / sumW);
-    cfg.offerAlloc[x.id] = Math.max(0, Math.floor(euros / x.e));
+    cfg.offerAlloc[x.key] = Math.max(0, Math.floor(euros / x.e));
   });
   var cur, tries = 0;
   while ((cur = homeObjPlannedCA(cfg, offerList)) < T - 0.5 && tries < 800) {
     tries++;
     effs.sort(function(a, b) { return b.e - a.e; });
-    cfg.offerAlloc[effs[0].id] = (cfg.offerAlloc[effs[0].id] || 0) + 1;
+    cfg.offerAlloc[effs[0].key] = (cfg.offerAlloc[effs[0].key] || 0) + 1;
   }
   tries = 0;
   while ((cur = homeObjPlannedCA(cfg, offerList)) > T + 0.5 && tries < 800) {
     tries++;
     effs.sort(function(a, b) { return a.e - b.e; });
-    if ((cfg.offerAlloc[effs[0].id] || 0) <= 0) break;
-    cfg.offerAlloc[effs[0].id]--;
+    if ((cfg.offerAlloc[effs[0].key] || 0) <= 0) break;
+    cfg.offerAlloc[effs[0].key]--;
   }
 }
 function homeObjActualMonthCA(y, m0, offerList) {
@@ -3802,7 +3864,8 @@ function homeObjActualMonthCA(y, m0, offerList) {
     var total = parseFloat(c.montant) || (o ? parseFloat(o.price) : 0);
     if (isNaN(total) || total <= 0) return;
     var n = o ? Math.max(1, parseInt(o.paiement, 10) || 1) : 1;
-    var counted = n > 1 ? total / n : total;
+    var lane = homeObjClosingLane(c, o);
+    var counted = lane === 'full' ? total : (n > 1 ? total / n : total);
     sum += Math.round(counted * 100) / 100;
   });
   return Math.round(sum * 100) / 100;
@@ -3822,18 +3885,17 @@ function renderHomeObjectives() {
   var monthKey = year + '-' + month;
   var offerList = loadOffres().filter(function(o) { return o && o.id; });
   var cfg = getHomeFunnelSettings();
+  if (homeObjMigrateOfferAlloc(cfg, offerList)) saveHomeFunnelSettings(cfg);
   if (cfg.monthKey !== monthKey) {
     cfg.monthKey = monthKey;
     if (cfg.targetCA == null) cfg.targetCA = 3000;
-    if (cfg.tauxContactRdv == null) cfg.tauxContactRdv = 35;
-    if (cfg.tauxRdvVente == null) cfg.tauxRdvVente = 28;
     cfg.offerAlloc = {};
     homeObjRepartitionAuto(cfg, offerList);
     saveHomeFunnelSettings(cfg);
   }
   if (!cfg.offerAlloc || typeof cfg.offerAlloc !== 'object') cfg.offerAlloc = {};
-  offerList.forEach(function(o) {
-    if (cfg.offerAlloc[o.id] == null || isNaN(parseInt(cfg.offerAlloc[o.id], 10))) cfg.offerAlloc[o.id] = 0;
+  homeObjPlanRows(offerList).forEach(function(r) {
+    if (cfg.offerAlloc[r.key] == null || isNaN(parseInt(cfg.offerAlloc[r.key], 10))) cfg.offerAlloc[r.key] = 0;
   });
   var yc = ST.clients.filter(function(c) { return getYear(c.date) === year; });
   var cohortVol = yc.length;
@@ -3842,12 +3904,14 @@ function renderHomeObjectives() {
   var targetCA = parseFloat(cfg.targetCA) || 0;
   var planned = homeObjPlannedCA(cfg, offerList);
   var actual = homeObjActualMonthCA(year, month, offerList);
-  var tRdv = parseFloat(cfg.tauxRdvVente);
-  if (!(tRdv > 0)) tRdv = Math.max(8, Math.min(92, tauxYear));
-  var tContact = parseFloat(cfg.tauxContactRdv);
-  if (!(tContact > 0)) tContact = 35;
-  var ventesBesoin = Object.keys(cfg.offerAlloc).reduce(function(s, k) {
-    return s + (parseInt(cfg.offerAlloc[k], 10) || 0);
+  var autoRdv = Math.max(8, Math.min(92, tauxYear));
+  var autoTc = 35;
+  var pipeManual = cfg.pipelineRatesManual === true;
+  var tRdv = pipeManual && parseFloat(cfg.tauxRdvVente) > 0 ? parseFloat(cfg.tauxRdvVente) : autoRdv;
+  var tContact = pipeManual && parseFloat(cfg.tauxContactRdv) > 0 ? parseFloat(cfg.tauxContactRdv) : autoTc;
+  var planRows = homeObjPlanRows(offerList);
+  var ventesBesoin = planRows.reduce(function(s, r) {
+    return s + (parseInt(cfg.offerAlloc[r.key], 10) || 0);
   }, 0);
   var rdvBesoin = tRdv > 0 ? Math.ceil(ventesBesoin / (tRdv / 100)) : 0;
   var contactsBesoin = tContact > 0 ? Math.ceil(rdvBesoin / (tContact / 100)) : 0;
@@ -3883,34 +3947,38 @@ function renderHomeObjectives() {
   else if (planned < targetCA) planCls += 'hf-plan-warn';
   else planCls += 'hf-plan-bad';
   var compact = !!cfg.objSavedOnce && cfg.uiHomeObjEdit !== true;
-  var pills = offerList.filter(function(o) {
-    return (parseInt(cfg.offerAlloc[o.id], 10) || 0) > 0;
-  }).map(function(o) {
-    var n = parseInt(cfg.offerAlloc[o.id], 10) || 0;
-    return '<span class="hf-mini-pill">' + homeObjEsc((o.name || '').slice(0, 18)) + ' ×' + n + '</span>';
-  }).join('') || '<span class="hf-mini-pill">Répartir vos offres</span>';
+  var pills = planRows.filter(function(r) {
+    return (parseInt(cfg.offerAlloc[r.key], 10) || 0) > 0;
+  }).map(function(r) {
+    var n = parseInt(cfg.offerAlloc[r.key], 10) || 0;
+    return '<span class="hf-mini-pill">' + homeObjEsc((r.title || '').slice(0, 22)) + ' ×' + n + '</span>';
+  }).join('') || '<span class="hf-mini-pill">Répartir</span>';
   var maxV = 40;
   var gradId = 'hfGrad_' + String(monthKey).replace(/[^a-zA-Z0-9]/g, '_');
-  var offerRows = offerList.map(function(o) {
-    var sid = homeObjSid(o.id);
-    var cnt = Math.min(maxV, Math.max(0, parseInt(cfg.offerAlloc[o.id], 10) || 0));
-    var eff = homeObjEffectivePrice(o);
-    var payN = Math.max(1, parseInt(o.paiement, 10) || 1);
-    var sub = payN <= 1
-      ? (o.price || 0) + '€ (1×) → ' + eff + '€ / vente (total le mois de signature)'
-      : (o.price || 0) + '€ · ' + payN + '× → ' + eff + '€ / mois (mensualité, objectif du mois)';
+  var offerRows = planRows.map(function(r) {
+    var sid = homeObjSid(r.key);
+    var cnt = Math.min(maxV, Math.max(0, parseInt(cfg.offerAlloc[r.key], 10) || 0));
     return '<div class="hf-offer-row">'
-      + '<div class="hf-offer-top"><div><div class="hf-offer-name">' + homeObjEsc((o.name || 'Offre').slice(0, 40)) + '</div>'
-      + '<div class="hf-offer-sub">' + homeObjEsc(sub) + '</div></div>'
+      + '<div class="hf-offer-top"><div><div class="hf-offer-name">' + homeObjEsc((r.title || '').slice(0, 44)) + '</div>'
+      + '<div class="hf-offer-sub">' + homeObjEsc(r.sub) + '</div></div>'
       + '<span class="hf-val" id="hf-n-' + sid + '">' + cnt + '</span></div>'
-      + '<div class="hf-slider-row"><input type="range" class="hf-range" min="0" max="' + maxV + '" value="' + cnt + '" data-oid="' + homeObjEsc(o.id) + '" id="hf-r-' + sid + '"></div>'
+      + '<div class="hf-slider-row"><input type="range" class="hf-range" min="0" max="' + maxV + '" value="' + cnt + '" data-alloc-key="' + homeObjEsc(r.key) + '" id="hf-r-' + sid + '"></div>'
       + '</div>';
   }).join('');
-  var caRuleNote = '<div style="margin-top:10px;padding:10px;border-radius:var(--r2);background:var(--bg3);border:1px solid var(--rim3);font-size:10px;color:var(--tx3);line-height:1.55">'
-    + '<strong style="color:var(--tx2)">CA du mois (automatique par offre)</strong> — '
-    + 'catalogue <strong>1×</strong> : le <strong>prix total</strong> entre dans le plan du mois de signature ; '
-    + 'catalogue <strong>N×</strong> : seule la <strong>mensualité</strong> (prix ÷ N), alignée sur ce que tu encaisses réellement chaque mois.'
-    + '</div>';
+  var pipeRatesBlock;
+  if (pipeManual) {
+    pipeRatesBlock = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">'
+      + '<div><label style="font-size:10px;color:var(--tx3)">RDV → vente %</label>'
+      + '<input type="number" min="5" max="95" id="hf-trdv" value="' + Math.round(tRdv) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>'
+      + '<div><label style="font-size:10px;color:var(--tx3)">Contact → RDV %</label>'
+      + '<input type="number" min="5" max="95" id="hf-tc" value="' + Math.round(tContact) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div></div>'
+      + '<button type="button" class="btn btn-dk btn-sm" id="hf-pipe-auto" style="margin-top:8px">Taux auto</button>';
+  } else {
+    pipeRatesBlock = '<div style="margin-top:10px;padding:10px;border-radius:var(--r2);background:var(--bg3);border:1px solid var(--rim3);font-size:12px;color:var(--tx2)">'
+      + 'RDV → vente <strong>' + Math.round(tRdv) + '%</strong> · Contact → RDV <strong>' + Math.round(tContact) + '%</strong>'
+      + ' <span style="color:var(--tx3);font-weight:600">· auto</span></div>'
+      + '<button type="button" class="btn btn-dk btn-sm" id="hf-pipe-manual" style="margin-top:8px">Ajuster les %</button>';
+  }
   box.innerHTML =
     '<div class="hf-card" id="hf-root">'
     + '<div class="hf-compact">'
@@ -3933,18 +4001,12 @@ function renderHomeObjectives() {
     +   '<div style="font-size:11px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:8px">Plan par offre</div>'
     +   '<div><label style="font-size:10px;color:var(--tx3)">CA cible du mois (€)</label>'
     +   '<input type="number" min="0" step="50" id="hf-ca" value="' + (cfg.targetCA != null ? cfg.targetCA : '') + '" style="width:100%;margin-top:4px;padding:10px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:15px;font-weight:800"></div>'
-    +   caRuleNote
     +   '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
     +     '<button type="button" class="btn btn-bx btn-sm" id="hf-repartir">Répartir sur le CA</button>'
-    +     '<span style="font-size:10px;color:var(--tx3);align-self:center">Ajuste les quantités pour coller à la cible</span></div>'
+    +     '</div>'
     +   '<div id="hf-offers-wrap" style="margin-top:12px;max-height:min(42vh,320px);overflow-y:auto;-webkit-overflow-scrolling:touch">' + offerRows + '</div>'
     +   '<div id="hf-planned-live" class="' + planCls + '">Plan : <strong>' + planned + '€</strong> · Cible : <strong>' + targetCA + '€</strong></div>'
-    +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">'
-    +     '<div><label style="font-size:10px;color:var(--tx3);line-height:1.35" title="Sur 100 RDV bilan (présents ou absents) dans le mois, combien se concluent par une vente signée le même mois ? Sert à estimer le nombre de RDV nécessaires pour atteindre tes ventes prévues.">Closing RDV bilan → vente (%)</label>'
-    +     '<input type="number" min="5" max="95" id="hf-trdv" value="' + Math.round(tRdv) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" aria-describedby="hf-help-funnel"></div>'
-    +     '<div><label style="font-size:10px;color:var(--tx3);line-height:1.35" title="Sur 100 nouveaux contacts (date de 1er contact dans le mois), combien obtiennent un RDV bilan ce mois ? Sert à estimer combien de contacts il faut en amont pour nourrir le pipeline.">Conversion contact → RDV bilan (%)</label>'
-    +     '<input type="number" min="5" max="95" id="hf-tc" value="' + Math.round(tContact) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" aria-describedby="hf-help-funnel"></div></div>'
-    +   '<p id="hf-help-funnel" style="font-size:10px;color:var(--tx3);line-height:1.5;margin:10px 0 0">Ces deux % ne changent pas ton CA : ce sont des <strong>hypothèses de conversion</strong> pour calculer le pipeline (ventes → combien de RDV → combien de contacts), à ajuster selon ton historique.</p>'
+    +   pipeRatesBlock
     +   '<div style="margin-top:12px;padding:11px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--rim3)">'
     +     '<div style="font-size:10px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:6px">Pipeline (à partir du plan)</div>'
     +     '<div style="font-size:12px">Ventes planifiées <strong>' + ventesBesoin + '</strong> · RDV <strong>' + rdvBesoin + '</strong> · Contacts <strong>' + contactsBesoin + '</strong></div></div>'
@@ -3958,13 +4020,22 @@ function renderHomeObjectives() {
   function readDraftCfg() {
     var c2 = getHomeFunnelSettings();
     c2.targetCA = parseFloat(document.getElementById('hf-ca') && document.getElementById('hf-ca').value) || 0;
-    c2.tauxRdvVente = parseFloat(document.getElementById('hf-trdv') && document.getElementById('hf-trdv').value) || 28;
-    c2.tauxContactRdv = parseFloat(document.getElementById('hf-tc') && document.getElementById('hf-tc').value) || 35;
-    c2.offerAlloc = Object.assign({}, c2.offerAlloc || {});
-    offerList.forEach(function(o) {
-      var el = document.getElementById('hf-r-' + homeObjSid(o.id));
-      c2.offerAlloc[o.id] = el ? Math.min(maxV, Math.max(0, parseInt(el.value, 10) || 0)) : (c2.offerAlloc[o.id] || 0);
+    var trIn = document.getElementById('hf-trdv');
+    if (trIn && trIn.type === 'number') {
+      c2.pipelineRatesManual = true;
+      c2.tauxRdvVente = parseFloat(trIn.value) || autoRdv;
+      c2.tauxContactRdv = parseFloat(document.getElementById('hf-tc') && document.getElementById('hf-tc').value) || autoTc;
+    } else {
+      c2.pipelineRatesManual = false;
+      c2.tauxRdvVente = null;
+      c2.tauxContactRdv = null;
+    }
+    var na = {};
+    planRows.forEach(function(r) {
+      var el = document.getElementById('hf-r-' + homeObjSid(r.key));
+      na[r.key] = el ? Math.min(maxV, Math.max(0, parseInt(el.value, 10) || 0)) : (parseInt(c2.offerAlloc && c2.offerAlloc[r.key], 10) || 0);
     });
+    c2.offerAlloc = na;
     return c2;
   }
   function refreshLive() {
@@ -3985,8 +4056,8 @@ function renderHomeObjectives() {
     var tgt = ev.target;
     if (!tgt) return;
     if (tgt.classList && tgt.classList.contains('hf-range')) {
-      var oid = tgt.getAttribute('data-oid');
-      var lab = oid ? document.getElementById('hf-n-' + homeObjSid(oid)) : null;
+      var ak = tgt.getAttribute('data-alloc-key');
+      var lab = ak ? document.getElementById('hf-n-' + homeObjSid(ak)) : null;
       if (lab) lab.textContent = tgt.value;
     }
     if (tgt.id === 'hf-ca' || tgt.id === 'hf-trdv' || tgt.id === 'hf-tc' || (tgt.classList && tgt.classList.contains('hf-range'))) refreshLive();
@@ -3994,6 +4065,16 @@ function renderHomeObjectives() {
   box.onclick = function(ev) {
     var t = ev.target && ev.target.closest ? ev.target.closest('[id]') : ev.target;
     if (!t || !t.id) return;
+    if (t.id === 'hf-pipe-manual') {
+      saveHomeFunnelSettings({ pipelineRatesManual: true, tauxRdvVente: autoRdv, tauxContactRdv: autoTc });
+      renderHomeObjectives();
+      return;
+    }
+    if (t.id === 'hf-pipe-auto') {
+      saveHomeFunnelSettings({ pipelineRatesManual: false, tauxRdvVente: null, tauxContactRdv: null });
+      renderHomeObjectives();
+      return;
+    }
     if (t.id === 'hf-mod') {
       if (compact) saveHomeFunnelSettings({ uiHomeObjEdit: true });
       else {
@@ -4326,17 +4407,17 @@ function renderStats() {
   const yc=ST.clients.filter(c=>getYear(c.date)===year);
   const _isC=isClosingStatusForKPI;
   const cohortVol=yc.length;
-  const pipelineCohort=yc.filter(function(c){ return !_isC(c); }).length;
   const closings=yc.filter(_isC).length;
   const taux=cohortVol>0?Math.round(closings/cohortVol*100):0;
   const ca=yc.filter(_isC).reduce((s,c)=>s+(parseFloat(c.montant)||0),0);
   const contactsYear = ST.clients.filter(function(c) { return getYearFromAnyDate(c.first_contact_date) === year; }).length;
   sv2('stat-closing-pct',taux+'%');
-  sv2('st-p', String(pipelineCohort));
+  sv2('st-p', String(contactsYear));
+  var stpLbl = document.getElementById('st-p-lbl');
+  if (stpLbl) stpLbl.textContent = contactsYear <= 1 ? '1er contact' : '1ers contacts';
   sv2('st-r', cohortVol || '—');
   sv2('st-c',closings||'—');
   sv2('st-ca',ca>0?ca+'€':'—');
-  sv2('st-contacts', String(contactsYear));
   function barEl(cid,data,col){
     const el=document.getElementById(cid);if(!el)return;
     const sorted=Object.entries(data).sort((a,b)=>b[1]-a[1]);
@@ -4419,10 +4500,11 @@ function openWrapped() {
     var n = o && o.name ? String(o.name).trim() : oid;
     if (n) offs[n] = offByIdW[oid];
   });
-  var topOffs = Object.entries(offs).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 2);
+  var topOffs = Object.entries(offs).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 3);
+  var offMax = topOffs[0] ? topOffs[0][1] : 1;
 
   var villes = {}; yc.forEach(function(c) { if (c.ville) villes[c.ville] = (villes[c.ville] || 0) + 1; });
-  var topVilles = Object.entries(villes).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 2);
+  var topVilles = Object.entries(villes).sort(function(a, b) { return b[1] - a[1]; });
 
   var noteVals = [];
   yc.forEach(function(c) {
@@ -4445,7 +4527,7 @@ function openWrapped() {
     }
     starsRow = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' + sc
       + '<span style="font-size:14px;font-weight:800;color:#fff">' + avgNotes.toFixed(1).replace('.', ',') + '/5</span>'
-      + '<span style="font-size:11px;color:rgba(255,255,255,.45)">(' + noteVals.length + ' bilan' + (noteVals.length > 1 ? 'x' : '') + ')</span></div>';
+      + '<span style="font-size:11px;color:rgba(255,255,255,.45)"> · ' + noteVals.length + ' avis</span></div>';
   }
 
   // Best month
@@ -4455,8 +4537,18 @@ function openWrapped() {
     if(!monthly[m]) monthly[m]=0; monthly[m]++;
   });
   var bestMonth = Object.entries(monthly).sort(function(a,b){return b[1]-a[1];})[0];
-  var mLabels=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-  var bestMonthLbl = bestMonth ? mLabels[parseInt(bestMonth[0].split('-')[1])-1]+' '+bestMonth[0].slice(2,4) : '—';
+  var bestMonthLbl = '—';
+  if (bestMonth) {
+    try {
+      var bp = bestMonth[0].split('-');
+      var yb = parseInt(bp[0], 10), mb = parseInt(bp[1], 10) - 1;
+      if (!isNaN(yb) && !isNaN(mb) && mb >= 0 && mb < 12) {
+        var dBest = new Date(yb, mb, 1);
+        bestMonthLbl = dBest.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        if (bestMonthLbl.length) bestMonthLbl = bestMonthLbl.charAt(0).toUpperCase() + bestMonthLbl.slice(1);
+      }
+    } catch (exBm) {}
+  }
 
   // Sex split
   var nF = yc.filter(function(c){return c.sex==='F';}).length;
@@ -4472,13 +4564,12 @@ function openWrapped() {
   function _wrEsc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
   function _wrClientName(c) { return _wrEsc(((c.prenom || '') + ' ' + (c.nom || '')).trim()) || '—'; }
 
-  // Sources bar (top 4)
-  var srcSorted = Object.entries(srcs).sort(function(a,b){return b[1]-a[1];}).slice(0,4);
+  var srcSorted = Object.entries(srcs).sort(function(a,b){return b[1]-a[1];}).slice(0, 3);
   var srcMax = srcSorted[0] ? srcSorted[0][1] : 1;
 
   function wrBar(items, max, color) {
     return items.map(function(e){
-      return '<div class="wr-bar-item"><div class="wr-bar-lbl">'+e[0].slice(0,16)+'</div><div class="wr-bar-track"><div class="wr-bar-fill" style="width:'+(e[1]/max*100)+'%;background:'+color+'"></div></div><div class="wr-bar-val">'+e[1]+'</div></div>';
+      return '<div class="wr-bar-item"><div class="wr-bar-lbl">'+_wrEsc(e[0].slice(0,22))+'</div><div class="wr-bar-track"><div class="wr-bar-fill" style="width:'+(e[1]/max*100)+'%;background:'+color+'"></div></div><div class="wr-bar-val">'+e[1]+'</div></div>';
     }).join('');
   }
 
@@ -4492,9 +4583,9 @@ function openWrapped() {
     '</div>' +
 
     '<div class="wr-grid">' +
-      '<div class="wr-kpi"><div class="wr-kpi-v">'+total+'</div><div class="wr-kpi-l">Cohorte (RDV année)</div></div>' +
-      '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#4cd964">'+closings.length+'</div><div class="wr-kpi-l">Ventes (Closé + anciens)</div></div>' +
-      '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#ff9f0a">'+taux+'%</div><div class="wr-kpi-l">Taux conversion</div></div>' +
+      '<div class="wr-kpi"><div class="wr-kpi-v">'+total+'</div><div class="wr-kpi-l">RDV bilan</div></div>' +
+      '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#ff9f0a">'+taux+'%</div><div class="wr-kpi-l">Taux de conversion</div></div>' +
+      '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#4cd964">'+closings.length+'</div><div class="wr-kpi-l">Ventes</div></div>' +
       '<div class="wr-kpi"><div class="wr-kpi-v" style="color:#ffd60a">'+(ca>0?ca+'€':'—')+'</div><div class="wr-kpi-l">CA total</div></div>' +
     '</div>' +
 
@@ -4504,14 +4595,12 @@ function openWrapped() {
     '</div>' +
 
     '<div class="wr-section">' +
-      '<div class="wr-section-title">🏆 Top moments</div>' +
+      '<div class="wr-section-title">TOP</div>' +
       '<div style="display:flex;flex-direction:column;gap:8px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">📅 Meilleur mois</span><span class="wr-badge">'+bestMonthLbl+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">📡 Source #1</span><span class="wr-badge">'+(topSrc?topSrc[0]:'—')+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">💼 Offre #1</span><span class="wr-badge" style="font-size:10px">'+(topOffs[0]?topOffs[0][0].slice(0,22):'—')+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">💼 Offre #2</span><span class="wr-badge" style="font-size:10px">'+(topOffs[1]?topOffs[1][0].slice(0,22):'—')+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">📍 Ville #1</span><span class="wr-badge">'+(topVilles[0]?topVilles[0][0]:'—')+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(255,255,255,.6);font-size:12px">📍 Ville #2</span><span class="wr-badge">'+(topVilles[1]?topVilles[1][0]:'—')+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="color:rgba(255,255,255,.6);font-size:12px">Meilleur mois</span><span class="wr-badge">'+_wrEsc(bestMonthLbl)+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="color:rgba(255,255,255,.6);font-size:12px">Source n°1</span><span class="wr-badge">'+_wrEsc(topSrc?topSrc[0]:'—')+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="color:rgba(255,255,255,.6);font-size:12px">Offre n°1</span><span class="wr-badge" style="font-size:10px">'+_wrEsc(topOffs[0]?topOffs[0][0].slice(0,28):'—')+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="color:rgba(255,255,255,.6);font-size:12px">Ville n°1</span><span class="wr-badge">'+_wrEsc(topVilles[0]?topVilles[0][0]:'—')+'</span></div>' +
       '</div>' +
     '</div>' +
 
@@ -4521,13 +4610,18 @@ function openWrapped() {
     '</div>' +
 
     '<div class="wr-section">' +
+      '<div class="wr-section-title">💼 Offres</div>' +
+      wrBar(topOffs, offMax, '#4ecdc4') +
+    '</div>' +
+
+    '<div class="wr-section">' +
       '<div class="wr-section-title">🏃 Les plus assidus</div>' +
       '<div style="display:flex;flex-direction:column;gap:8px">' +
         (assiduRows.length
           ? assiduRows.map(function(x, i) {
               return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="color:rgba(255,255,255,.75);font-size:12px">' + (i + 1) + '. ' + _wrClientName(x.c) + '</span><span class="wr-badge">' + x.n + ' séance' + (x.n > 1 ? 's' : '') + '</span></div>';
             }).join('')
-          : '<div class="note" style="padding:6px 0;color:rgba(255,255,255,.45);font-size:12px">Aucune séance enregistrée pour la cohorte ' + year + '</div>') +
+          : '<div class="note" style="padding:6px 0;color:rgba(255,255,255,.45);font-size:12px">Aucune séance · RDV bilan ' + year + '</div>') +
       '</div>' +
     '</div>' +
 
@@ -4626,7 +4720,7 @@ function exportWrappedPDF() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.8);
     var lines = splitLines(plain, 86);
-    var maxLines = title.indexOf('Sources') !== -1 ? 14 : 22;
+    var maxLines = title.indexOf('Sources') !== -1 || title.indexOf('Offres') !== -1 ? 14 : 22;
     lines.slice(0, maxLines).forEach(function(line) {
       ensureSpace(4);
       doc.text(line, 7, y);

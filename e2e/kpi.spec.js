@@ -33,7 +33,7 @@ function cohortClientsPayload() {
 }
 
 test.describe('BILAN CRM — KPI', () => {
-  test('Stats: non closés vs volume année, closings + offres catalogue', async ({ page, context }) => {
+  test('Stats: 1ers contacts, volume RDV, closings + offres catalogue', async ({ page, context }) => {
     const { json } = cohortClientsPayload();
     await context.addInitScript((payload) => {
       sessionStorage.setItem('ba_pin', '1');
@@ -51,7 +51,7 @@ test.describe('BILAN CRM — KPI', () => {
     await expect(page.locator('#st-p')).toHaveText('1');
     await expect(page.locator('#st-r')).toHaveText('3');
     await expect(page.locator('#st-c')).toHaveText('2');
-    await expect(page.locator('#st-contacts')).toHaveText('1');
+    await expect(page.locator('#st-p-lbl')).toHaveText('1er contact');
     await expect(page.locator('#stat-closing-pct')).toContainText('67');
 
     const off = page.locator('#stats-offres');
@@ -92,7 +92,7 @@ test.describe('BILAN CRM — KPI', () => {
       openWrapped();
     }, year);
 
-    const closingsVal = page.locator('.wr-kpi').nth(1).locator('.wr-kpi-v');
+    const closingsVal = page.locator('.wr-kpi').nth(2).locator('.wr-kpi-v');
     await expect(closingsVal).toHaveText('2');
   });
 
