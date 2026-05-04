@@ -3745,32 +3745,30 @@ function saveHomeFunnelSettings(patch) {
   Object.keys(patch || {}).forEach(function(k) { cur[k] = patch[k]; });
   try { localStorage.setItem('ba_home_funnel_v1', JSON.stringify(cur)); } catch (e) {}
 }
-/** CA « par vente » selon mode : contrat = prix catalogue ; trésorerie = 1er versement (prix / n échéances). */
-function homeObjEffectivePrice(o, caMode) {
+/** CA compté pour l’objectif du mois, par vente signée : 1× = prix total ; N× = mensualité (prix ÷ N). */
+function homeObjEffectivePrice(o) {
   var p = parseFloat(o && o.price);
   if (isNaN(p) || p <= 0) return 0;
   var n = Math.max(1, parseInt(o && o.paiement, 10) || 1);
-  if (caMode === 'treso') return Math.round((p / n) * 100) / 100;
-  return Math.round(p * 100) / 100;
+  if (n <= 1) return Math.round(p * 100) / 100;
+  return Math.round((p / n) * 100) / 100;
 }
 function homeObjPlannedCA(cfg, offerList) {
-  var mode = cfg.caMode || 'contrat';
   var alloc = cfg.offerAlloc || {};
   var s = 0;
   (offerList || []).forEach(function(o) {
     if (!o || !o.id) return;
     var cnt = parseInt(alloc[o.id], 10) || 0;
-    s += cnt * homeObjEffectivePrice(o, mode);
+    s += cnt * homeObjEffectivePrice(o);
   });
   return Math.round(s * 100) / 100;
 }
 function homeObjRepartitionAuto(cfg, offerList) {
   cfg.offerAlloc = cfg.offerAlloc || {};
   var T = parseFloat(cfg.targetCA) || 0;
-  var mode = cfg.caMode || 'contrat';
   (offerList || []).forEach(function(o) { if (o && o.id) cfg.offerAlloc[o.id] = 0; });
   var effs = (offerList || []).map(function(o) {
-    return { id: o.id, e: homeObjEffectivePrice(o, mode), o: o };
+    return { id: o.id, e: homeObjEffectivePrice(o), o: o };
   }).filter(function(x) { return x.id && x.e > 0; });
   if (!effs.length || T <= 0) return;
   var sumW = effs.reduce(function(s, x) { return s + x.e; }, 0);
@@ -3792,7 +3790,7 @@ function homeObjRepartitionAuto(cfg, offerList) {
     cfg.offerAlloc[effs[0].id]--;
   }
 }
-function homeObjActualMonthCA(y, m0, caMode, offerList) {
+function homeObjActualMonthCA(y, m0, offerList) {
   var sum = 0;
   ST.clients.forEach(function(c) {
     if (!isClosingStatusForKPI(c) || !c.closedAt) return;
@@ -3804,8 +3802,8 @@ function homeObjActualMonthCA(y, m0, caMode, offerList) {
     var total = parseFloat(c.montant) || (o ? parseFloat(o.price) : 0);
     if (isNaN(total) || total <= 0) return;
     var n = o ? Math.max(1, parseInt(o.paiement, 10) || 1) : 1;
-    if (caMode === 'treso') sum += Math.round((total / n) * 100) / 100;
-    else sum += Math.round(total * 100) / 100;
+    var counted = n > 1 ? total / n : total;
+    sum += Math.round(counted * 100) / 100;
   });
   return Math.round(sum * 100) / 100;
 }
@@ -3827,7 +3825,6 @@ function renderHomeObjectives() {
   if (cfg.monthKey !== monthKey) {
     cfg.monthKey = monthKey;
     if (cfg.targetCA == null) cfg.targetCA = 3000;
-    if (cfg.caMode !== 'treso' && cfg.caMode !== 'contrat') cfg.caMode = 'contrat';
     if (cfg.tauxContactRdv == null) cfg.tauxContactRdv = 35;
     if (cfg.tauxRdvVente == null) cfg.tauxRdvVente = 28;
     cfg.offerAlloc = {};
@@ -3843,9 +3840,8 @@ function renderHomeObjectives() {
   var closings = yc.filter(isClosingStatusForKPI).length;
   var tauxYear = cohortVol > 0 ? Math.round(closings / cohortVol * 100) : 25;
   var targetCA = parseFloat(cfg.targetCA) || 0;
-  var mode = cfg.caMode || 'contrat';
   var planned = homeObjPlannedCA(cfg, offerList);
-  var actual = homeObjActualMonthCA(year, month, mode, offerList);
+  var actual = homeObjActualMonthCA(year, month, offerList);
   var tRdv = parseFloat(cfg.tauxRdvVente);
   if (!(tRdv > 0)) tRdv = Math.max(8, Math.min(92, tauxYear));
   var tContact = parseFloat(cfg.tauxContactRdv);
@@ -3898,9 +3894,11 @@ function renderHomeObjectives() {
   var offerRows = offerList.map(function(o) {
     var sid = homeObjSid(o.id);
     var cnt = Math.min(maxV, Math.max(0, parseInt(cfg.offerAlloc[o.id], 10) || 0));
-    var eff = homeObjEffectivePrice(o, mode);
+    var eff = homeObjEffectivePrice(o);
     var payN = Math.max(1, parseInt(o.paiement, 10) || 1);
-    var sub = (o.price || 0) + '€' + (payN > 1 ? ' · ' + payN + '×' : '') + ' → ' + eff + '€/' + (mode === 'treso' ? '1er vrs' : 'vente');
+    var sub = payN <= 1
+      ? (o.price || 0) + '€ (1×) → ' + eff + '€ / vente (total le mois de signature)'
+      : (o.price || 0) + '€ · ' + payN + '× → ' + eff + '€ / mois (mensualité, objectif du mois)';
     return '<div class="hf-offer-row">'
       + '<div class="hf-offer-top"><div><div class="hf-offer-name">' + homeObjEsc((o.name || 'Offre').slice(0, 40)) + '</div>'
       + '<div class="hf-offer-sub">' + homeObjEsc(sub) + '</div></div>'
@@ -3908,10 +3906,11 @@ function renderHomeObjectives() {
       + '<div class="hf-slider-row"><input type="range" class="hf-range" min="0" max="' + maxV + '" value="' + cnt + '" data-oid="' + homeObjEsc(o.id) + '" id="hf-r-' + sid + '"></div>'
       + '</div>';
   }).join('');
-  var modeSel = '<select id="hf-mode" style="width:100%;padding:9px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:12px;margin-top:4px">'
-    + '<option value="contrat"' + (mode === 'contrat' ? ' selected' : '') + '>Contrat — CA prix total (signature)</option>'
-    + '<option value="treso"' + (mode === 'treso' ? ' selected' : '') + '>Trésorerie — 1er versement par vente (multi-×)</option>'
-    + '</select>';
+  var caRuleNote = '<div style="margin-top:10px;padding:10px;border-radius:var(--r2);background:var(--bg3);border:1px solid var(--rim3);font-size:10px;color:var(--tx3);line-height:1.55">'
+    + '<strong style="color:var(--tx2)">CA du mois (automatique par offre)</strong> — '
+    + 'catalogue <strong>1×</strong> : le <strong>prix total</strong> entre dans le plan du mois de signature ; '
+    + 'catalogue <strong>N×</strong> : seule la <strong>mensualité</strong> (prix ÷ N), alignée sur ce que tu encaisses réellement chaque mois.'
+    + '</div>';
   box.innerHTML =
     '<div class="hf-card" id="hf-root">'
     + '<div class="hf-compact">'
@@ -3934,17 +3933,18 @@ function renderHomeObjectives() {
     +   '<div style="font-size:11px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:8px">Plan par offre</div>'
     +   '<div><label style="font-size:10px;color:var(--tx3)">CA cible du mois (€)</label>'
     +   '<input type="number" min="0" step="50" id="hf-ca" value="' + (cfg.targetCA != null ? cfg.targetCA : '') + '" style="width:100%;margin-top:4px;padding:10px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:15px;font-weight:800"></div>'
-    +   '<div style="margin-top:10px"><label style="font-size:10px;color:var(--tx3)">Comptabilisation</label>' + modeSel + '</div>'
+    +   caRuleNote
     +   '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
     +     '<button type="button" class="btn btn-bx btn-sm" id="hf-repartir">Répartir sur le CA</button>'
     +     '<span style="font-size:10px;color:var(--tx3);align-self:center">Ajuste les quantités pour coller à la cible</span></div>'
     +   '<div id="hf-offers-wrap" style="margin-top:12px;max-height:min(42vh,320px);overflow-y:auto;-webkit-overflow-scrolling:touch">' + offerRows + '</div>'
     +   '<div id="hf-planned-live" class="' + planCls + '">Plan : <strong>' + planned + '€</strong> · Cible : <strong>' + targetCA + '€</strong></div>'
     +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">'
-    +     '<div><label style="font-size:10px;color:var(--tx3)">RDV → vente (%)</label>'
-    +     '<input type="number" min="5" max="95" id="hf-trdv" value="' + Math.round(tRdv) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>'
-    +     '<div><label style="font-size:10px;color:var(--tx3)">Contact → RDV (%)</label>'
-    +     '<input type="number" min="5" max="95" id="hf-tc" value="' + Math.round(tContact) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div></div>'
+    +     '<div><label style="font-size:10px;color:var(--tx3);line-height:1.35" title="Sur 100 RDV bilan (présents ou absents) dans le mois, combien se concluent par une vente signée le même mois ? Sert à estimer le nombre de RDV nécessaires pour atteindre tes ventes prévues.">Closing RDV bilan → vente (%)</label>'
+    +     '<input type="number" min="5" max="95" id="hf-trdv" value="' + Math.round(tRdv) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" aria-describedby="hf-help-funnel"></div>'
+    +     '<div><label style="font-size:10px;color:var(--tx3);line-height:1.35" title="Sur 100 nouveaux contacts (date de 1er contact dans le mois), combien obtiennent un RDV bilan ce mois ? Sert à estimer combien de contacts il faut en amont pour nourrir le pipeline.">Conversion contact → RDV bilan (%)</label>'
+    +     '<input type="number" min="5" max="95" id="hf-tc" value="' + Math.round(tContact) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px" aria-describedby="hf-help-funnel"></div></div>'
+    +   '<p id="hf-help-funnel" style="font-size:10px;color:var(--tx3);line-height:1.5;margin:10px 0 0">Ces deux % ne changent pas ton CA : ce sont des <strong>hypothèses de conversion</strong> pour calculer le pipeline (ventes → combien de RDV → combien de contacts), à ajuster selon ton historique.</p>'
     +   '<div style="margin-top:12px;padding:11px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--rim3)">'
     +     '<div style="font-size:10px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:6px">Pipeline (à partir du plan)</div>'
     +     '<div style="font-size:12px">Ventes planifiées <strong>' + ventesBesoin + '</strong> · RDV <strong>' + rdvBesoin + '</strong> · Contacts <strong>' + contactsBesoin + '</strong></div></div>'
@@ -3958,7 +3958,6 @@ function renderHomeObjectives() {
   function readDraftCfg() {
     var c2 = getHomeFunnelSettings();
     c2.targetCA = parseFloat(document.getElementById('hf-ca') && document.getElementById('hf-ca').value) || 0;
-    c2.caMode = (document.getElementById('hf-mode') && document.getElementById('hf-mode').value) || 'contrat';
     c2.tauxRdvVente = parseFloat(document.getElementById('hf-trdv') && document.getElementById('hf-trdv').value) || 28;
     c2.tauxContactRdv = parseFloat(document.getElementById('hf-tc') && document.getElementById('hf-tc').value) || 35;
     c2.offerAlloc = Object.assign({}, c2.offerAlloc || {});
@@ -3991,10 +3990,6 @@ function renderHomeObjectives() {
       if (lab) lab.textContent = tgt.value;
     }
     if (tgt.id === 'hf-ca' || tgt.id === 'hf-trdv' || tgt.id === 'hf-tc' || (tgt.classList && tgt.classList.contains('hf-range'))) refreshLive();
-  };
-  box.onchange = function(ev) {
-    var tgt = ev.target;
-    if (tgt && tgt.id === 'hf-mode') refreshLive();
   };
   box.onclick = function(ev) {
     var t = ev.target && ev.target.closest ? ev.target.closest('[id]') : ev.target;
