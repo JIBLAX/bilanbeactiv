@@ -1040,7 +1040,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     </div>
     <div style="display:flex;flex-direction:column;gap:8px"><button class="hero-cta" onclick="showPg('prospect')">＋ Ajouter Prospect</button></div>
   </div>
-  <div class="sh no-mt">🎯 Objectif du mois <span id="home-year" style="font-size:10px;color:var(--tx3);font-weight:400;margin-left:3px"></span></div>
+  <div class="sh no-mt">📈 Pilotage du mois <span id="home-year" style="font-size:10px;color:var(--tx3);font-weight:400;margin-left:3px"></span></div>
   <div class="card" id="home-objectif-funnel" style="margin-bottom:14px;padding:14px 16px"></div>
   <div class="sh sh-B">📅 Prochain RDV Bilan</div>
   <div id="home-rdv"><div class="rdv-empty">Aucun RDV — ajoutez en via le bouton ci-dessous</div></div>
@@ -1381,7 +1381,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <div class="f"><label>Type de structure</label>
       <select id="pro-type">
         <option value="">— Choisir —</option>
-        <option>Association sportive</option>
+        <option>Association</option>
         <option>Entreprise / CE</option>
         <option>École / Université</option>
         <option>Collectivité</option>
@@ -1414,6 +1414,17 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
           <option value="annuel">Annuel</option>
         </select>
       </div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>Cadence cours</label>
+        <select id="pro-cadence">
+          <option value="hebdo">1 cours / semaine</option>
+          <option value="3sem">1 cours / 3 semaines</option>
+          <option value="mensuel">1 cours / mois</option>
+          <option value="custom">Personnalisé</option>
+        </select>
+      </div>
+      <div class="f"><label>Créneau habituel</label><input id="pro-creneau" type="text" placeholder="Lundi 18h30"></div>
     </div>
     <div class="f"><label>Date de début</label><input id="pro-date" type="date"></div>
     <div class="f"><label>Notes / contexte</label><textarea id="pro-notes" rows="3" placeholder="Contexte, besoins spécifiques, historique…"></textarea></div>
@@ -3901,229 +3912,129 @@ function homeObjSid(id) {
 function renderHomeObjectives() {
   var box = document.getElementById('home-objectif-funnel');
   if (!box) return;
-  var year = new Date().getFullYear();
-  var month = String(new Date().getMonth() + 1).padStart(2, '0');
+  var cfg = getHomeFunnelSettings();
+  var now = new Date();
+  var year = now.getFullYear();
+  var month = String(now.getMonth() + 1).padStart(2, '0');
   var monthKey = year + '-' + month;
   var offerList = loadOffres().filter(function(o) { return o && o.id; });
-  var cfg = getHomeFunnelSettings();
-  if (homeObjMigrateOfferAlloc(cfg, offerList)) saveHomeFunnelSettings(cfg);
-  if (cfg.monthKey !== monthKey) {
-    cfg.monthKey = monthKey;
-    if (cfg.targetCA == null) cfg.targetCA = 3000;
-    cfg.offerAlloc = {};
-    homeObjRepartitionAuto(cfg, offerList);
-    saveHomeFunnelSettings(cfg);
+
+  function getClientContractTotal(c) {
+    var o = c.sig_offre_id ? offerList.find(function(x){ return x.id === c.sig_offre_id; }) : null;
+    var v = c.actual_amount != null ? Number(c.actual_amount)
+      : c.montant != null ? Number(c.montant)
+      : c.catalog_price_snapshot != null ? Number(c.catalog_price_snapshot)
+      : (o && o.price != null ? Number(o.price) : 0);
+    return isNaN(v) || v < 0 ? 0 : v;
   }
-  if (!cfg.offerAlloc || typeof cfg.offerAlloc !== 'object') cfg.offerAlloc = {};
-  homeObjPlanRows(offerList).forEach(function(r) {
-    if (cfg.offerAlloc[r.key] == null || isNaN(parseInt(cfg.offerAlloc[r.key], 10))) cfg.offerAlloc[r.key] = 0;
+  function getReceivedTotal(c, total) {
+    if (Array.isArray(c.versements) && c.versements.length) {
+      var s = c.versements.filter(function(v){ return !!v.done; }).reduce(function(sum, v){ return sum + (Number(v.montant) || 0); }, 0);
+      return Math.max(0, Math.min(total, Math.round(s * 100) / 100));
+    }
+    var rec = Number(c.versements_recus);
+    var inst = Number(c.installments_planned || c.payment_mode || 1);
+    if (!isNaN(rec) && !isNaN(inst) && inst > 0 && rec > 0) {
+      return Math.max(0, Math.min(total, Math.round((total * rec / inst) * 100) / 100));
+    }
+    return isClosingStatusForKPI(c) ? total : 0;
+  }
+  function monthFromIso(iso) {
+    if (!iso) return '';
+    try { return String(iso).slice(0, 7); } catch (e) { return ''; }
+  }
+  function getMonthReceived(c) {
+    if (Array.isArray(c.versements) && c.versements.length) {
+      return c.versements.filter(function(v){ return !!v.done && monthFromIso(v.doneAt) === monthKey; })
+        .reduce(function(sum, v){ return sum + (Number(v.montant) || 0); }, 0);
+    }
+    if (monthFromIso(c.closedAt) === monthKey) return getReceivedTotal(c, getClientContractTotal(c));
+    return 0;
+  }
+
+  var objective = Number(cfg.targetCA);
+  if (isNaN(objective) || objective < 0) objective = 3000;
+  var tauxRdvVente = Number(cfg.tauxRdvVente);
+  if (isNaN(tauxRdvVente) || tauxRdvVente <= 0) tauxRdvVente = 35;
+  var tauxContactRdv = Number(cfg.tauxContactRdv);
+  if (isNaN(tauxContactRdv) || tauxContactRdv <= 0) tauxContactRdv = 60;
+
+  var realized = 0;
+  var signedNonEncaissed = 0;
+  var totalsForBasket = [];
+  (ST.clients || []).forEach(function(c) {
+    if (!c || c.isPro) return;
+    if (!isClosingStatusForKPI(c) && c.statut !== 'Closé' && c.statut !== 'Ancien Client') return;
+    var total = getClientContractTotal(c);
+    if (total <= 0) return;
+    var rec = getReceivedTotal(c, total);
+    var rem = Math.max(0, total - rec);
+    realized += getMonthReceived(c);
+    signedNonEncaissed += rem;
+    totalsForBasket.push(total);
   });
-  var yc = ST.clients.filter(function(c) { return getYear(c.date) === year; });
-  var cohortVol = yc.length;
-  var closings = yc.filter(isClosingStatusForKPI).length;
-  var tauxYear = cohortVol > 0 ? Math.round(closings / cohortVol * 100) : 25;
-  var targetCA = parseFloat(cfg.targetCA) || 0;
-  var planned = homeObjPlannedCA(cfg, offerList);
-  var actual = homeObjActualMonthCA(year, month, offerList);
-  var autoRdv = Math.max(8, Math.min(92, tauxYear));
-  var autoTc = 35;
-  var pipeManual = cfg.pipelineRatesManual === true;
-  var tRdv = pipeManual && parseFloat(cfg.tauxRdvVente) > 0 ? parseFloat(cfg.tauxRdvVente) : autoRdv;
-  var tContact = pipeManual && parseFloat(cfg.tauxContactRdv) > 0 ? parseFloat(cfg.tauxContactRdv) : autoTc;
-  var planRows = homeObjPlanRows(offerList);
-  var ventesBesoin = planRows.reduce(function(s, r) {
-    return s + (parseInt(cfg.offerAlloc[r.key], 10) || 0);
-  }, 0);
-  var rdvBesoin = tRdv > 0 ? Math.ceil(ventesBesoin / (tRdv / 100)) : 0;
-  var contactsBesoin = tContact > 0 ? Math.ceil(rdvBesoin / (tContact / 100)) : 0;
-  var y = year, m0 = month;
-  var contactsFaits = ST.clients.filter(function(c) {
-    var fc = c.first_contact_date || '';
-    if (!fc || fc.length < 7) return false;
-    return fc.slice(0, 7) === y + '-' + m0;
-  }).length;
-  var rdvFaits = ST.clients.filter(function(c) {
-    if (!c.date || c.date.length < 7) return false;
-    if (c.date.indexOf('/') >= 0) return false;
-    if (c.date.slice(0, 7) !== y + '-' + m0) return false;
-    return c.rdvStatut === 'Présent' || c.rdvStatut === 'Absent';
-  }).length;
-  var ventesFaits = ST.clients.filter(function(c) {
-    if (!isClosingStatusForKPI(c) || !c.closedAt) return false;
-    try {
-      var d = new Date(c.closedAt);
-      return d.getFullYear() === y && String(d.getMonth() + 1).padStart(2, '0') === m0;
-    } catch (e) { return false; }
-  }).length;
-  function bar(pct) {
-    pct = Math.max(0, Math.min(100, pct));
-    return '<div style="height:7px;background:var(--rim3);border-radius:6px;overflow:hidden;margin-top:4px"><div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--bx),var(--R));border-radius:6px"></div></div>';
+  realized = Math.round(realized * 100) / 100;
+  signedNonEncaissed = Math.round(signedNonEncaissed * 100) / 100;
+
+  var panierMoyen = Number(cfg.panierMoyen);
+  if (isNaN(panierMoyen) || panierMoyen <= 0) {
+    if (totalsForBasket.length) panierMoyen = Math.round((totalsForBasket.reduce(function(s, v){ return s + v; }, 0) / totalsForBasket.length) * 100) / 100;
+    else panierMoyen = 300;
   }
-  var ringPct = targetCA > 0 ? Math.min(100, Math.round(actual / targetCA * 1000) / 10) : 0;
-  var cLen = 2 * Math.PI * 30;
-  var dash = Math.max(0.01, (ringPct / 100) * cLen);
-  var planCls = 'hf-plan-total ';
-  if (targetCA <= 0) planCls += 'hf-plan-warn';
-  else if (Math.abs(planned - targetCA) <= Math.max(1, targetCA * 0.02)) planCls += 'hf-plan-ok';
-  else if (planned < targetCA) planCls += 'hf-plan-warn';
-  else planCls += 'hf-plan-bad';
-  var compact = !!cfg.objSavedOnce && cfg.uiHomeObjEdit !== true;
-  var pills = planRows.filter(function(r) {
-    return (parseInt(cfg.offerAlloc[r.key], 10) || 0) > 0;
-  }).map(function(r) {
-    var n = parseInt(cfg.offerAlloc[r.key], 10) || 0;
-    return '<span class="hf-mini-pill">' + homeObjEsc((r.title || '').slice(0, 22)) + ' ×' + n + '</span>';
-  }).join('') || '<span class="hf-mini-pill">Répartir</span>';
-  var maxV = 40;
-  var gradId = 'hfGrad_' + String(monthKey).replace(/[^a-zA-Z0-9]/g, '_');
-  var offerRows = planRows.map(function(r) {
-    var sid = homeObjSid(r.key);
-    var cnt = Math.min(maxV, Math.max(0, parseInt(cfg.offerAlloc[r.key], 10) || 0));
-    return '<div class="hf-offer-row">'
-      + '<div class="hf-offer-top"><div><div class="hf-offer-name">' + homeObjEsc((r.title || '').slice(0, 44)) + '</div>'
-      + '<div class="hf-offer-sub">' + homeObjEsc(r.sub) + '</div></div>'
-      + '<span class="hf-val" id="hf-n-' + sid + '">' + cnt + '</span></div>'
-      + '<div class="hf-slider-row"><input type="range" class="hf-range" min="0" max="' + maxV + '" value="' + cnt + '" data-alloc-key="' + homeObjEsc(r.key) + '" id="hf-r-' + sid + '"></div>'
-      + '</div>';
-  }).join('');
-  var pipeRatesBlock;
-  if (pipeManual) {
-    pipeRatesBlock = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">'
-      + '<div><label style="font-size:10px;color:var(--tx3)">RDV → vente %</label>'
-      + '<input type="number" min="5" max="95" id="hf-trdv" value="' + Math.round(tRdv) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>'
-      + '<div><label style="font-size:10px;color:var(--tx3)">Contact → RDV %</label>'
-      + '<input type="number" min="5" max="95" id="hf-tc" value="' + Math.round(tContact) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div></div>'
-      + '<button type="button" class="btn btn-dk btn-sm" id="hf-pipe-auto" style="margin-top:8px">Taux auto</button>';
-  } else {
-    pipeRatesBlock = '<div style="margin-top:10px;padding:10px;border-radius:var(--r2);background:var(--bg3);border:1px solid var(--rim3);font-size:12px;color:var(--tx2)">'
-      + 'RDV → vente <strong>' + Math.round(tRdv) + '%</strong> · Contact → RDV <strong>' + Math.round(tContact) + '%</strong>'
-      + ' <span style="color:var(--tx3);font-weight:600">· auto</span></div>'
-      + '<button type="button" class="btn btn-dk btn-sm" id="hf-pipe-manual" style="margin-top:8px">Ajuster les %</button>';
-  }
+  var reste = Math.max(0, objective - realized);
+  var closingsNeed = panierMoyen > 0 ? Math.ceil(reste / panierMoyen) : 0;
+  var rdvNeed = tauxRdvVente > 0 ? Math.ceil(closingsNeed / (tauxRdvVente / 100)) : 0;
+  var contactsNeed = tauxContactRdv > 0 ? Math.ceil(rdvNeed / (tauxContactRdv / 100)) : 0;
+  var prog = objective > 0 ? Math.min(100, Math.max(0, Math.round((realized / objective) * 100))) : 0;
+  var doneCls = prog >= 100 ? 'hf-plan-ok' : '';
+
   box.innerHTML =
-    '<div class="hf-card" id="hf-root">'
-    + '<div class="hf-compact">'
-    +   '<div class="hf-ring-wrap">'
-    +     '<svg class="hf-ring-svg" viewBox="0 0 76 76" aria-hidden="true">'
-    +       '<circle cx="38" cy="38" r="30" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="6"/>'
-    +       '<circle cx="38" cy="38" r="30" fill="none" stroke="url(#' + gradId + ')" stroke-width="6" stroke-linecap="round" '
-    +       'stroke-dasharray="' + dash + ' ' + cLen + '" stroke-dashoffset="0"/>'
-    +       '<defs><linearGradient id="' + gradId + '" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="var(--bx)"/><stop offset="100%" stop-color="var(--R)"/></linearGradient></defs>'
-    +     '</svg>'
-    +     '<div class="hf-ring-pct">' + (targetCA > 0 ? ringPct + '<span style="font-size:9px;font-weight:700">%</span>' : '—')
-    +     '<span class="hf-ring-sub">CA mois</span></div></div>'
-    +   '<div class="hf-compact-meta">'
-    +     '<div style="font-size:13px;font-weight:900;color:var(--tx);letter-spacing:.2px">Objectif ' + month + '/' + year + '</div>'
-    +     '<div style="font-size:11px;color:var(--tx3);line-height:1.45;margin-top:4px">Réalisé <strong style="color:var(--tx)">' + actual + '€</strong> · Cible <strong>' + targetCA + '€</strong> · Plan <strong>' + planned + '€</strong></div>'
-    +     '<div class="hf-mini-offers">' + pills + '</div>'
-    +     '<button type="button" class="btn btn-dk btn-sm" id="hf-mod" style="margin-top:10px">' + (compact ? 'Modifier le plan' : 'Réduire') + '</button>'
-    +   '</div></div>'
-    + '<div class="hf-edit-panel' + (compact ? '' : ' open') + '" id="hf-edit-panel"><div class="hf-edit-inner">'
-    +   '<div style="font-size:11px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:8px">Plan par offre</div>'
-    +   '<div><label style="font-size:10px;color:var(--tx3)">CA cible du mois (€)</label>'
-    +   '<input type="number" min="0" step="50" id="hf-ca" value="' + (cfg.targetCA != null ? cfg.targetCA : '') + '" style="width:100%;margin-top:4px;padding:10px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:15px;font-weight:800"></div>'
-    +   '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
-    +     '<button type="button" class="btn btn-bx btn-sm" id="hf-repartir">Répartir sur le CA</button>'
-    +     '</div>'
-    +   '<div id="hf-offers-wrap" style="margin-top:12px;max-height:min(42vh,320px);overflow-y:auto;-webkit-overflow-scrolling:touch">' + offerRows + '</div>'
-    +   '<div id="hf-planned-live" class="' + planCls + '">Plan : <strong>' + planned + '€</strong> · Cible : <strong>' + targetCA + '€</strong></div>'
-    +   pipeRatesBlock
-    +   '<div style="margin-top:12px;padding:11px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--rim3)">'
-    +     '<div style="font-size:10px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:6px">Pipeline (à partir du plan)</div>'
-    +     '<div style="font-size:12px">Ventes planifiées <strong>' + ventesBesoin + '</strong> · RDV <strong>' + rdvBesoin + '</strong> · Contacts <strong>' + contactsBesoin + '</strong></div></div>'
-    +   '<div style="margin-top:10px;padding:10px;border:1px dashed var(--rim3);border-radius:var(--r2)">'
-    +     '<div style="font-size:10px;font-weight:800;color:var(--tx3);margin-bottom:6px">Avancement réel</div>'
-    +     '<div style="font-size:11px;margin-bottom:5px">Contacts <strong>' + contactsFaits + '</strong>/' + contactsBesoin + bar(contactsBesoin ? contactsFaits / contactsBesoin * 100 : 0) + '</div>'
-    +     '<div style="font-size:11px;margin-bottom:5px">RDV bilan <strong>' + rdvFaits + '</strong>/' + rdvBesoin + bar(rdvBesoin ? rdvFaits / rdvBesoin * 100 : 0) + '</div>'
-    +     '<div style="font-size:11px">Closings mois <strong>' + ventesFaits + '</strong>/' + ventesBesoin + bar(ventesBesoin ? ventesFaits / ventesBesoin * 100 : 0) + '</div></div>'
-    +   '<button type="button" class="btn btn-bx btn-sm" id="hf-save" style="width:100%;margin-top:12px">Enregistrer le plan</button>'
-    + '</div></div></div>';
-  function readDraftCfg() {
-    var c2 = getHomeFunnelSettings();
-    c2.targetCA = parseFloat(document.getElementById('hf-ca') && document.getElementById('hf-ca').value) || 0;
-    var trIn = document.getElementById('hf-trdv');
-    if (trIn && trIn.type === 'number') {
-      c2.pipelineRatesManual = true;
-      c2.tauxRdvVente = parseFloat(trIn.value) || autoRdv;
-      c2.tauxContactRdv = parseFloat(document.getElementById('hf-tc') && document.getElementById('hf-tc').value) || autoTc;
-    } else {
-      c2.pipelineRatesManual = false;
-      c2.tauxRdvVente = null;
-      c2.tauxContactRdv = null;
-    }
-    var na = {};
-    planRows.forEach(function(r) {
-      var el = document.getElementById('hf-r-' + homeObjSid(r.key));
-      na[r.key] = el ? Math.min(maxV, Math.max(0, parseInt(el.value, 10) || 0)) : (parseInt(c2.offerAlloc && c2.offerAlloc[r.key], 10) || 0);
+    '<div class="hf-card ' + doneCls + '" style="padding:14px 16px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">'
+        + '<div style="font-size:13px;font-weight:900;color:var(--tx)">Pilotage du mois</div>'
+        + '<button type="button" id="hf-detail" class="btn btn-dk btn-sm" style="padding:4px 10px">Voir le détail</button>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+        + '<div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase">Réalisé</div><div style="font-size:20px;font-weight:900;color:var(--tx)">' + realized.toLocaleString('fr-FR') + '€</div></div>'
+        + '<div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase">Signé</div><div style="font-size:20px;font-weight:900;color:var(--B)">' + signedNonEncaissed.toLocaleString('fr-FR') + '€</div></div>'
+        + '<div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase">Objectif</div><div style="font-size:17px;font-weight:800;color:var(--tx2)">' + objective.toLocaleString('fr-FR') + '€</div></div>'
+        + '<div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase">Reste</div><div style="font-size:17px;font-weight:800;color:' + (reste > 0 ? 'var(--Y)' : 'var(--G)') + '">' + reste.toLocaleString('fr-FR') + '€</div></div>'
+      + '</div>'
+      + '<div style="margin-top:10px"><div style="height:7px;background:var(--rim3);border-radius:7px;overflow:hidden"><div style="height:100%;width:' + prog + '%;background:' + (prog >= 100 ? 'linear-gradient(90deg,var(--G),#59d18d)' : 'linear-gradient(90deg,var(--bx),var(--R))') + '"></div></div><div style="margin-top:4px;font-size:11px;color:var(--tx3)">' + prog + '% de l’objectif</div></div>'
+      + '<div style="margin-top:10px;padding:10px;border:1px solid var(--rim3);border-radius:var(--r2);background:var(--bg3)">'
+        + '<div style="font-size:10px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:6px">À produire</div>'
+        + '<div style="font-size:12px;color:var(--tx2)">'
+          + '<strong>' + closingsNeed + '</strong> closings · <strong>' + rdvNeed + '</strong> RDV · <strong>' + contactsNeed + '</strong> contacts'
+        + '</div>'
+      + '</div>'
+      + '<div id="hf-detail-box" style="display:none;margin-top:10px;padding:10px;border:1px dashed var(--rim3);border-radius:var(--r2)">'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+          + '<div><label style="font-size:10px;color:var(--tx3)">Objectif (€)</label><input id="hf-target" type="number" min="0" step="50" value="' + objective + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>'
+          + '<div><label style="font-size:10px;color:var(--tx3)">Panier moyen (€)</label><input id="hf-panier" type="number" min="0" step="10" value="' + panierMoyen + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>'
+          + '<div><label style="font-size:10px;color:var(--tx3)">Taux RDV→vente (%)</label><input id="hf-rdv" type="number" min="1" max="100" value="' + Math.round(tauxRdvVente) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>'
+          + '<div><label style="font-size:10px;color:var(--tx3)">Taux contact→RDV (%)</label><input id="hf-contact" type="number" min="1" max="100" value="' + Math.round(tauxContactRdv) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>'
+        + '</div>'
+        + '<button type="button" class="btn btn-bx btn-sm" id="hf-save" style="width:100%;margin-top:10px">Enregistrer</button>'
+      + '</div>'
+    + '</div>';
+
+  var detailBtn = document.getElementById('hf-detail');
+  var detailBox = document.getElementById('hf-detail-box');
+  if (detailBtn && detailBox) {
+    detailBtn.onclick = function() {
+      detailBox.style.display = detailBox.style.display === 'none' ? 'block' : 'none';
+    };
+  }
+  var saveBtn = document.getElementById('hf-save');
+  if (saveBtn) saveBtn.onclick = function() {
+    saveHomeFunnelSettings({
+      targetCA: Number(document.getElementById('hf-target') && document.getElementById('hf-target').value) || 0,
+      panierMoyen: Number(document.getElementById('hf-panier') && document.getElementById('hf-panier').value) || 0,
+      tauxRdvVente: Number(document.getElementById('hf-rdv') && document.getElementById('hf-rdv').value) || 35,
+      tauxContactRdv: Number(document.getElementById('hf-contact') && document.getElementById('hf-contact').value) || 60
     });
-    c2.offerAlloc = na;
-    return c2;
-  }
-  function refreshLive() {
-    var live = document.getElementById('hf-planned-live');
-    if (!live) return;
-    var d = readDraftCfg();
-    var p = homeObjPlannedCA(d, offerList);
-    var t = d.targetCA || 0;
-    var cls = 'hf-plan-total ';
-    if (t <= 0) cls += 'hf-plan-warn';
-    else if (Math.abs(p - t) <= Math.max(1, t * 0.02)) cls += 'hf-plan-ok';
-    else if (p < t) cls += 'hf-plan-warn';
-    else cls += 'hf-plan-bad';
-    live.className = cls;
-    live.innerHTML = 'Plan : <strong>' + p + '€</strong> · Cible : <strong>' + t + '€</strong>';
-  }
-  box.oninput = function(ev) {
-    var tgt = ev.target;
-    if (!tgt) return;
-    if (tgt.classList && tgt.classList.contains('hf-range')) {
-      var ak = tgt.getAttribute('data-alloc-key');
-      var lab = ak ? document.getElementById('hf-n-' + homeObjSid(ak)) : null;
-      if (lab) lab.textContent = tgt.value;
-    }
-    if (tgt.id === 'hf-ca' || tgt.id === 'hf-trdv' || tgt.id === 'hf-tc' || (tgt.classList && tgt.classList.contains('hf-range'))) refreshLive();
-  };
-  box.onclick = function(ev) {
-    var t = ev.target && ev.target.closest ? ev.target.closest('[id]') : ev.target;
-    if (!t || !t.id) return;
-    if (t.id === 'hf-pipe-manual') {
-      saveHomeFunnelSettings({ pipelineRatesManual: true, tauxRdvVente: autoRdv, tauxContactRdv: autoTc });
-      renderHomeObjectives();
-      return;
-    }
-    if (t.id === 'hf-pipe-auto') {
-      saveHomeFunnelSettings({ pipelineRatesManual: false, tauxRdvVente: null, tauxContactRdv: null });
-      renderHomeObjectives();
-      return;
-    }
-    if (t.id === 'hf-mod') {
-      if (compact) saveHomeFunnelSettings({ uiHomeObjEdit: true });
-      else {
-        var dCol = readDraftCfg();
-        dCol.uiHomeObjEdit = false;
-        saveHomeFunnelSettings(dCol);
-      }
-      renderHomeObjectives();
-      return;
-    }
-    if (t.id === 'hf-repartir') {
-      var d = readDraftCfg();
-      saveHomeFunnelSettings(d);
-      homeObjRepartitionAuto(d, offerList);
-      saveHomeFunnelSettings(d);
-      renderHomeObjectives();
-      toast('ok', 'Répartition appliquée');
-      return;
-    }
-    if (t.id === 'hf-save') {
-      var d = readDraftCfg();
-      d.objSavedOnce = true;
-      d.uiHomeObjEdit = false;
-      d.monthKey = monthKey;
-      saveHomeFunnelSettings(d);
-      toast('ok', 'Plan enregistré');
-      renderHomeObjectives();
-    }
+    toast('ok', 'Pilotage mis à jour');
+    renderHomeObjectives();
   };
 }
 function updateKPIs() {
@@ -5812,6 +5723,9 @@ function saveProClient() {
     offres: gv('pro-offre'),
     montant: gv('pro-montant') ? parseFloat(gv('pro-montant')) : null,
     proFreq: gv('pro-freq'),
+    proCadence: gv('pro-cadence') || 'hebdo',
+    proCreneau: gv('pro-creneau'),
+    pro_sessions: {},
     notes: gv('pro-notes'),
     statut: 'Contact',
     profil_code: 'PRO',
@@ -5837,10 +5751,10 @@ function saveProClient() {
   saveToSupabase(client);
 
   // Reset form
-  ['pro-nom','pro-contact','pro-tel','pro-email','pro-ville','pro-nb','pro-montant','pro-notes'].forEach(function(id){
+  ['pro-nom','pro-contact','pro-tel','pro-email','pro-ville','pro-nb','pro-montant','pro-notes','pro-creneau'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.value='';
   });
-  ['pro-type','pro-offre','pro-freq'].forEach(function(id){
+  ['pro-type','pro-offre','pro-freq','pro-cadence'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.selectedIndex=0;
   });
   document.querySelectorAll('input[name="pro-source"]').forEach(function(el){el.checked=false;});
@@ -5872,7 +5786,7 @@ function renderProClientModal(id, c, container) {
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">' +
     '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Type</div><div style="font-weight:600">'+( c.proType||'—')+'</div></div>' +
     '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Personnes</div><div style="font-weight:600">'+(c.proNbPersonnes||'—')+'</div></div>' +
-    '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Contact</div><div style="font-weight:600">'+(c.prenom||'')+' '+(c.nom||'')+'</div></div>' +
+    '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Référent</div><div style="font-weight:600">'+(c.prenom||'')+' '+(c.nom||'')+'</div></div>' +
     '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Ville</div><div style="font-weight:600">'+(c.ville||'—')+'</div></div>' +
     (c.tel ? '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Tél</div><div style="font-weight:600">'+c.tel+'</div></div>' : '') +
     (c.email ? '<div><div style="color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px">Email</div><div style="font-weight:600">'+c.email+'</div></div>' : '') +
@@ -5891,6 +5805,8 @@ function renderProClientModal(id, c, container) {
       (c.notes ? '<div style="font-size:12px;color:var(--tx3);margin-top:8px;font-style:italic;line-height:1.5">'+c.notes+'</div>' : '');
     container.appendChild(offreCard);
   }
+
+  appendProSessionTracking(container, id);
 
   // Statut
   var statutLabel = document.createElement('div');
@@ -5945,11 +5861,71 @@ function prefillProForm(c) {
   if(el('pro-offre')) el('pro-offre').value = c.offres || '';
   if(el('pro-montant')) el('pro-montant').value = c.montant || '';
   if(el('pro-freq')) el('pro-freq').value = c.proFreq || 'ponctuel';
+  if(el('pro-cadence')) el('pro-cadence').value = c.proCadence || 'hebdo';
+  if(el('pro-creneau')) el('pro-creneau').value = c.proCreneau || '';
   if(el('pro-notes')) el('pro-notes').value = c.notes || '';
   // Source
   document.querySelectorAll('input[name="pro-source"]').forEach(function(inp){
     inp.checked = inp.value === c.source;
   });
+}
+
+function getProDefaultSessionsPlanned(c) {
+  var cad = String(c.proCadence || '').toLowerCase();
+  if (cad === 'mensuel') return 1;
+  if (cad === '3sem') return 2;
+  if (cad === 'custom') return Number(c.proNbCoursMensuel) || 4;
+  return 4;
+}
+
+function getProSessionMonthData(c, monthKey) {
+  if (!c.pro_sessions || typeof c.pro_sessions !== 'object') c.pro_sessions = {};
+  if (!c.pro_sessions[monthKey]) {
+    c.pro_sessions[monthKey] = { planned: getProDefaultSessionsPlanned(c), done: 0 };
+  }
+  return c.pro_sessions[monthKey];
+}
+
+function saveProSessionMonthData(clientId, monthKey, patch) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  var cur = getProSessionMonthData(c, monthKey);
+  if (patch.planned != null) cur.planned = Math.max(0, Number(patch.planned) || 0);
+  if (patch.done != null) cur.done = Math.max(0, Number(patch.done) || 0);
+  c.updated_at = new Date().toISOString();
+  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+  saveToSupabase(c);
+  renderClientModal(clientId);
+}
+
+function appendProSessionTracking(container, clientId) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c || !c.isPro) return;
+  var now = new Date();
+  var monthKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  var m = getProSessionMonthData(c, monthKey);
+  var rest = Math.max(0, (Number(m.planned) || 0) - (Number(m.done) || 0));
+  var cadenceLbl = c.proCadence === '3sem' ? '1 cours / 3 semaines' : c.proCadence === 'mensuel' ? '1 cours / mois' : c.proCadence === 'custom' ? 'Cadence personnalisée' : '1 cours / semaine';
+
+  var wrap = document.createElement('div');
+  wrap.className = 'card';
+  wrap.style.marginBottom = '13px';
+  wrap.innerHTML =
+    '<div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">📆 Suivi cours — mois en cours</div>' +
+    '<div style="font-size:12px;color:var(--tx2);margin-bottom:10px">' + cadenceLbl + (c.proCreneau ? ' · ' + c.proCreneau : '') + '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">' +
+      '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Cours prévus</div><input id="pro-s-planned-' + clientId + '" type="number" min="0" value="' + (m.planned || 0) + '" style="width:100%;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>' +
+      '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Cours réalisés</div><div style="display:flex;align-items:center;gap:8px"><button type="button" class="btn btn-sm" id="pro-s-minus-' + clientId + '" style="padding:6px 10px">−1</button><span style="font-weight:800;min-width:22px;text-align:center">' + (m.done || 0) + '</span><button type="button" class="btn btn-sm" id="pro-s-plus-' + clientId + '" style="padding:6px 10px">+1</button></div></div>' +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--tx2)"><strong>' + (m.done || 0) + '</strong> réalisés · <strong>' + rest + '</strong> restants</div>';
+  container.appendChild(wrap);
+
+  var pEl = document.getElementById('pro-s-planned-' + clientId);
+  if (pEl) pEl.onchange = function(){ saveProSessionMonthData(clientId, monthKey, { planned: this.value }); };
+  var mEl = document.getElementById('pro-s-minus-' + clientId);
+  if (mEl) mEl.onclick = function(){ saveProSessionMonthData(clientId, monthKey, { done: (Number(m.done) || 0) - 1 }); };
+  var p2El = document.getElementById('pro-s-plus-' + clientId);
+  if (p2El) p2El.onclick = function(){ saveProSessionMonthData(clientId, monthKey, { done: (Number(m.done) || 0) + 1 }); };
 }
 
 

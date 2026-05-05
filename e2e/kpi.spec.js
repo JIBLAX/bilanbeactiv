@@ -60,7 +60,7 @@ test.describe('BILAN CRM — KPI', () => {
     await expect(off).not.toContainText('Libellé périmé');
   });
 
-  test('Accueil: objectif du mois (funnel)', async ({ page, context }) => {
+  test('Accueil: pilotage du mois', async ({ page, context }) => {
     const { json } = cohortClientsPayload();
     await context.addInitScript((payload) => {
       sessionStorage.setItem('ba_pin', '1');
@@ -73,8 +73,10 @@ test.describe('BILAN CRM — KPI', () => {
     await page.waitForFunction(() => typeof window.updateKPIs === 'function');
     await page.evaluate(() => window.updateKPIs());
 
-    await expect(page.locator('#home-objectif-funnel')).toContainText('CA cible');
-    await expect(page.locator('#home-objectif-funnel')).toContainText('Plan par offre');
+    await expect(page.locator('#home-objectif-funnel')).toContainText('Pilotage du mois');
+    await expect(page.locator('#home-objectif-funnel')).toContainText('Réalisé');
+    await expect(page.locator('#home-objectif-funnel')).toContainText('Signé');
+    await expect(page.locator('#home-objectif-funnel')).toContainText('À produire');
   });
 
   test('Wrapped: closings = Closé + Ancien', async ({ page, context }) => {
