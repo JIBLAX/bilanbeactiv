@@ -1831,6 +1831,8 @@ function renderProspectModal(id, c, container) {
   // ── Bloc résumé
   var summary = document.createElement('div'); summary.className = 'pm-summary';
   var rows = [];
+  if (c.first_contact_date) rows.push(['Date 1er contact', String(c.first_contact_date).slice(0, 10)]);
+  if (c.closedAt) rows.push(['Date engagement', String(c.closedAt).slice(0, 10)]);
   if (c.tel)   rows.push(['Téléphone', c.tel]);
   if (c.email) rows.push(['Email', '<span style="word-break:break-all">'+cleanEmail(c.email)+'</span>']);
   if (c.ville) rows.push(['Ville', c.ville]);
@@ -6642,7 +6644,8 @@ function renderModeStages(clientId, c, container) {
   if (c.parcours_started_at) {
     var dd = document.createElement('div');
     dd.style.cssText = 'font-size:11px;color:var(--tx3);margin:-6px 0 10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--rim3)';
-    dd.innerHTML = '🚀 Démarré le <strong>' + String(c.parcours_started_at).slice(0, 10) + '</strong>';
+    dd.innerHTML = '🚀 Démarré le <strong>' + String(c.parcours_started_at).slice(0, 10) + '</strong>'
+      + (c.parcours_expected_end_at ? ' · fin prévue <strong>' + String(c.parcours_expected_end_at).slice(0, 10) + '</strong>' : '');
     stagesWrap.appendChild(dd);
   }
   if (sessionGate && clientQualifiesForSessionTrackingCRM(c)) {
@@ -6826,6 +6829,10 @@ function renderModeStages(clientId, c, container) {
       hHtml = '🏁 Parcours collectif terminé';
       subHtml = 'Choisissez la suite : renouvellement, nouvelle prestation, ou fin de coaching.';
       actions.appendChild(mkBtn('btn btn-bx btn-sm', '🔁', 'Renouveler la prestation', function(){ openNewOffreForClient(clientId); }));
+      actions.appendChild(mkBtn('btn btn-dk btn-sm', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
+      if (c.statut !== 'Ancien Client') {
+        actions.appendChild(mkBtn('btn btn-V btn-sm', '🏁', 'Fin de coaching', function(){ setAncienClient(clientId); }));
+      }
     } else {
       hHtml = '✅ Étape validée';
       actions.appendChild(mkBtn('btn btn-bx btn-sm', '💼', 'Nouvelle offre', function(){ openNewOffreForClient(clientId); }));
@@ -6842,11 +6849,6 @@ function renderModeStages(clientId, c, container) {
     }
     appendParcoursNextSelect(clientId, c, endDiv);
 
-    if (c.statut !== 'Ancien Client') {
-      var afterDiv = document.createElement('div'); afterDiv.className = 'cm-finale-after';
-      afterDiv.appendChild(mkBtn('btn', '🏁', 'Fin de coaching → Ancien Client', function(){ setAncienClient(clientId); }));
-      endDiv.appendChild(afterDiv);
-    }
     container.appendChild(endDiv);
   }
 
@@ -6884,6 +6886,51 @@ function setAncienClient(clientId) {
     renderClients();
     renderClientModal(clientId);
     toast('ok', '🏁 ' + (c.prenom||'Client') + ' — Ancien Client');
+  });
+}
+
+function _crmAddParcoursDuration(startIso, raw) {
+  if (!startIso || !raw) return '';
+  var d = new Date(startIso + 'T12:00:00');
+  if (isNaN(d.getTime())) return '';
+  var s = String(raw || '');
+  if (s.indexOf('w:') === 0) {
+    var w = parseInt(s.split(':')[1], 10) || 0;
+    d.setDate(d.getDate() + (w * 7));
+    return d.toISOString().split('T')[0];
+  }
+  if (s.indexOf('m:') === 0) {
+    var m = parseInt(s.split(':')[1], 10) || 0;
+    d.setMonth(d.getMonth() + m);
+    return d.toISOString().split('T')[0];
+  }
+  return '';
+}
+
+function askParcoursStartPlan(clientId, cb) {
+  var c = ST.clients.find(function(x){ return x.id == clientId; });
+  if (!c) return;
+  var started = c.parcours_started_at ? String(c.parcours_started_at).slice(0, 10) : new Date().toISOString().slice(0, 10);
+  showDialog({
+    title: '🚀 Démarrage parcours coaching',
+    inputs: [
+      { id: 'start_date', label: 'Date prestation', type: 'date', value: started },
+      { id: 'duration_plan', label: 'Fin prévue', type: 'select', value: 'w:8', options: [
+        'w:4|4 semaines',
+        'w:8|8 semaines',
+        'w:12|12 semaines',
+        'm:1|1 mois',
+        'm:2|2 mois',
+        'm:3|3 mois'
+      ] }
+    ],
+    confirmLabel: 'Valider le démarrage'
+  }).then(function(r){
+    if (!r.confirmed) return;
+    var sDate = (r.values.start_date || '').trim() || new Date().toISOString().slice(0, 10);
+    var dSel = (r.values.duration_plan || 'w:8').trim();
+    var endDate = _crmAddParcoursDuration(sDate, dSel);
+    cb({ startDate: sDate, expectedEnd: endDate });
   });
 }
 
@@ -6930,20 +6977,37 @@ function validateModeStep(clientId, stageIdx, stepIdx) {
       }
     }
   }
-  if (!c.parcours_started_at && stepDef && !stepDef.isFinal) {
-    var stId = (stagesDef[stageIdx] && stagesDef[stageIdx].id) || '';
-    var tid = stepDef.id || '';
-    if (tid === 'go' || tid === 'premiere_seance' || tid === 'demarrage' || (stId === 'demarrage' && stepIdx === 0)) {
-      c.parcours_started_at = new Date().toISOString();
+  function finalizeStep(startPayload) {
+    if (startPayload && startPayload.startDate) {
+      c.parcours_started_at = startPayload.startDate + 'T12:00:00.000Z';
+      if (startPayload.expectedEnd) c.parcours_expected_end_at = startPayload.expectedEnd + 'T12:00:00.000Z';
     }
+    if (!c.parcours_started_at && stepDef && !stepDef.isFinal) {
+      var stId = (stagesDef[stageIdx] && stagesDef[stageIdx].id) || '';
+      var tid = stepDef.id || '';
+      if (tid === 'go' || tid === 'premiere_seance' || tid === 'demarrage' || (stId === 'demarrage' && stepIdx === 0)) {
+        c.parcours_started_at = new Date().toISOString();
+      }
+    }
+    c.mode_stages[stageIdx].steps[stepIdx].done = true;
+    c.mode_stages[stageIdx].steps[stepIdx].doneAt = new Date().toISOString();
+    c.updated_at = new Date().toISOString();
+    localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
+    saveToSupabase(c);
+    toast('ok', '✅ ' + stagesDef[stageIdx].steps[stepIdx].lbl);
+    renderClientModal(clientId);
   }
-  c.mode_stages[stageIdx].steps[stepIdx].done = true;
-  c.mode_stages[stageIdx].steps[stepIdx].doneAt = new Date().toISOString();
-  c.updated_at = new Date().toISOString();
-  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-  saveToSupabase(c);
-  toast('ok', '✅ ' + stagesDef[stageIdx].steps[stepIdx].lbl);
-  renderClientModal(clientId);
+  var shouldAskParcoursStart = false;
+  if (!c.parcours_started_at && stepDef && !stepDef.isFinal) {
+    var stId0 = (stagesDef[stageIdx] && stagesDef[stageIdx].id) || '';
+    var tid0 = stepDef.id || '';
+    shouldAskParcoursStart = (tid0 === 'go' || tid0 === 'premiere_seance' || tid0 === 'demarrage' || (stId0 === 'demarrage' && stepIdx === 0));
+  }
+  if (shouldAskParcoursStart) {
+    askParcoursStartPlan(clientId, function(payload){ finalizeStep(payload); });
+    return;
+  }
+  finalizeStep(null);
 }
 
 // ── F3 dans le parcours (post-signature) ─────────────
@@ -7860,29 +7924,6 @@ function appendSessionTrackingCRM(container, clientId) {
   }
 }
 
-/** Engagement (closing) + démarrage parcours — rétro et imports. */
-function saveClientDossierDates(clientId) {
-  var c = ST.clients.find(function(x){ return x.id == clientId; });
-  if (!c) return;
-  var elC = document.getElementById('crm-dossier-closed-' + clientId);
-  var elP = document.getElementById('crm-dossier-parcours-' + clientId);
-  if (elC) {
-    var vc = (elC.value || '').trim();
-    if (vc) c.closedAt = vc + 'T12:00:00.000Z';
-    else delete c.closedAt;
-  }
-  if (elP) {
-    var vp = (elP.value || '').trim();
-    if (vp) c.parcours_started_at = vp + 'T12:00:00.000Z';
-    else delete c.parcours_started_at;
-  }
-  c.updated_at = new Date().toISOString();
-  localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients));
-  saveToSupabase(c);
-  toast('ok', '✅ Dates dossier enregistrées');
-  renderClientModal(clientId);
-}
-
 function saveBilanFinalNoteForClient(clientId) {
   var c = ST.clients.find(function(x) { return x.id == clientId; });
   if (!c) return;
@@ -8025,29 +8066,6 @@ function appendClientOfferHistoryPanel(container, c) {
   html += '</div>';
   wrap.innerHTML = html;
   container.appendChild(wrap);
-}
-
-function appendClientDossierDatesPanel(container, clientId, c) {
-  if (!container || !c) return;
-  var showParcours = !!(c.sig_offre_id || resolveOffreForClient(c) || (Array.isArray(c.mode_stages) && c.mode_stages.length) || c.parcours_started_at);
-  var wrap = document.createElement('details');
-  wrap.style.cssText = 'margin:8px 0 10px;border:1px solid var(--rim3);border-radius:var(--r2);background:var(--bg3);overflow:hidden';
-  var closedVal = c.closedAt ? String(c.closedAt).slice(0, 10) : '';
-  var parcVal = c.parcours_started_at ? String(c.parcours_started_at).slice(0, 10) : '';
-  var h = '<summary style="list-style:none;cursor:pointer;padding:10px 12px;font-size:12px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px">📅 Dates dossier <span style="float:right;opacity:.5">▸</span></summary>'
-    + '<div style="padding:0 12px 12px;display:grid;gap:10px">'
-    + '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Engagement client</div>'
-    + '<input type="date" id="crm-dossier-closed-' + clientId + '" value="' + closedVal + '" style="width:100%;max-width:280px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>';
-  if (showParcours) {
-    h += '<div><div style="font-size:10px;color:var(--tx3);margin-bottom:4px">Démarrage parcours coaching</div>'
-      + '<input type="date" id="crm-dossier-parcours-' + clientId + '" value="' + parcVal + '" style="width:100%;max-width:280px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>';
-  }
-  h += '<button type="button" class="btn btn-bx btn-sm" id="crm-dossier-save-' + clientId + '" style="width:100%">💾 Enregistrer les dates</button>'
-    + '</div>';
-  wrap.innerHTML = h;
-  container.appendChild(wrap);
-  var btn = document.getElementById('crm-dossier-save-' + clientId);
-  if (btn) btn.onclick = function() { saveClientDossierDates(clientId); };
 }
 
 function saveClientImportantDates(clientId, patch) {
@@ -8303,16 +8321,8 @@ function renderClientModal(id) {
   container.appendChild(parcoursFold);
 
   // ── Infos secondaires
-  appendClientDossierDatesPanel(container, id, c);
   appendClientBilanFinalNotePanel(container, id, c);
   appendClientSuiviJalonsPanel(container, id);
-
-  if (isAncien) {
-    var reopenRow = document.createElement('div');
-    reopenRow.style.cssText = 'text-align:center;padding:12px 8px 4px;border-top:1px dashed var(--rim3);margin-top:8px';
-    reopenRow.innerHTML = '<button type="button" class="btn btn-V btn-sm" style="font-size:12px;font-weight:700" onclick="relancerAncienClient(\''+id+'\')">↩ Rouvrir le dossier</button>';
-    container.appendChild(reopenRow);
-  }
 
   // ── Actions secondaires (en bas, discrètes)
   var hideFooterNouvelleOffre = !!(isAncien || finaleParcoursNewOffreShown);
@@ -8436,11 +8446,12 @@ async function loadFromSupabase(){
     rows.forEach(row=>{
       // Ignorer les enregistrements sans nom (prospects vides/incomplets)
       if(!row.prenom && !row.nom) return;
-      let pq=null,bilan=null,final=null,bilanRaw=null,rdvHistory=null,sess=null,sessionCycles=null,importantDates=null,parcoursStarted=null,testsData=null,rapportLeger=null,modeStagesRemote=null;
+      let pq=null,bilan=null,final=null,bilanRaw=null,rdvHistory=null,sess=null,sessionCycles=null,importantDates=null,parcoursStarted=null,parcoursExpectedEnd=null,testsData=null,rapportLeger=null,modeStagesRemote=null;
       var nextChoice=null,parcoursCoachEarly=null,closingAtRemote=null;
-      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;rdvHistory=j.rdv_history||null;sess=j.session_tracking||null;if(Array.isArray(j.session_cycles))sessionCycles=j.session_cycles;if(j.important_dates&&typeof j.important_dates==='object')importantDates=j.important_dates;if(j.parcours_started_at) parcoursStarted=j.parcours_started_at;if(j.tests_data&&typeof j.tests_data==='object')testsData=j.tests_data;if(j.rapport_leger)rapportLeger=j.rapport_leger;if(Array.isArray(j.mode_stages))modeStagesRemote=j.mode_stages;if(j.parcours_next_choice)nextChoice=j.parcours_next_choice;if(j.parcours_coaching_early_end_at)parcoursCoachEarly=j.parcours_coaching_early_end_at;if(j.closing_at)closingAtRemote=j.closing_at;else if(j.closed_at)closingAtRemote=j.closed_at;}catch(e){}
+      try{const j=JSON.parse(row.report_json||'{}');pq=j.pq;bilan=j.bilan;final=j.final;bilanRaw=j.bilan_raw||null;rdvHistory=j.rdv_history||null;sess=j.session_tracking||null;if(Array.isArray(j.session_cycles))sessionCycles=j.session_cycles;if(j.important_dates&&typeof j.important_dates==='object')importantDates=j.important_dates;if(j.parcours_started_at) parcoursStarted=j.parcours_started_at;if(j.parcours_expected_end_at) parcoursExpectedEnd=j.parcours_expected_end_at;if(j.tests_data&&typeof j.tests_data==='object')testsData=j.tests_data;if(j.rapport_leger)rapportLeger=j.rapport_leger;if(Array.isArray(j.mode_stages))modeStagesRemote=j.mode_stages;if(j.parcours_next_choice)nextChoice=j.parcours_next_choice;if(j.parcours_coaching_early_end_at)parcoursCoachEarly=j.parcours_coaching_early_end_at;if(j.closing_at)closingAtRemote=j.closing_at;else if(j.closed_at)closingAtRemote=j.closed_at;}catch(e){}
       const sc={id:row.id,prenom:row.prenom,nom:row.nom,age:row.age,source:row.source,rdvType:row.rdv_type,date:row.date_rdv,rdv_history:rdvHistory,profil_code:row.profil_code,profil_label:row.profil_label,offres:row.offre,montant:row.montant,statut:row.statut||'Non closé',score_global:row.score_global,pq_summary:pq,bilan_summary:bilan,final_report:final,bilan_raw:bilanRaw,tests_data:testsData,rapport_leger:rapportLeger,updated_at:row.updated_at,groupId:row.group_id||null,group_name:row.group_name||null,is_group_leader:row.is_group_leader||false,sap_enabled:row.sap_enabled||false};
       if(parcoursStarted) sc.parcours_started_at = parcoursStarted;
+      if(parcoursExpectedEnd) sc.parcours_expected_end_at = parcoursExpectedEnd;
       if(sessionCycles) sc.session_cycles = sessionCycles;
       if(importantDates) sc.important_dates = importantDates;
       if(modeStagesRemote) sc.mode_stages = modeStagesRemote;
@@ -8460,6 +8471,7 @@ async function loadFromSupabase(){
           if(prev.parcours_next_choice != null && prev.parcours_next_choice !== '') sc.parcours_next_choice = prev.parcours_next_choice;
           if(prev.closedAt) sc.closedAt = prev.closedAt;
           if(prev.parcours_started_at) sc.parcours_started_at = prev.parcours_started_at;
+          if(prev.parcours_expected_end_at) sc.parcours_expected_end_at = prev.parcours_expected_end_at;
         }
         ST.clients[i]=sc;
       }else ST.clients.unshift(sc);
@@ -8503,7 +8515,7 @@ async function saveToSupabase(c){
       ? { seancesPrevues: cur.seancesPrevues != null ? cur.seancesPrevues : null, seancesEffectuees: cur.seancesEffectuees != null ? cur.seancesEffectuees : null, periodeDebut: cur.periodeDebut || null, periodeFin: cur.periodeFin || null }
       : { seancesPrevues: c.seancesPrevues != null ? c.seancesPrevues : null, seancesEffectuees: c.seancesEffectuees != null ? c.seancesEffectuees : null, periodeDebut: c.periodeDebut || null, periodeFin: c.periodeFin || null };
     var _sync = loadMaxConfig().sync;
-    var _rj = { pq:c.pq_summary, bilan:c.bilan_summary, final:c.final_report, bilan_raw:c.bilan_raw||null, rdv_history:c.rdv_history||null, session_tracking:legacySess, session_cycles:cycles, important_dates:c.important_dates||null, parcours_started_at:c.parcours_started_at||null, parcours_next_choice:c.parcours_next_choice||null, parcours_coaching_early_end_at:c.parcours_coaching_early_end_at||null, closing_at:c.closedAt||null, is_pro:!!c.isPro, structure_name:c.structureName||null };
+    var _rj = { pq:c.pq_summary, bilan:c.bilan_summary, final:c.final_report, bilan_raw:c.bilan_raw||null, rdv_history:c.rdv_history||null, session_tracking:legacySess, session_cycles:cycles, important_dates:c.important_dates||null, parcours_started_at:c.parcours_started_at||null, parcours_expected_end_at:c.parcours_expected_end_at||null, parcours_next_choice:c.parcours_next_choice||null, parcours_coaching_early_end_at:c.parcours_coaching_early_end_at||null, closing_at:c.closedAt||null, is_pro:!!c.isPro, structure_name:c.structureName||null };
     if (_sync.tests_data && c.tests_data && typeof c.tests_data === 'object') _rj.tests_data = c.tests_data;
     if (_sync.rapport_leger && c.rapport_leger) _rj.rapport_leger = c.rapport_leger;
     if (_sync.mode_stages && Array.isArray(c.mode_stages)) _rj.mode_stages = c.mode_stages;
