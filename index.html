@@ -1722,6 +1722,7 @@ function switchClientTab(tab) {
 function deleteClient(clientId) {
   dlgConfirm('Supprimer définitivement ce dossier ?','Supprimer').then(function(r){
     if(!r.confirmed) return;
+    deleteFromSupabase(clientId);
     ST.clients = ST.clients.filter(function(c){return c.id!==clientId;});
     localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
     closeModal('client');
@@ -8520,6 +8521,16 @@ async function saveToSupabase(c){
     if (_sync.rapport_leger && c.rapport_leger) _rj.rapport_leger = c.rapport_leger;
     if (_sync.mode_stages && Array.isArray(c.mode_stages)) _rj.mode_stages = c.mode_stages;
     await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,name:(c.prenom+' '+c.nom).trim(),age:parseInt(c.age)||null,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offre:_offreLabel,montant:c.montant?parseFloat(c.montant):null,is_client:c.statut==='Closé',score_global:c.score_global,report_json:JSON.stringify(_rj),updated_at:c.updated_at,group_id:c.groupId||null,group_name:c.group_name||null,is_group_leader:c.is_group_leader||false})});
+  }catch(e){}
+}
+
+async function deleteFromSupabase(clientId){
+  if(!ST.sbUrl||!ST.sbKey||!clientId) return;
+  try{
+    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients?id=eq.'+encodeURIComponent(String(clientId)),{
+      method:'DELETE',
+      headers:{'apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey}
+    });
   }catch(e){}
 }
 
