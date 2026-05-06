@@ -1809,7 +1809,7 @@ function renderProspectModal(id, c, container) {
   var head = document.createElement('div'); head.className = 'pm-head';
   var metaPills = buildBilanModalHeaderPills(c)
     +(c.source?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.source+'</span>':'')
-    +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
+    +(c.profil_code && !(c.isPro && String(c.profil_code).toUpperCase() === 'PRO') ? '<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>' : '')
     +(c.sap_enabled?'<span class="pill" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">🏠 SAP</span>':'')
     +(c.group_name?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">👥 '+c.group_name+(c.is_group_leader?' ★':'')+'</span>':'')
     +(isClosingEnCours?'<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(200,130,10,.12);color:var(--Y);border:1.5px solid rgba(200,130,10,.35);animation:pulse-y 1.5s ease-in-out infinite">🔶 En signature</span>':'');
@@ -2351,11 +2351,6 @@ function renderSignatureAccordion(clientId, c, container) {
     if (c.sig_offre_id) {
       var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
       if (o) {
-        if (o.modeOffre) {
-          var modeRow = document.createElement('div'); modeRow.style.marginTop = '6px';
-          modeRow.innerHTML = '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(o.modeOffre)+'</span>';
-          ofRow.appendChild(modeRow);
-        }
         // Montant réel encaissé
         var amtRow = document.createElement('div'); amtRow.className = 'cm-sig-form-row';
         var amtLbl = document.createElement('label'); amtLbl.textContent = 'Montant réel encaissé (€)';
@@ -2394,7 +2389,7 @@ function renderSignatureAccordion(clientId, c, container) {
     var o = loadOffres().find(function(x){return x.id===c.sig_offre_id;});
     if (o) {
       var chip = document.createElement('div'); chip.className = 'cm-sig-offre-chip';
-      chip.innerHTML = '💼 <strong>'+o.name+'</strong>' + (o.modeOffre ? ' · <span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(o.modeOffre)+'</span>' : '');
+      chip.innerHTML = '💼 <strong>'+o.name+'</strong>';
       body.appendChild(chip);
     }
   }
@@ -3421,7 +3416,6 @@ function renderOffresPage() {
     else if (o.offer_type === 'session') tags += '<span class="pill" style="font-size:9px;background:#1a5276;color:#fff">Séances</span> ';
     if (o.modeOffre === 'action')          tags += '<span class="pill pill-Y" style="font-size:9px">⚡ Action</span> ';
     else if (o.modeOffre === 'transformation') tags += '<span class="pill pill-V" style="font-size:9px">🔄 Transformation</span> ';
-    else if (o.modeOffre === 'collectif') tags += '<span class="pill pill-B" style="font-size:9px">🔥 Collectif</span> ';
     if (o.parcours && !o.alaCarte) tags += '<span class="pill pill-G" style="font-size:9px">Parcours</span> ';
     if (o.alaCarte) tags += '<span class="pill" style="font-size:9px;background:var(--bg3);color:var(--tx3)">À la carte</span> ';
     if (o.isAbonnement) tags += '<span class="pill pill-B" style="font-size:9px">Abonnement</span> ';
@@ -5975,7 +5969,9 @@ function openEditClientModal(clientId) {
   if (!c) return;
   var isPro = !!c.isPro;
   showDialog({
-    title: (isPro ? '🏢 Modifier structure' : '✏️ Modifier ') + ((c.prenom||'') + ' ' + (c.nom||'')).trim(),
+    title: '✏️ Modifier ' + (isPro
+      ? ((c.structureName || c.prenom || c.nom || '').trim() || '—')
+      : ((c.prenom||'') + ' ' + (c.nom||'')).trim()),
     inputs: isPro ? [
       {id:'structure_name', label:'Nom social', type:'text', value: c.structureName || c.prenom || c.nom || ''},
       {id:'tel',            label:'Téléphone',  type:'text', value: c.tel||''},
@@ -6320,7 +6316,7 @@ function renderClients(){
       +'<div class="cinfo"><div class="cname">'+(listDisplayName||'—')+'</div>'
       +'<div class="cmeta">'+(cmetaStr||'&nbsp;')+'</div>'
       +'<div class="cbadges">'
-        +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
+        +(c.profil_code && !(c.isPro && String(c.profil_code).toUpperCase() === 'PRO') ? '<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>' : '')
         + coreBadgesHtml + closingBadge + groupBadge + sapBadge + retourBadge
         +(c.score_global!=null?'<span style="font-size:11px;color:var(--tx3)">★ '+c.score_global+'</span>':'')
       +'</div></div></div>';
@@ -8309,9 +8305,8 @@ function renderClientModal(id) {
   // ── Header premium
   var head = document.createElement('div'); head.className = 'cm-head';
   var meta = buildBilanModalHeaderPills(c)
-    + (offreMode ? '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(offreMode)+'</span>' : '')
     + (offreName ? '<span class="pill pill-Y" style="font-size:10px">'+offreName+'</span>' : '')
-    + (c.profil_code && c.profil_code!=='PRO' ? '<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.profil_code+'</span>' : '')
+    + (c.profil_code && String(c.profil_code).toUpperCase() !== 'PRO' ? '<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.profil_code+'</span>' : '')
     + (c.statut === 'Membre CC' ? '<span class="pill pill-V" style="font-size:10px">♾️ Membre CC</span>' : '');
   head.innerHTML = '<div class="cm-avatar'+(isAncien?' ancien':'')+'">'+initials+'</div>'
     + '<div class="cm-name-wrap">'
