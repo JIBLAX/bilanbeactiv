@@ -1408,7 +1408,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
         <option>Autre</option>
       </select>
     </div>
-    <div class="f"><label>Nombre de personnes concernées</label><input id="pro-nb" type="number" placeholder="Ex: 12" min="1"></div>
   </div>
 
   <div class="card">
@@ -5740,7 +5739,7 @@ function saveProClient() {
     email: gv('pro-email'),
     ville: gv('pro-ville'),
     proType: gv('pro-type'),
-    proNbPersonnes: gv('pro-nb'),
+    proNbPersonnes: '',
     source: (function(){var el=document.querySelector('input[name="pro-source"]:checked');return el?el.value:'';}()),
     rdvType: '',
     rdvStatut: '',
@@ -5776,7 +5775,7 @@ function saveProClient() {
   saveToSupabase(client);
 
   // Reset form
-  ['pro-nom','pro-contact','pro-tel','pro-email','pro-ville','pro-nb','pro-montant','pro-notes','pro-creneau'].forEach(function(id){
+  ['pro-nom','pro-contact','pro-tel','pro-email','pro-ville','pro-montant','pro-notes','pro-creneau'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.value='';
   });
   ['pro-type','pro-offre','pro-freq','pro-cadence'].forEach(function(id){
@@ -5882,7 +5881,6 @@ function prefillProForm(c) {
   if(el('pro-email')) el('pro-email').value = c.email || '';
   if(el('pro-ville')) el('pro-ville').value = c.ville || '';
   if(el('pro-type')) el('pro-type').value = c.proType || '';
-  if(el('pro-nb')) el('pro-nb').value = c.proNbPersonnes || '';
   if(el('pro-offre')) el('pro-offre').value = c.offres || '';
   if(el('pro-montant')) el('pro-montant').value = c.montant || '';
   if(el('pro-freq')) el('pro-freq').value = c.proFreq || 'ponctuel';
