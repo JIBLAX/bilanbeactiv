@@ -1721,9 +1721,10 @@ function switchClientTab(tab) {
 }
 
 function deleteClient(clientId) {
-  dlgConfirm('Supprimer définitivement ce dossier ?','Supprimer').then(function(r){
+  dlgConfirm('Supprimer définitivement ce dossier ?','Supprimer').then(async function(r){
     if(!r.confirmed) return;
-    deleteFromSupabase(clientId);
+    var ok = await deleteFromSupabase(clientId);
+    if(!ok && ST.sbUrl && ST.sbKey) return;
     ST.clients = ST.clients.filter(function(c){return c.id!==clientId;});
     localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
     closeModal('client');
@@ -1771,16 +1772,23 @@ function deleteSelected(){
   if(!n) return;
   var bar=document.getElementById('sel-bar');
   if(bar) bar.style.display='none';
-  dlgConfirm('Supprimer définitivement '+n+' dossier'+(n>1?'s':'')+' ?','Supprimer').then(function(r){
+  dlgConfirm('Supprimer définitivement '+n+' dossier'+(n>1?'s':'')+' ?','Supprimer').then(async function(r){
     if(!r.confirmed){ if(bar) bar.style.display='flex'; return; }
     var ids=ST.selectedIds.slice();
+    var cloudConfigured = !!(ST.sbUrl && ST.sbKey);
+    if(cloudConfigured){
+      for(var i=0;i<ids.length;i++){
+        var ok = await deleteFromSupabase(ids[i]);
+        if(!ok){ if(bar) bar.style.display='flex'; return; }
+      }
+    }
     ST.clients=ST.clients.filter(function(c){ return ids.indexOf(c.id)===-1; });
     localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));
     ST.selectMode=false; ST.selectedIds=[];
     var btn=document.getElementById('btn-select-mode');
     if(btn){ btn.style.background=''; btn.style.color=''; }
     renderClients();
-    toast('ok',n+' dossier'+(n>1?'s':'')+' supprimé'+(n>1?'s':''));
+    toast('ok',n+' dossier'+(n>1?'s':'')+' supprimé'+(n>1?'s':'')+(cloudConfigured?' (cloud)':''));
   });
 }
 
@@ -8637,17 +8645,28 @@ async function _saveToSupabaseNow(c){
 }
 
 async function deleteFromSupabase(clientId){
-  if(!ST.sbUrl||!ST.sbKey||!clientId) return;
+  if(!ST.sbUrl||!ST.sbKey||!clientId){
+    toast('err','⚠️ Supabase URL/clé manquants — rien supprimé en base.');
+    return false;
+  }
   try{
-    await fetch(ST.sbUrl+'/rest/v1/be_activ_clients?id=eq.'+encodeURIComponent(String(clientId)),{
+    var r1 = await fetch(ST.sbUrl+'/rest/v1/be_activ_clients?id=eq.'+encodeURIComponent(String(clientId)),{
       method:'DELETE',
-      headers:{'apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey}
+      headers:{'apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'return=minimal'}
     });
-    await fetch(ST.sbUrl+'/rest/v1/crm_people_v1?external_ref=eq.'+encodeURIComponent(String(clientId)),{
+    var r2 = await fetch(ST.sbUrl+'/rest/v1/crm_people_v1?external_ref=eq.'+encodeURIComponent(String(clientId)),{
       method:'DELETE',
-      headers:{'apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey}
+      headers:{'apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'return=minimal'}
     });
-  }catch(e){}
+    if(!r1.ok || !r2.ok){
+      toast('err','❌ Suppression cloud refusée (HTTP '+r1.status+' / '+r2.status+'). Utilisez la service role dans les réglages Bilan ou vérifiez les politiques RLS (DELETE).');
+      return false;
+    }
+    return true;
+  }catch(e){
+    toast('err','❌ Erreur réseau : '+(e&&e.message||e));
+    return false;
+  }
 }
 
 function renderSectionsEditor(formKey) {
