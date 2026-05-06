@@ -1116,7 +1116,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
     <button id="tab-anciens" class="ctab" onclick="switchClientTab('anciens')">🏁 Anciens</button>
   </div>
   <div class="srch">
-    <input class="srch-i" type="search" placeholder="🔍  Rechercher…" id="srch-i" oninput="renderClients()">
+    <input class="srch-i" type="search" placeholder="🔍  Rechercher…" id="srch-i" oninput="renderClientsFromSearchInput()">
     <button id="btn-select-mode" class="btn btn-dk btn-sm" onclick="toggleSelectMode()" title="Sélection multiple" style="padding:0 10px;font-size:12px">☑</button>
     <button class="btn btn-bx btn-sm" onclick="showPg('prospect')" title="Ajouter un prospect">＋</button>
     <button class="btn btn-dk btn-sm" onclick="showPg('pro')" title="Nouvelle structure pro" style="padding:0 10px">🏢</button>
@@ -6154,6 +6154,15 @@ function isNewClient(c) {
   return (Date.now() - new Date(c.closedAt).getTime()) < 72 * 60 * 60 * 1000;
 }
 
+var _clientsSearchRenderTimer = null;
+function renderClientsFromSearchInput() {
+  if (_clientsSearchRenderTimer) clearTimeout(_clientsSearchRenderTimer);
+  _clientsSearchRenderTimer = setTimeout(function () {
+    _clientsSearchRenderTimer = null;
+    renderClients();
+  }, 110);
+}
+
 function renderClients(){
   var srchEl=document.getElementById('srch-i');
   var srch=(srchEl?srchEl.value:'').toLowerCase();
@@ -6163,7 +6172,12 @@ function renderClients(){
   // Prospects : pipeline hors closés / anciens / réactivations (liste Clients)
   var prospectStatuts=['Prospect','Contact','Attente RDV','Non Closé','Sans Suite','Non closé','En cours','À relancer','Refusé','','Membre CC'];
   var list=ST.clients.filter(function(c){
-    var ms=!srch||((c.prenom||'')+' '+(c.nom||'')+' '+(c.source||'')+' '+(c.ville||'')+' '+(c.structureName||'')).toLowerCase().includes(srch);
+    var _rawSearch = (c.prenom||'')+' '+(c.nom||'')+' '+(c.source||'')+' '+(c.ville||'')+' '+(c.structureName||'');
+    if (c._searchIndexRaw !== _rawSearch) {
+      c._searchIndexRaw = _rawSearch;
+      c._searchIndex = _rawSearch.toLowerCase();
+    }
+    var ms=!srch||(c._searchIndex||'').includes(srch);
     var mv=ST.filterStatut==='all'||c.statut===ST.filterStatut;
     var tabMatch = false;
     if (isProspectTab) {
@@ -8479,7 +8493,22 @@ async function loadFromSupabase(){
   }catch(e){}
 }
 
-async function saveToSupabase(c){
+var _sbSaveQueueById = Object.create(null);
+var _sbSaveTimerById = Object.create(null);
+function saveToSupabase(c){
+  if(!c || !c.id) return;
+  var _id = String(c.id);
+  _sbSaveQueueById[_id] = c;
+  if (_sbSaveTimerById[_id]) clearTimeout(_sbSaveTimerById[_id]);
+  _sbSaveTimerById[_id] = setTimeout(function(){
+    var latest = _sbSaveQueueById[_id];
+    delete _sbSaveQueueById[_id];
+    delete _sbSaveTimerById[_id];
+    _saveToSupabaseNow(latest);
+  }, 180);
+}
+
+async function _saveToSupabaseNow(c){
   if(!ST.sbUrl||!ST.sbKey)return;
   // Ne pas sauvegarder un prospect sans nom (évite les enregistrements vides)
   if(!c.prenom && !c.nom) return;
