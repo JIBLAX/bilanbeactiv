@@ -350,6 +350,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 .pill-Y{background:var(--Y-l);color:var(--Y);border:1px solid rgba(200,130,10,.2)}
 .pill-R{background:var(--R-l);color:var(--R);border:1px solid rgba(214,48,49,.2)}
 .pill-V{background:var(--V-l);color:var(--V);border:1px solid rgba(108,92,231,.2)}
+.pill-OLD{background:rgba(139,94,60,.14);color:#8b5e3c;border:1px solid rgba(139,94,60,.35)}
 .tag-offre{display:inline-block;padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:700;background:var(--Y-l);color:var(--Y);border:1px solid rgba(200,130,10,.2);margin:2px}
 
 /* ═══════════════════════════════════════════════════
@@ -372,7 +373,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
    PROSPECT MODAL — HUB PREMIUM
 ═══════════════════════════════════════════════════ */
 .pm-head{display:flex;align-items:center;gap:12px;padding:4px 0 14px;border-bottom:1px solid var(--rim3);margin-bottom:14px}
-.pm-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--bx),var(--bx3));color:#fff;font-weight:900;font-size:17px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px;flex-shrink:0;box-shadow:0 2px 10px rgba(139,21,32,.22)}
+.pm-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#8b1520,#5f0f17);color:#fff;font-weight:900;font-size:17px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px;flex-shrink:0;box-shadow:0 2px 10px rgba(139,21,32,.22)}
 .pm-name-wrap{flex:1;min-width:0}
 .pm-name{font-weight:800;font-size:18px;color:var(--tx);line-height:1.15;letter-spacing:-.2px}
 .pm-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;align-items:center}
@@ -444,7 +445,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
 ═══════════════════════════════════════════════════ */
 .cm-head{display:flex;align-items:center;gap:12px;padding:4px 0 14px;border-bottom:1px solid var(--rim3);margin-bottom:14px}
 .cm-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--G),#0c8a52);color:#fff;font-weight:900;font-size:17px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px;flex-shrink:0;box-shadow:0 2px 10px rgba(0,163,98,.22)}
-.cm-avatar.ancien{background:linear-gradient(135deg,var(--V),#5444c8)}
+.cm-avatar.ancien{background:linear-gradient(135deg,#8e8e8e,#6f6f6f);box-shadow:0 2px 10px rgba(110,110,110,.22)}
 .cm-name-wrap{flex:1;min-width:0}
 .cm-name{font-weight:800;font-size:18px;color:var(--tx);line-height:1.15;letter-spacing:-.2px}
 .cm-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;align-items:center}
@@ -4005,9 +4006,6 @@ function renderHomeObjectives() {
     else panierMoyen = 300;
   }
   var reste = Math.max(0, objective - realized);
-  var closingsNeed = panierMoyen > 0 ? Math.ceil(reste / panierMoyen) : 0;
-  var rdvNeed = tauxRdvVente > 0 ? Math.ceil(closingsNeed / (tauxRdvVente / 100)) : 0;
-  var contactsNeed = tauxContactRdv > 0 ? Math.ceil(rdvNeed / (tauxContactRdv / 100)) : 0;
   var prog = objective > 0 ? Math.min(100, Math.max(0, Math.round((realized / objective) * 100))) : 0;
   var doneCls = prog >= 100 ? 'hf-plan-ok' : '';
 
@@ -4024,12 +4022,6 @@ function renderHomeObjectives() {
         + '<div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase">Reste</div><div style="font-size:17px;font-weight:800;color:' + (reste > 0 ? 'var(--Y)' : 'var(--G)') + '">' + reste.toLocaleString('fr-FR') + '€</div></div>'
       + '</div>'
       + '<div style="margin-top:10px"><div style="height:7px;background:var(--rim3);border-radius:7px;overflow:hidden"><div style="height:100%;width:' + prog + '%;background:' + (prog >= 100 ? 'linear-gradient(90deg,var(--G),#59d18d)' : 'linear-gradient(90deg,var(--bx),var(--R))') + '"></div></div><div style="margin-top:4px;font-size:11px;color:var(--tx3)">' + prog + '% de l’objectif</div></div>'
-      + '<div style="margin-top:10px;padding:10px;border:1px solid var(--rim3);border-radius:var(--r2);background:var(--bg3)">'
-        + '<div style="font-size:10px;font-weight:800;color:var(--tx3);text-transform:uppercase;margin-bottom:6px">À produire</div>'
-        + '<div style="font-size:12px;color:var(--tx2)">'
-          + '<strong>' + closingsNeed + '</strong> closings · <strong>' + rdvNeed + '</strong> RDV · <strong>' + contactsNeed + '</strong> contacts'
-        + '</div>'
-      + '</div>'
       + '<div id="hf-detail-box" style="display:none;margin-top:10px;padding:10px;border:1px dashed var(--rim3);border-radius:var(--r2)">'
         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
           + '<div><label style="font-size:10px;color:var(--tx3)">Objectif (€)</label><input id="hf-target" type="number" min="0" step="50" value="' + objective + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>'
@@ -6202,7 +6194,7 @@ function buildBilanListCoreBadgesHtml(c, tab) {
     return '<span class="pill pill-G" style="font-size:10px;font-weight:800;letter-spacing:.3px">CLIENT</span>' + nb + (c.isPro ? pillPro : '');
   }
   if (tab === 'anciens') {
-    return '<span class="pill pill-V" style="font-size:10px;font-weight:800;letter-spacing:.3px">ANCIEN</span>' + (c.isPro ? pillPro : '');
+    return '<span class="pill pill-OLD" style="font-size:10px;font-weight:800;letter-spacing:.3px">ANCIEN</span>' + (c.isPro ? pillPro : '');
   }
   return '';
 }
@@ -6215,7 +6207,7 @@ function buildBilanModalHeaderPills(c) {
     return '<span class="pill pill-G" style="font-size:10px;font-weight:800">CLIENT</span>' + nb + (c.isPro ? pillPro : '');
   }
   if (c.statut === 'Ancien Client') {
-    return '<span class="pill pill-V" style="font-size:10px;font-weight:800">ANCIEN</span>' + (c.isPro ? pillPro : '');
+    return '<span class="pill pill-OLD" style="font-size:10px;font-weight:800">ANCIEN</span>' + (c.isPro ? pillPro : '');
   }
   var pl = bilanProspectPrimaryUpper(c);
   var cls = pl === 'CARDIO MOUV' ? 'pill-Y' : pl === 'NON CLOSÉ' ? 'pill-R' : pl === 'ATTENTE RDV' ? 'pill-Y' : 'pill-B';
@@ -6301,6 +6293,11 @@ function renderClients(){
     var cardClasses='ccrd'+(ST.selectMode?' select-mode':'')+(isSelected?' selected':'');
     var cardClick=ST.selectMode?'toggleClientSelect(\''+c.id+'\',event)':'openClient(\''+c.id+'\')';
     var cardStyle=ST.selectMode?'':(isNew?'animation:slide-in-new 2s ease-out':isClosing?'border-color:rgba(200,130,10,.4)':'');
+    var avatarBg = isAnciensTab
+      ? 'background:linear-gradient(135deg,#8e8e8e,#6f6f6f)'
+      : isClientsTab
+        ? 'background:linear-gradient(135deg,var(--G),#0c8a52)'
+        : 'background:linear-gradient(135deg,#8b1520,#5f0f17)';
     var metaLine = [];
     var _src = (c.source||'').trim();
     var _vil = (c.ville||'').trim();
@@ -6312,7 +6309,7 @@ function renderClients(){
     var listDisplayName = (c.isPro && (c.structureName||'').trim()) ? c.structureName.trim() : (((c.prenom||'')+' '+(c.nom||'')).trim());
     return '<div class="'+cardClasses+'" onclick="'+cardClick+'" style="'+cardStyle+'">'
       +selCheck
-      +'<div class="cav" style="'+(isClosing?'background:var(--Y)':isNew?'background:var(--G)':'')+'">'+init+'</div>'
+      +'<div class="cav" style="'+avatarBg+'">'+init+'</div>'
       +'<div class="cinfo"><div class="cname">'+(listDisplayName||'—')+'</div>'
       +'<div class="cmeta">'+(cmetaStr||'&nbsp;')+'</div>'
       +'<div class="cbadges">'
