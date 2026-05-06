@@ -1124,8 +1124,9 @@ textarea{resize:vertical;min-height:72px;line-height:1.6}
   <div class="chips" id="chips-statut">
     <div class="chip on" data-v="all">Tous</div>
     <div class="chip" data-v="Contact">Contact</div>
+    <div class="chip" data-v="Attente RDV">Attente RDV</div>
     <div class="chip" data-v="Non Closé">Non closé</div>
-    <div class="chip" data-v="Sans Suite">Sans Suite</div>
+    <div class="chip" data-v="Cardio Mouv">Cardio Mouv</div>
   </div>
   <div id="clients-list"></div>
 </div>
@@ -1783,14 +1784,7 @@ function deleteSelected(){
 }
 
 function renderProspectModal(id, c, container) {
-  var sp={'Prospect':'pill-B','Closé':'pill-G','Client':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Non Closé':'pill-R','Sans Suite':'pill-V','Ancien Client':'pill-V','Ancien':'pill-V','Non closé':'pill-R','À relancer':'pill-Y','Refusé':'pill-R','Closing en cours':'pill-Y'};
   var isClosingEnCours = (c.sig_started === true);
-  var statutLabel = c.statut || 'Prospect';
-  if (c.statut === 'Non Closé' || c.statut === 'Non closé') statutLabel = 'Non closé';
-  else if (c.statut === 'Closé') statutLabel = 'Client';
-  else if (c.statut === 'Ancien Client') statutLabel = 'Ancien';
-  else if (c.rdvStatut !== 'Présent' && c.rdvStatut !== 'Absent' && (c.statut === 'Contact' || c.statut === 'Attente RDV' || c.statut === 'Prospect' || !c.statut))
-    statutLabel = 'Contact';
   var inactifStatuts = ['Prospect','Non Closé','Sans Suite','Contact','Attente RDV','Membre CC','','Refusé','Non closé','À relancer'];
   var fullName = c.isPro
     ? (c.structureName || c.prenom || c.nom || 'Structure')
@@ -1813,7 +1807,7 @@ function renderProspectModal(id, c, container) {
 
   // ── Header premium (avatar + nom + meta)
   var head = document.createElement('div'); head.className = 'pm-head';
-  var metaPills = '<span class="pill '+(sp[statutLabel]||sp[c.statut]||'pill-B')+'">'+statutLabel+'</span>'
+  var metaPills = buildBilanModalHeaderPills(c)
     +(c.source?'<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.source+'</span>':'')
     +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
     +(c.sap_enabled?'<span class="pill" style="background:rgba(22,163,74,.12);color:#16a34a;border:1px solid rgba(22,163,74,.3)">🏠 SAP</span>':'')
@@ -1845,7 +1839,7 @@ function renderProspectModal(id, c, container) {
   }
   if (!c.isPro && c.profession) rows.push(['Profession', c.profession]);
   if (c.isPro && c.structureType) rows.push(['Type de structure', c.structureType]);
-  if (c.rdvType) {
+  if (c.rdvType && !c.isPro) {
     var dStr = c.date ? new Date(c.date).toLocaleDateString('fr-FR') : '—';
     var rdvVal = dStr + (c.rdvTime?' · '+c.rdvTime:'') + ' · ' + c.rdvType;
     if (c.rdvType === 'Physique' && c.rdvLieu) rdvVal += '<span class="pm-sub">📍 '+c.rdvLieu+'</span>';
@@ -1859,8 +1853,8 @@ function renderProspectModal(id, c, container) {
   if (c.notes) summary.innerHTML += '<div class="pm-note">'+c.notes+'</div>';
   container.appendChild(summary);
 
-  // ── Pré-qualif IA (repliable : libère la fiche, accessible depuis Actions)
-  if (hasPq) {
+  // ── Pré-qualif IA (particuliers uniquement — pas les structures pro)
+  if (hasPq && !c.isPro) {
     var pq = c.pq_summary;
     var ucCls = {Critique:'pill-R',Élevé:'pill-Y',Moyen:'pill-B',Faible:'pill-G'}[pq.niveauUrgence]||'';
     var ccCls = {Chaud:'pill-R',Tiède:'pill-Y',Froid:'pill-B','À qualifier':'pill-V'}[pq.closingStatusSuggestion]||'';
@@ -1919,12 +1913,12 @@ function renderProspectModal(id, c, container) {
   // ── 4 TUILES D'ACTION (ou Démarrer Signature pour Pro)
   var tilesWrap = document.createElement('div'); tilesWrap.className = 'pm-tiles-wrap';
   if (c.isPro && !isClosingEnCours) {
-    tilesWrap.innerHTML = '<div class="pm-tiles-h">Action principale</div>'
+    tilesWrap.innerHTML = '<div class="pm-tiles-h">Structure pro</div>'
       + '<button class="pm-tile todo" data-cid="'+id+'" data-act="sig-pro" style="grid-column:1/-1">'
       +   '<span class="pm-tile-flag">→</span>'
       +   '<div class="pm-tile-ico">✍️</div>'
       +   '<div class="pm-tile-title">Démarrer Signature</div>'
-      +   '<div class="pm-tile-state">Lancer le parcours de signature</div>'
+      +   '<div class="pm-tile-state">Contrat / offre — sans pré-qualif ni bilan RDV</div>'
       + '</button>';
     tilesWrap.firstElementChild && (tilesWrap.style.display = 'block');
     container.appendChild(tilesWrap);
@@ -2040,6 +2034,13 @@ function renderProspectModal(id, c, container) {
   var editBtn = document.createElement('button'); editBtn.className = 'btn'; editBtn.innerHTML = '✏️ Modifier';
   editBtn.onclick = function(){ openEditClientModal(id); };
   sec.appendChild(editBtn);
+  if (!c.isPro && c.statut !== 'Cardio Mouv' && c.statut !== 'CARDIO MOUV') {
+    var cardioBtn = document.createElement('button'); cardioBtn.className = 'btn btn-dk';
+    cardioBtn.innerHTML = '🏃 Cardio Mouv';
+    cardioBtn.title = 'Badge prospect orientation Cardio (sans parcours coaching prioritaire)';
+    cardioBtn.onclick = function(){ setProspectCardioMouv(id); };
+    sec.appendChild(cardioBtn);
+  }
   if (!c.statut || inactifStatuts.indexOf(c.statut) > -1) {
     var nbRelances = (c.relances && c.relances.length) || 0;
     var reactBtn = document.createElement('button'); reactBtn.className = 'btn btn-V';
@@ -2095,6 +2096,7 @@ function renderProspectModal(id, c, container) {
 function startPrequalifForProspect(clientId) {
   var c = ST.clients.find(function(x){ return x.id == clientId; });
   if (!c) return;
+  if (c.isPro) { toast('info', '🏢 Pas de pré-qualif IA pour une structure — utilisez Signature.'); return; }
   ST.returnToClientId = String(clientId);
   ST.clientId = clientId;
   ST.pqSummary = c.pq_summary || null;
@@ -2125,6 +2127,7 @@ function hydrateBilanFormFromClient(clientId, opts) {
   opts = opts || {};
   var c = ST.clients.find(function(x){ return x.id == clientId; });
   if (!c) return;
+  if (c.isPro) return;
   if (document.getElementById('b-pn')) document.getElementById('b-pn').value = c.prenom || '';
   if (document.getElementById('b-nn')) document.getElementById('b-nn').value = c.nom || '';
   if (document.getElementById('b-first-contact')) document.getElementById('b-first-contact').value = c.first_contact_date || '';
@@ -2162,7 +2165,7 @@ function hydrateBilanFormFromClient(clientId, opts) {
 
 function hydrateTestsFormFromClient(clientId) {
   var c = ST.clients.find(function(x){ return x.id == clientId; });
-  if (!c || !c.tests_data) return;
+  if (!c || c.isPro || !c.tests_data) return;
   var td = c.tests_data;
   var formDef = loadFormDef('tests');
   formDef.forEach(function(section) {
@@ -2243,6 +2246,7 @@ function hydrateBilanDynamicFieldsFromRaw(c) {
 function startBilanForProspect(clientId) {
   var c = ST.clients.find(function(x){ return x.id == clientId; });
   if (!c) return;
+  if (c.isPro) { toast('info', '🏢 Pas de RDV bilan pour une structure — utilisez Signature.'); return; }
 
   // Ancienne clé globale : ne garder que si elle correspond à ce client
   var legacyDraft = localStorage.getItem('ba_bilan_draft');
@@ -3612,6 +3616,7 @@ window.onload = function() {
   var _statMap={'Clos':'Closé','CLOS':'Closé','CLOSÉ':'Closé','CLOSE':'Closé','Non clos':'Contact','relancer':'Attente RDV','Refus':'Non Closé','REFUS':'Non Closé','Refusé':'Non Closé','À relancer':'Attente RDV','Non closé':'Contact','Closing en cours':'Attente RDV'};
   var _migrated=0;
   ST.clients.forEach(function(c){if(_statMap[c.statut]){c.statut=_statMap[c.statut];_migrated++;}});
+  ST.clients.forEach(function(c){ if (c.statut === 'CARDIO MOUV') { c.statut = 'Cardio Mouv'; _migrated++; } });
   if(_migrated>0){localStorage.setItem('ba_clients_v8',JSON.stringify(ST.clients));}
 
   const lr=localStorage.getItem('ba_rdvs_v8');
@@ -4126,6 +4131,7 @@ function renderNextRDV() {
 
   // Ajouter les prospects avec un RDV Bilan planifié (rdvType défini, date >= aujourd'hui, statut pas Closé/Refusé)
   ST.clients.forEach(function(c){
+    if (c.isPro) return;
     if (!c.rdvType) return; // on n'inclut que les vrais RDVs planifiés
     if (!c.date || c.date < today) return;
     if (c.statut === 'Closé' || c.statut === 'Non Closé' || c.statut === 'Refusé' || c.statut === 'Ancien Client') return;
@@ -4282,6 +4288,7 @@ function _buildHomeAlerts() {
   // 3) Anniversaires (7 jours)
   ST.clients.forEach(function(c) {
     if (!c || !(c.prenom || c.nom)) return;
+    if (c.isPro) return;
     var biso = _birthIsoFromClient(c);
     var du = _daysUntilBirthday(biso, todayIso);
     if (du == null || du > 7) return;
@@ -5070,6 +5077,10 @@ async function callAI(system,user,model,maxTokens){
 }
 
 async function analyzePQ(){
+  if (ST.clientId) {
+    var _pqg = ST.clients.find(function (x) { return String(x.id) === String(ST.clientId); });
+    if (_pqg && _pqg.isPro) { toast('info', '🏢 Pré-qualif réservée aux particuliers.'); return; }
+  }
   const raw=gv('pq-raw');if(raw.length<20){toast('err','⚠️ Collez les réponses Calendly');return;}
   const btn=document.getElementById('btn-pq');btn.disabled=true;btn.textContent='⏳ Analyse…';
   try{
@@ -5092,6 +5103,10 @@ function renderPQResult(d){
 function ab(t,c,col){col=col||'B';if(!c)return'';return'<div class="ai-blk"><div class="ai-blk-t" style="color:var(--'+col+')">'+t+'</div><div class="ai-blk-c">'+c+'</div></div>';}
 
 async function analyzeBilan(){
+  if (ST.clientId) {
+    var _bg = ST.clients.find(function (x) { return String(x.id) === String(ST.clientId); });
+    if (_bg && _bg.isPro) { toast('info', '🏢 Bilan RDV réservé aux particuliers.'); return; }
+  }
   const btn=document.getElementById('btn-bilan');btn.disabled=true;btn.textContent='⏳ Analyse…';
   try{
     const b=collectBilan();
@@ -6149,9 +6164,78 @@ function saveBilanAndReturn() {
 }
 
 function isNewClient(c) {
-  // Badge "New" pendant 72h après le closing
+  // Badge NEW : 3 jours (72h) après signature / closing
   if (c.statut !== 'Closé' || !c.closedAt) return false;
   return (Date.now() - new Date(c.closedAt).getTime()) < 72 * 60 * 60 * 1000;
+}
+
+/** Libellé badge pipeline prospect (Contacts — grille fixe). */
+function bilanProspectPrimaryUpper(c) {
+  var st = (c.statut || '').trim();
+  if (st === 'Cardio Mouv' || st === 'CARDIO MOUV') return 'CARDIO MOUV';
+  if (st === 'Non Closé' || st === 'Non closé' || st === 'Sans Suite' || st === 'Refusé') return 'NON CLOSÉ';
+  if (st === 'Attente RDV') return 'ATTENTE RDV';
+  return 'CONTACT';
+}
+
+function prospectMatchesStatChip(c, chip) {
+  if (chip === 'all') return true;
+  var st = (c.statut || '').trim();
+  if (chip === 'Cardio Mouv') return st === 'Cardio Mouv' || st === 'CARDIO MOUV';
+  if (chip === 'Non Closé') return st === 'Non Closé' || st === 'Non closé' || st === 'Sans Suite' || st === 'Refusé';
+  if (chip === 'Attente RDV') return st === 'Attente RDV';
+  if (chip === 'Contact') {
+    if (st === 'Cardio Mouv' || st === 'CARDIO MOUV') return false;
+    if (st === 'Attente RDV' || st === 'Non Closé' || st === 'Non closé' || st === 'Sans Suite' || st === 'Refusé') return false;
+    return st === 'Contact' || st === 'Prospect' || st === 'En cours' || st === 'À relancer' || st === 'Membre CC' || !st;
+  }
+  return st === chip;
+}
+
+/** Badges liste Contacts selon l’onglet (grille produit). */
+function buildBilanListCoreBadgesHtml(c, tab) {
+  var pillPro = '<span class="pill" style="font-size:10px;font-weight:800;background:rgba(108,92,231,.14);color:var(--V);border:1px solid rgba(108,92,231,.35);letter-spacing:.3px">PRO</span>';
+  if (tab === 'prospects') {
+    var pl = bilanProspectPrimaryUpper(c);
+    var cls = pl === 'CARDIO MOUV' ? 'pill-Y' : pl === 'NON CLOSÉ' ? 'pill-R' : pl === 'ATTENTE RDV' ? 'pill-Y' : 'pill-B';
+    var main = '<span class="pill ' + cls + '" style="font-size:10px;font-weight:800;letter-spacing:.4px">' + pl + '</span>';
+    return main + (c.isPro ? pillPro : '');
+  }
+  if (tab === 'clients') {
+    var nb = isNewClient(c) ? '<span class="badge-new">NEW</span>' : '';
+    return '<span class="pill pill-G" style="font-size:10px;font-weight:800;letter-spacing:.3px">CLIENT</span>' + nb + (c.isPro ? pillPro : '');
+  }
+  if (tab === 'anciens') {
+    return '<span class="pill pill-V" style="font-size:10px;font-weight:800;letter-spacing:.3px">ANCIEN</span>' + (c.isPro ? pillPro : '');
+  }
+  return '';
+}
+
+/** Pills en-tête fiche client (même grille). */
+function buildBilanModalHeaderPills(c) {
+  var pillPro = '<span class="pill" style="font-size:10px;font-weight:800;background:rgba(108,92,231,.14);color:var(--V);border:1px solid rgba(108,92,231,.35)">PRO</span>';
+  if (c.statut === 'Closé' || c.reopen_from_ancien) {
+    var nb = isNewClient(c) ? '<span class="badge-new">NEW</span>' : '';
+    return '<span class="pill pill-G" style="font-size:10px;font-weight:800">CLIENT</span>' + nb + (c.isPro ? pillPro : '');
+  }
+  if (c.statut === 'Ancien Client') {
+    return '<span class="pill pill-V" style="font-size:10px;font-weight:800">ANCIEN</span>' + (c.isPro ? pillPro : '');
+  }
+  var pl = bilanProspectPrimaryUpper(c);
+  var cls = pl === 'CARDIO MOUV' ? 'pill-Y' : pl === 'NON CLOSÉ' ? 'pill-R' : pl === 'ATTENTE RDV' ? 'pill-Y' : 'pill-B';
+  return '<span class="pill ' + cls + '" style="font-size:10px;font-weight:800">' + pl + '</span>' + (c.isPro ? pillPro : '');
+}
+
+function setProspectCardioMouv(id) {
+  var c = ST.clients.find(function (x) { return x.id === id; });
+  if (!c || c.statut === 'Closé' || c.statut === 'Ancien Client') return;
+  c.statut = 'Cardio Mouv';
+  c.updated_at = new Date().toISOString();
+  try { localStorage.setItem('ba_clients_v8', JSON.stringify(ST.clients)); } catch (e) {}
+  saveToSupabase(c);
+  renderClients();
+  if (ST.clientId === id && document.getElementById('m-client-body')) renderClientModal(id);
+  toast('ok', '🏃 Prospect marqué Cardio Mouv');
 }
 
 var _clientsSearchRenderTimer = null;
@@ -6170,7 +6254,7 @@ function renderClients(){
   var isClientsTab=currentClientTab==='clients';
   var isAnciensTab=currentClientTab==='anciens';
   // Prospects : pipeline hors closés / anciens / réactivations (liste Clients)
-  var prospectStatuts=['Prospect','Contact','Attente RDV','Non Closé','Sans Suite','Non closé','En cours','À relancer','Refusé','','Membre CC'];
+  var prospectStatuts=['Prospect','Contact','Attente RDV','Non Closé','Sans Suite','Non closé','En cours','À relancer','Refusé','','Membre CC','Cardio Mouv','CARDIO MOUV'];
   var list=ST.clients.filter(function(c){
     var _rawSearch = (c.prenom||'')+' '+(c.nom||'')+' '+(c.source||'')+' '+(c.ville||'')+' '+(c.structureName||'');
     if (c._searchIndexRaw !== _rawSearch) {
@@ -6178,7 +6262,7 @@ function renderClients(){
       c._searchIndex = _rawSearch.toLowerCase();
     }
     var ms=!srch||(c._searchIndex||'').includes(srch);
-    var mv=ST.filterStatut==='all'||c.statut===ST.filterStatut;
+    var mv = isProspectTab ? prospectMatchesStatChip(c, ST.filterStatut) : true;
     var tabMatch = false;
     if (isProspectTab) {
       tabMatch = (!c.statut || prospectStatuts.indexOf(c.statut) >= 0) && c.statut !== 'Ancien Client' && !c.reopen_from_ancien;
@@ -6191,7 +6275,6 @@ function renderClients(){
   });
   var emptySub = isProspectTab ? 'Ajoutez votre premier prospect.' : (isClientsTab ? 'Aucun client actif.' : 'Aucun ancien client.');
   if(!list.length){document.getElementById('clients-list').innerHTML='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Aucun contact</div><div class="empty-s">'+emptySub+'</div></div>';return;}
-  const sp={'Closé':'pill-G','Client':'pill-G','Contact':'pill-B','Attente RDV':'pill-Y','Non Closé':'pill-R','Sans Suite':'pill-V','Ancien Client':'pill-V','Ancien':'pill-V','Membre CC':'pill-V','Non closé':'pill-R','À relancer':'pill-Y','Refusé':'pill-R','En cours':'pill-B','Closing en cours':'pill-Y'};
   // Compter les membres par groupId pour les badges
   var groupCounts={};
   ST.clients.forEach(function(c){ if(c.groupId){ groupCounts[c.groupId]=(groupCounts[c.groupId]||0)+1; } });
@@ -6201,16 +6284,9 @@ function renderClients(){
     var isNew = isNewClient(c);
     var dt=c.updated_at?new Date(c.updated_at).toLocaleDateString('fr-FR'):'';
     var offRaw = ((c.offres||'').split(',')[0]||'').trim();
-    var displayStatut = c.statut;
-    if (isClientsTab && c.statut === 'Closé') displayStatut = 'Client';
-    if (isAnciensTab && c.statut === 'Ancien Client') displayStatut = 'Ancien';
-    if (isProspectTab) {
-      if (c.statut === 'Non Closé' || c.statut === 'Non closé') displayStatut = 'Non closé';
-      else if (c.rdvStatut !== 'Présent' && c.rdvStatut !== 'Absent' && (c.statut === 'Contact' || c.statut === 'Attente RDV' || c.statut === 'Prospect' || !c.statut))
-        displayStatut = 'Contact';
-    }
-    var statPill = c.statut ? '<span class="pill '+(sp[displayStatut]||sp[c.statut]||'')+'" style="font-size:10px'+(isClosing?';animation:pulse-y 2s ease-in-out infinite':'')+'">'+(isNew?'🆕 ':'')+displayStatut+'</span>' : '';
-    var newBadge = isNew ? '<span class="badge-new">New</span>' : '';
+    var listTab = isProspectTab ? 'prospects' : isClientsTab ? 'clients' : 'anciens';
+    var coreBadgesHtml = buildBilanListCoreBadgesHtml(c, listTab);
+    var newBadge = '';
     var closingBadge = (isClosing && c.statut !== 'Closé' && c.statut !== 'Ancien Client') ? '<span class="badge-closing">En signature</span>' : '';
     var retourBadge = (c.relances && c.relances.length > 0) ? '<span style="font-size:9px;font-weight:700;background:rgba(130,80,200,.15);color:#8a50c8;border:1px solid rgba(130,80,200,.3);border-radius:50px;padding:1px 6px;margin-left:2px">🔄 Retour</span>' : '';
     // Badge groupe
@@ -6237,15 +6313,15 @@ function renderClients(){
     if (offRaw) metaLine.push(offRaw);
     if (dt) metaLine.push(dt);
     var cmetaStr = metaLine.join(' · ');
+    var listDisplayName = (c.isPro && (c.structureName||'').trim()) ? c.structureName.trim() : (((c.prenom||'')+' '+(c.nom||'')).trim());
     return '<div class="'+cardClasses+'" onclick="'+cardClick+'" style="'+cardStyle+'">'
       +selCheck
       +'<div class="cav" style="'+(isClosing?'background:var(--Y)':isNew?'background:var(--G)':'')+'">'+init+'</div>'
-      +'<div class="cinfo"><div class="cname">'+(c.prenom||'')+' '+(c.nom||'')+'</div>'
+      +'<div class="cinfo"><div class="cname">'+(listDisplayName||'—')+'</div>'
       +'<div class="cmeta">'+(cmetaStr||'&nbsp;')+'</div>'
       +'<div class="cbadges">'
         +(c.profil_code?'<span class="pill pill-bx" style="font-size:10px">'+c.profil_code+'</span>':'')
-        + newBadge + closingBadge + groupBadge + sapBadge + retourBadge
-        + ((!isNew&&!isClosing)?(c.statut?statPill:''):'')
+        + coreBadgesHtml + closingBadge + groupBadge + sapBadge + retourBadge
         +(c.score_global!=null?'<span style="font-size:11px;color:var(--tx3)">★ '+c.score_global+'</span>':'')
       +'</div></div></div>';
   }).join('');
@@ -8232,9 +8308,7 @@ function renderClientModal(id) {
 
   // ── Header premium
   var head = document.createElement('div'); head.className = 'cm-head';
-  var statutLbl = isAncien ? 'Ancien' : 'Client';
-  var statutCls = isAncien ? 'pill-V' : 'pill-G';
-  var meta = '<span class="pill '+statutCls+'">'+(isNew?'🆕 ':'')+statutLbl+'</span>'
+  var meta = buildBilanModalHeaderPills(c)
     + (offreMode ? '<span class="pill pill-B" style="font-size:10px">'+getModeOffreLabel(offreMode)+'</span>' : '')
     + (offreName ? '<span class="pill pill-Y" style="font-size:10px">'+offreName+'</span>' : '')
     + (c.profil_code && c.profil_code!=='PRO' ? '<span class="pill" style="background:var(--bg3);color:var(--tx3);border:1px solid var(--rim3)">'+c.profil_code+'</span>' : '')
