@@ -8521,6 +8521,31 @@ async function saveToSupabase(c){
     if (_sync.rapport_leger && c.rapport_leger) _rj.rapport_leger = c.rapport_leger;
     if (_sync.mode_stages && Array.isArray(c.mode_stages)) _rj.mode_stages = c.mode_stages;
     await fetch(ST.sbUrl+'/rest/v1/be_activ_clients',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:c.id,prenom:c.prenom,nom:c.nom,name:(c.prenom+' '+c.nom).trim(),age:parseInt(c.age)||null,source:c.source,rdv_type:c.rdvType,date_rdv:c.date,profil_code:c.profil_code,profil_label:c.profil_label,offre:_offreLabel,montant:c.montant?parseFloat(c.montant):null,is_client:c.statut==='Closé',score_global:c.score_global,report_json:JSON.stringify(_rj),updated_at:c.updated_at,group_id:c.groupId||null,group_name:c.group_name||null,is_group_leader:c.is_group_leader||false})});
+    var _fullName = ((c.prenom || '') + ' ' + (c.nom || '')).trim();
+    if (c.isPro) _fullName = c.structureName || _fullName;
+    var _status = (c.statut === 'Ancien Client' || c.statut === 'Archivé') ? 'ANCIEN_CLIENT' : (c.statut === 'Closé' ? 'CLIENT_ACTIF' : 'PROSPECT');
+    var _kind = c.isPro ? 'STRUCTURE' : 'PARTICULIER';
+    await fetch(ST.sbUrl+'/rest/v1/crm_people_v1',{method:'POST',headers:{'Content-Type':'application/json','apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({
+      external_ref:String(c.id),
+      user_id:FINANCES_USER_ID||null,
+      full_name:_fullName,
+      status:_status,
+      person_kind:_kind,
+      is_active:_status==='CLIENT_ACTIF',
+      phone:c.tel||null,
+      email:c.email||null,
+      city:c.ville||null,
+      structure_type:c.structure_type||null,
+      offer_name:_offreLabel||null,
+      amount:c.montant?parseFloat(c.montant):null,
+      source_app:'BILAN_CRM',
+      group_id:c.groupId||null,
+      group_name:c.group_name||null,
+      is_group_leader:c.is_group_leader||false,
+      sap_enabled:!!c.sap_enabled,
+      notes:c.notes||null,
+      updated_at:c.updated_at||new Date().toISOString()
+    })});
   }catch(e){}
 }
 
@@ -8528,6 +8553,10 @@ async function deleteFromSupabase(clientId){
   if(!ST.sbUrl||!ST.sbKey||!clientId) return;
   try{
     await fetch(ST.sbUrl+'/rest/v1/be_activ_clients?id=eq.'+encodeURIComponent(String(clientId)),{
+      method:'DELETE',
+      headers:{'apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey}
+    });
+    await fetch(ST.sbUrl+'/rest/v1/crm_people_v1?external_ref=eq.'+encodeURIComponent(String(clientId)),{
       method:'DELETE',
       headers:{'apikey':ST.sbKey,'Authorization':'Bearer '+ST.sbKey}
     });
@@ -9643,7 +9672,7 @@ async function syncClientToFinances(c) {
   var rawSex = c.sexe || c.sex || '';
   if (rawSex === 'Homme' || rawSex === 'H' || rawSex === 'M') sexBiz = 'H';
 
-  // Statut Business : CLIENT | ARCHIVÉ | PROSPECT
+  // Statut unifié : CLIENT_ACTIF | ANCIEN_CLIENT | PROSPECT
   var allStagesDone = false;
   if (c.mode_stages && c.mode_stages.length > 0) {
     allStagesDone = c.mode_stages.every(function(s) {
@@ -9651,7 +9680,7 @@ async function syncClientToFinances(c) {
     });
   }
   var isClosedClient = (c.statut === 'Closé');
-  var statutBiz = allStagesDone ? 'ARCHIVÉ' : (isClosedClient ? 'CLIENT' : 'PROSPECT');
+  var statutBiz = allStagesDone ? 'ANCIEN_CLIENT' : (isClosedClient ? 'CLIENT_ACTIF' : 'PROSPECT');
   var closingBiz = isClosedClient ? 'OUI' : 'NON';
 
   // Montant : actual_amount > montant saisi > catalog_price_snapshot > prix offre live
@@ -9693,6 +9722,7 @@ async function syncClientToFinances(c) {
     paiement_mode:           paiementMode,
     installments_planned:    installPlanned,
     versements_recus:        versementsRecus,
+    person_kind:             c.isPro ? 'STRUCTURE' : 'PARTICULIER',
   };
 
   try {

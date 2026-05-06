@@ -24,27 +24,37 @@ module.exports = async function handler(req, res) {
 
   // Contrat volontairement minimal :
   // BILAN envoie uniquement la fiche client utile au nommage/rattachement.
+  const statusRaw = String(prospect.statut || '').trim().toUpperCase();
+  const status =
+    statusRaw === 'ARCHIVÉ' || statusRaw === 'ANCIEN CLIENT'
+      ? 'ANCIEN_CLIENT'
+      : statusRaw === 'PROSPECT'
+        ? 'PROSPECT'
+        : 'CLIENT_ACTIF';
   const payload = {
     user_id:                prospect.user_id,
     external_ref:           prospect.id,
-    name:                   prospect.name,
-    sex:                    prospect.sex            || null,
-    age:                    prospect.age            || null,
-    contact:                prospect.contact        || null,
-    source:                 prospect.source         || null,
-    statut:                 prospect.statut         || 'CLIENT',
-    closing:                prospect.closing        || 'OUI',
-    date:                   prospect.date           || new Date().toISOString().split('T')[0],
-    offre:                  prospect.offre          || null,
+    full_name:              prospect.name,
+    status,
+    person_kind:            prospect.person_kind || 'PARTICULIER',
+    is_active:              status === 'CLIENT_ACTIF',
+    phone:                  prospect.contact        || null,
+    source_app:             'BILAN_CRM',
+    offer_name:             prospect.offre          || null,
+    amount:                 prospect.montant        || null,
     notes:                  prospect.notes          || null,
     profile:                prospect.profile        || null,
+    sap_enabled:            prospect.sap_enabled    ?? false,
+    group_id:               prospect.group_id       ?? null,
+    group_name:             prospect.group_name     ?? null,
+    is_group_leader:        prospect.is_group_leader ?? false,
   };
 
   try {
-    // CRM writes ONLY in unified clients_pro.
+    // CRM writes ONLY in unified crm_people_v1.
     // Upsert by external_ref, fallback to (user_id,name,contact) when needed.
     const upsertRes = await fetch(
-      `${supabaseUrl}/rest/v1/clients_pro`,
+      `${supabaseUrl}/rest/v1/crm_people_v1`,
       {
         method: 'POST',
         headers: {
