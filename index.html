@@ -3978,14 +3978,9 @@ function renderHomeObjectives() {
 
   var objective = Number(cfg.targetCA);
   if (isNaN(objective) || objective < 0) objective = 3000;
-  var tauxRdvVente = Number(cfg.tauxRdvVente);
-  if (isNaN(tauxRdvVente) || tauxRdvVente <= 0) tauxRdvVente = 35;
-  var tauxContactRdv = Number(cfg.tauxContactRdv);
-  if (isNaN(tauxContactRdv) || tauxContactRdv <= 0) tauxContactRdv = 60;
 
   var realized = 0;
   var signedNonEncaissed = 0;
-  var totalsForBasket = [];
   (ST.clients || []).forEach(function(c) {
     if (!c || c.isPro) return;
     if (!isClosingStatusForKPI(c) && c.statut !== 'Closé' && c.statut !== 'Ancien Client') return;
@@ -3995,16 +3990,9 @@ function renderHomeObjectives() {
     var rem = Math.max(0, total - rec);
     realized += getMonthReceived(c);
     signedNonEncaissed += rem;
-    totalsForBasket.push(total);
   });
   realized = Math.round(realized * 100) / 100;
   signedNonEncaissed = Math.round(signedNonEncaissed * 100) / 100;
-
-  var panierMoyen = Number(cfg.panierMoyen);
-  if (isNaN(panierMoyen) || panierMoyen <= 0) {
-    if (totalsForBasket.length) panierMoyen = Math.round((totalsForBasket.reduce(function(s, v){ return s + v; }, 0) / totalsForBasket.length) * 100) / 100;
-    else panierMoyen = 300;
-  }
   var reste = Math.max(0, objective - realized);
   var prog = objective > 0 ? Math.min(100, Math.max(0, Math.round((realized / objective) * 100))) : 0;
   var doneCls = prog >= 100 ? 'hf-plan-ok' : '';
@@ -4023,11 +4011,8 @@ function renderHomeObjectives() {
       + '</div>'
       + '<div style="margin-top:10px"><div style="height:7px;background:var(--rim3);border-radius:7px;overflow:hidden"><div style="height:100%;width:' + prog + '%;background:' + (prog >= 100 ? 'linear-gradient(90deg,var(--G),#59d18d)' : 'linear-gradient(90deg,var(--bx),var(--R))') + '"></div></div><div style="margin-top:4px;font-size:11px;color:var(--tx3)">' + prog + '% de l’objectif</div></div>'
       + '<div id="hf-detail-box" style="display:none;margin-top:10px;padding:10px;border:1px dashed var(--rim3);border-radius:var(--r2)">'
-        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+        + '<div style="display:grid;grid-template-columns:1fr;gap:8px">'
           + '<div><label style="font-size:10px;color:var(--tx3)">Objectif (€)</label><input id="hf-target" type="number" min="0" step="50" value="' + objective + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>'
-          + '<div><label style="font-size:10px;color:var(--tx3)">Panier moyen (€)</label><input id="hf-panier" type="number" min="0" step="10" value="' + panierMoyen + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>'
-          + '<div><label style="font-size:10px;color:var(--tx3)">Taux RDV→vente (%)</label><input id="hf-rdv" type="number" min="1" max="100" value="' + Math.round(tauxRdvVente) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>'
-          + '<div><label style="font-size:10px;color:var(--tx3)">Taux contact→RDV (%)</label><input id="hf-contact" type="number" min="1" max="100" value="' + Math.round(tauxContactRdv) + '" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--r2);border:1px solid var(--rim3);font-size:13px"></div>'
         + '</div>'
         + '<button type="button" class="btn btn-bx btn-sm" id="hf-save" style="width:100%;margin-top:10px">Enregistrer</button>'
       + '</div>'
@@ -4043,10 +4028,7 @@ function renderHomeObjectives() {
   var saveBtn = document.getElementById('hf-save');
   if (saveBtn) saveBtn.onclick = function() {
     saveHomeFunnelSettings({
-      targetCA: Number(document.getElementById('hf-target') && document.getElementById('hf-target').value) || 0,
-      panierMoyen: Number(document.getElementById('hf-panier') && document.getElementById('hf-panier').value) || 0,
-      tauxRdvVente: Number(document.getElementById('hf-rdv') && document.getElementById('hf-rdv').value) || 35,
-      tauxContactRdv: Number(document.getElementById('hf-contact') && document.getElementById('hf-contact').value) || 60
+      targetCA: Number(document.getElementById('hf-target') && document.getElementById('hf-target').value) || 0
     });
     toast('ok', 'Pilotage mis à jour');
     renderHomeObjectives();
@@ -6270,7 +6252,6 @@ function renderClients(){
     var init = c.isPro ? '🏢' : ((c.prenom||'?')[0]+(c.nom||'?')[0]).toUpperCase();
     var isClosing = c.sig_started === true;
     var isNew = isNewClient(c);
-    var dt=c.updated_at?new Date(c.updated_at).toLocaleDateString('fr-FR'):'';
     var offRaw = ((c.offres||'').split(',')[0]||'').trim();
     var listTab = isProspectTab ? 'prospects' : isClientsTab ? 'clients' : 'anciens';
     var coreBadgesHtml = buildBilanListCoreBadgesHtml(c, listTab);
@@ -6301,11 +6282,24 @@ function renderClients(){
     var metaLine = [];
     var _src = (c.source||'').trim();
     var _vil = (c.ville||'').trim();
-    if (_src) metaLine.push(_src);
-    if (_vil) metaLine.push(_vil);
-    if (offRaw) metaLine.push(offRaw);
-    if (dt) metaLine.push(dt);
-    var cmetaStr = metaLine.join(' · ');
+    var _firstContact = (c.first_contact_date || c.date || '').trim();
+    var _signature = (c.closedAt || '').trim();
+    var _fmtDate = function(v){
+      if (!v) return '';
+      try { return new Date(v).toLocaleDateString('fr-FR'); } catch(e) {}
+      return String(v).slice(0, 10);
+    };
+    if (isProspectTab) {
+      var _d1 = _fmtDate(_firstContact);
+      if (_d1) metaLine.push(_d1);
+      if (_src) metaLine.push(_src);
+      if (_vil) metaLine.push(_vil);
+    } else if (isClientsTab) {
+      var _ds = _fmtDate(_signature);
+      if (_ds) metaLine.push(_ds);
+      if (offRaw) metaLine.push(offRaw);
+    }
+    var cmetaStr = metaLine.join(' - ');
     var listDisplayName = (c.isPro && (c.structureName||'').trim()) ? c.structureName.trim() : (((c.prenom||'')+' '+(c.nom||'')).trim());
     return '<div class="'+cardClasses+'" onclick="'+cardClick+'" style="'+cardStyle+'">'
       +selCheck
